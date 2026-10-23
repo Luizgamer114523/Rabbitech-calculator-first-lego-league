@@ -317,6 +317,29 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
   </div>
 </section>
 
+<section id="page-youtube" class="page">
+  <div class="section-title"><div><h2>▶️ Rabbitech TV</h2><p>Pesquise vídeos e assista sem sair do Rabbitech BIOGLOW.</p></div></div>
+  <div class="card">
+    <form id="rbYoutubeSearchForm" class="two" style="align-items:end">
+      <label class="field">Pesquisar vídeos no YouTube<input id="rbYoutubeQuery" maxlength="160" placeholder="Ex.: robótica LEGO SPIKE Prime" autocomplete="off" required></label>
+      <button class="primary" type="submit" id="rbYoutubeSearch">🔎 Pesquisar</button>
+    </form>
+    <p id="rbYoutubeStatus" class="footnote" role="status" aria-live="polite">A pesquisa usa o serviço seguro do site quando configurado. Também é possível abrir um vídeo por link.</p>
+    <form id="rbYoutubeUrlForm" class="two" style="align-items:end;margin-top:12px">
+      <label class="field">Ou cole o link de um vídeo<input id="rbYoutubeUrl" type="url" maxlength="500" placeholder="https://www.youtube.com/watch?v=..." autocomplete="url"></label>
+      <button type="submit">▶ Assistir link</button>
+    </form>
+  </div>
+  <div id="rbYoutubePlayerCard" class="card hidden" style="margin-top:12px">
+    <div class="two" style="align-items:start"><div><h3 id="rbYoutubeNowTitle">Vídeo selecionado</h3><p id="rbYoutubeNowChannel" class="footnote"></p></div><button id="rbYoutubeClose" type="button" class="ghost">Fechar vídeo</button></div>
+    <div style="position:relative;width:100%;aspect-ratio:16/9;margin-top:10px"><iframe id="rbYoutubePlayer" title="Reprodutor de vídeo do YouTube" src="about:blank" style="position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:14px" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>
+  </div>
+  <div class="section-title"><div><h2>Vídeos encontrados</h2><p>Escolha um vídeo para reproduzir. Alguns canais bloqueiam a reprodução incorporada.</p></div></div>
+  <div id="rbYoutubeResults" class="grid"><div class="card"><p class="footnote">Faça uma pesquisa para ver os resultados aqui.</p></div></div>
+  <div class="section-title"><div><h2>📌 Vídeos fixados</h2><p>Vídeos salvos neste navegador. A sincronização entre visitantes exige uma tabela compartilhada no Supabase.</p></div></div>
+  <div id="rbYoutubePinned" class="grid"><div class="card"><p class="footnote">Carregando vídeos fixados…</p></div></div>
+</section>
+
 <section id="page-admin" class="page">
   <div class="section-title"><div><h2>🔐 Painel administrativo</h2><p>Área privada para acompanhar as equipes e a atividade geral da Rabbitech.</p></div><div class="toolbar"><button id="rbAdminRefresh" type="button">Atualizar painel</button></div></div>
   <div class="card">
@@ -335,9 +358,19 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
       <div class="two"><label class="field">Cor de destaque<input id="rbGlobalAccent" type="color" value="#d0f477"></label><label class="field">Nome do tema<input id="rbGlobalThemeName" maxlength="40" placeholder="Ex.: BioGlow Verde"></label></div>
       <button type="button" id="rbGlobalThemeSave" class="primary" style="margin-top:10px">Salvar aparência global</button>
       <hr style="margin:24px 0;border-color:var(--line)">
-      <h3>🛡️ Administradores</h3><p class="footnote">Adicione pelo e-mail da conta Google já cadastrada no site. Evite remover a última conta administrativa.</p>
+      <div id="rbOwnerAdminSection">
+      <h3>🛡️ Administradores</h3><p class="footnote">Somente o proprietário pode adicionar ou remover administradores.</p>
       <div class="two"><label class="field">E-mail Google<input id="rbAdminEmail" maxlength="320" type="email" placeholder="pessoa@gmail.com"></label><div style="display:flex;align-items:end"><button type="button" id="rbAdminAdd" class="primary">Adicionar administrador</button></div></div>
       <div id="rbAdminList" style="margin-top:12px"><p class="footnote">Carregando administradores…</p></div>
+      </div>
+      <div id="rbOwnerControls" class="hidden">
+        <hr style="margin:24px 0;border-color:var(--line)">
+        <h3>👑 Controle exclusivo do proprietário</h3>
+        <p class="footnote">Disponível somente para a conta proprietária do Rabbitech BIOGLOW. A chave é enviada ao Supabase por uma função protegida e não deve ser publicada no HTML.</p>
+        <label class="field">Chave da YouTube Data API v3<input id="rbYoutubeApiKey" type="password" maxlength="300" autocomplete="new-password" placeholder="Cole sua chave da API aqui"></label>
+        <div class="toolbar" style="margin-top:10px"><button type="button" id="rbYoutubeApiSave" class="primary">Salvar / trocar API</button><button type="button" id="rbYoutubeApiRemove" class="danger">Remover API</button></div>
+        <p id="rbYoutubeApiStatus" class="footnote" role="status" aria-live="polite">Estado da API: não verificado.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -452,6 +485,7 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
 <button data-page="strategy"><span class="dock-icon">🧭</span><span class="dock-label">Estratégia</span></button>
 <button data-page="routes"><span class="dock-icon">🗺️</span><span class="dock-label">Rotas</span></button>
 <button data-page="rules"><span class="dock-icon">📘</span><span class="dock-label">Regras</span></button>
+<button data-page="youtube" id="rbYouTubeNav"><span class="dock-icon">▶️</span><span class="dock-label">Rabbitech TV</span></button>
 <button data-page="admin" id="rbAdminNav" hidden><span class="dock-icon">🔐</span><span class="dock-label">Admin</span></button>
 </nav>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -921,7 +955,7 @@ const RB_URL='https://ieijssfqonoucqheedac.supabase.co';
 const RB_KEY='sb_publishable_fyFewm4Smq5iTXRJDB9C1Q_nuuAKL54';
 const PENDING_TEAM_KEY='rbGooglePendingTeam';
 const UNASSIGNED_HISTORY_KEY=(typeof KEY!=='undefined'?KEY:'rabbitech-bioglow-fllc')+'.history.unassignedArchive';
-let rbClient=null,rbCloudUser=null,rbCloudTeam=null,rbBusy=false,rbIsAdmin=false,rbLeaderboardSignature='',rbLeaderboardBusy=false,rbAdminBusy=false;
+const RB_OWNER_USER_ID='7e799691-ba7e-42ea-ab6f-71ad11ca32ff'; const RB_OWNER_EMAIL='luiznarciso122@gmail.com'; let rbClient=null,rbCloudUser=null,rbCloudTeam=null,rbBusy=false,rbIsAdmin=false,rbLeaderboardSignature='',rbLeaderboardBusy=false,rbAdminBusy=false;
 const rbEl=id=>document.getElementById(id);
 function rbCloudStatus(msg){const el=rbEl('rbCloudStatus');if(el)el.textContent=msg;}
 function rbAdminStatus(msg){const el=rbEl('rbAdminStatus');if(el)el.textContent=msg;}
@@ -934,7 +968,7 @@ function rbSetButtons(){
  rbEl('rbCloudSync').hidden=!(signed&&linked);rbEl('rbCloudSync').disabled=!(signed&&linked);
  rbEl('rbCloudLogout').hidden=!signed;
  rbEl('rbCloudTeam').readOnly=signed&&linked;
- if(rbIsAdmin){rbEl('rbAdminNav').hidden=false;}else{rbEl('rbAdminNav').hidden=true;}
+ rbEl('rbAdminNav').hidden=!rbIsAdmin; const ownerControls=rbEl('rbOwnerControls');if(ownerControls)ownerControls.classList.toggle('hidden',!owner); const ownerAdminSection=rbEl('rbOwnerAdminSection');if(ownerAdminSection)ownerAdminSection.classList.toggle('hidden',!owner);
 }
 function rbLoadSdk(){return new Promise((resolve,reject)=>{if(window.supabase?.createClient){resolve();return;}const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';sc.onload=resolve;sc.onerror=()=>reject(new Error('Não foi possível carregar a biblioteca do Supabase.'));document.head.appendChild(sc);});}
 function rbReadArray(key){try{const v=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(v)?v:[]}catch(_){return []}}
@@ -1061,7 +1095,7 @@ let rbGlobalSettingsSignature='';
 let rbGlobalSettingsCurrent={notice_text:'',notice_active:false,notice_type:'info',accent_color:'#d0f477',theme_name:'BioGlow Verde'};
 function rbApplyGlobalSettings(cfg){cfg=cfg||{};rbGlobalSettingsCurrent={...rbGlobalSettingsCurrent,...cfg};const n=rbEl('rbGlobalNotice');const active=!!cfg.notice_active&&String(cfg.notice_text||'').trim();if(n){n.classList.toggle('hidden',!active);n.textContent=active?String(cfg.notice_text):'';n.style.borderColor=cfg.notice_type==='warning'?'var(--amber)':cfg.notice_type==='success'?'var(--mint)':'var(--blue)';}const accent=/^#[0-9a-fA-F]{6}$/.test(cfg.accent_color||'')?cfg.accent_color:'#d0f477';document.documentElement.style.setProperty('--lime',accent);if(rbEl('rbGlobalAccent')&&document.activeElement!==rbEl('rbGlobalAccent'))rbEl('rbGlobalAccent').value=accent;if(rbEl('rbGlobalThemeName')&&document.activeElement!==rbEl('rbGlobalThemeName'))rbEl('rbGlobalThemeName').value=cfg.theme_name||'';if(rbEl('rbGlobalNoticeText')&&document.activeElement!==rbEl('rbGlobalNoticeText'))rbEl('rbGlobalNoticeText').value=cfg.notice_text||'';if(rbEl('rbGlobalNoticeType')&&document.activeElement!==rbEl('rbGlobalNoticeType'))rbEl('rbGlobalNoticeType').value=cfg.notice_type||'info';}
 async function rbLoadGlobalSettings(){if(!rbClient)return;try{const {data,error}=await rbClient.rpc('get_rabbitech_public_settings');if(error)throw error;const cfg=data||{},sig=JSON.stringify(cfg);if(sig!==rbGlobalSettingsSignature){rbGlobalSettingsSignature=sig;rbApplyGlobalSettings(cfg);}}catch(e){console.warn('Configuração global indisponível:',e.message||e);if(rbIsAdmin)rbAdminStatus('Não foi possível carregar as configurações globais: '+(e?.message||String(e))+' Confira se as funções SQL globais foram criadas no projeto Supabase correto.');}}
-async function rbAdminLoadAdmins(){const host=rbEl('rbAdminList');if(!host)return;if(!rbIsAdmin||!rbClient){host.innerHTML='<p class="footnote">Entre com uma conta autorizada como administradora para carregar esta lista.</p>';return;}host.innerHTML='<p class="footnote">Consultando administradores…</p>';try{const result=await Promise.race([rbClient.rpc('admin_list_rabbitech_admins'),new Promise((_,reject)=>setTimeout(()=>reject(new Error('A consulta demorou mais de 12 segundos. Verifique a conexão e a sessão do Supabase.')),12000))]);const {data,error}=result;if(error)throw error;const rows=Array.isArray(data)?data:[];host.innerHTML=rows.length?rows.map(a=>`<div class="rb-admin-team" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0"><div><strong>${rbEsc(a.email||'Conta sem e-mail')}</strong><div class="footnote">${rbEsc(a.user_id||'')}</div></div><button type="button" data-rb-admin-remove="${rbEsc(a.user_id||'')}" ${a.user_id===rbCloudUser?.id?'disabled':''}>Remover</button></div>`).join(''):'<p class="footnote">Nenhum administrador listado.</p>';host.querySelectorAll('[data-rb-admin-remove]').forEach(b=>b.addEventListener('click',()=>rbRun(async()=>{if(!confirm('Remover esta conta da lista de administradores?'))return;const {error}=await rbClient.rpc('admin_remove_rabbitech_admin',{p_user_id:b.dataset.rbAdminRemove});if(error)throw error;await rbAdminLoadAdmins();rbAdminStatus('Lista de administradores atualizada.');})));}catch(e){host.innerHTML=`<p class="footnote" role="alert">Falha ao carregar administradores: ${rbEsc(e?.message||String(e))}</p>`;rbAdminStatus('Erro ao carregar administradores: '+(e?.message||String(e)));}}
+async function rbAdminLoadAdmins(){const host=rbEl('rbAdminList');if(!host)return;if(!rbIsOwner()||!rbIsAdmin||!rbClient){host.innerHTML='<p class="footnote">A gestão de administradores é exclusiva da conta proprietária.</p>';return;}host.innerHTML='<p class="footnote">Consultando administradores…</p>';try{const result=await Promise.race([rbClient.rpc('admin_list_rabbitech_admins'),new Promise((_,reject)=>setTimeout(()=>reject(new Error('A consulta demorou mais de 12 segundos. Verifique a conexão e a sessão do Supabase.')),12000))]);const {data,error}=result;if(error)throw error;const rows=Array.isArray(data)?data:[];host.innerHTML=rows.length?rows.map(a=>`<div class="rb-admin-team" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0"><div><strong>${rbEsc(a.email||'Conta sem e-mail')}</strong><div class="footnote">${rbEsc(a.user_id||'')}</div></div><button type="button" data-rb-admin-remove="${rbEsc(a.user_id||'')}" ${a.user_id===rbCloudUser?.id?'disabled':''}>Remover</button></div>`).join(''):'<p class="footnote">Nenhum administrador listado.</p>';host.querySelectorAll('[data-rb-admin-remove]').forEach(b=>b.addEventListener('click',()=>rbRun(async()=>{if(!rbIsOwner())throw new Error('Somente o proprietário pode remover administradores.');if(!confirm('Remover esta conta da lista de administradores?'))return;const {error}=await rbClient.rpc('admin_remove_rabbitech_admin',{p_user_id:b.dataset.rbAdminRemove});if(error)throw error;await rbAdminLoadAdmins();rbAdminStatus('Lista de administradores atualizada.');})));}catch(e){host.innerHTML=`<p class="footnote" role="alert">Falha ao carregar administradores: ${rbEsc(e?.message||String(e))}</p>`;rbAdminStatus('Erro ao carregar administradores: '+(e?.message||String(e)));}}
 async function rbSaveGlobalSettings(p){if(!rbIsAdmin)throw new Error('Apenas administradores podem alterar configurações globais.');const {data,error}=await rbClient.rpc('admin_update_rabbitech_settings',{p_notice_text:p.notice_text,p_notice_active:p.notice_active,p_notice_type:p.notice_type,p_accent_color:p.accent_color,p_theme_name:p.theme_name});if(error)throw new Error('Supabase recusou salvar as configurações: '+(error.message||String(error)));if(data&&data.ok===false)throw new Error(data.message||'O Supabase não confirmou a gravação.');rbGlobalSettingsSignature='';await rbLoadGlobalSettings();rbAdminStatus('Configuração global publicada e recarregada.');}
 rbEl('rbGlobalNoticeSave')?.addEventListener('click',rbRun(async()=>{const t=rbEl('rbGlobalNoticeText').value.trim();if(!t)throw new Error('Escreva uma mensagem antes de publicar.');await rbSaveGlobalSettings({notice_text:t,notice_active:true,notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
 rbEl('rbGlobalNoticeClear')?.addEventListener('click',rbRun(async()=>{if(!confirm('Remover o aviso global para todos?'))return;await rbSaveGlobalSettings({notice_text:'',notice_active:false,notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
@@ -1073,7 +1107,7 @@ rbEl('rbAdminAdd')?.addEventListener('click',async()=>{
  try{
   await rbInitIfNeeded();
   if(!rbCloudUser)throw new Error('Sua sessão expirou. Entre novamente com a conta administradora.');
-  if(!rbIsAdmin)throw new Error('O Supabase não reconhece esta conta como administradora. Confirme public.app_admins e atualize a sessão.');
+  if(!rbIsOwner())throw new Error('Somente o proprietário do Rabbitech BIOGLOW pode adicionar administradores.');
   const email=String(input.value||'').trim().toLowerCase();
   if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('Digite um endereço de e-mail válido.');
   rbAdminStatus('Adicionando '+email+' como administrador…');
@@ -1103,6 +1137,27 @@ rbEl('rbAdminAdd')?.addEventListener('click',async()=>{
 const rbLoadAdminBeforeGlobal=rbLoadAdmin;rbLoadAdmin=async function(){await rbLoadAdminBeforeGlobal();if(rbIsAdmin&&!rbEl('rbAdminContent').classList.contains('hidden')){await rbAdminLoadAdmins();await rbLoadGlobalSettings();}};
 const rbInitBeforeGlobal=rbInit;rbInit=async function(){await rbInitBeforeGlobal();await rbLoadGlobalSettings();};
 setInterval(()=>{if(document.visibilityState==='visible'&&rbClient)rbLoadGlobalSettings();},5000);
+})();
+
+
+// Rabbitech TV: busca via endpoint do servidor para nunca expor a chave da API no navegador.
+(function rbInitYouTubeTV(){
+ const form=rbEl('rbYoutubeSearchForm'),query=rbEl('rbYoutubeQuery'),status=rbEl('rbYoutubeStatus'),results=rbEl('rbYoutubeResults'),playerCard=rbEl('rbYoutubePlayerCard'),player=rbEl('rbYoutubePlayer');
+ const esc=rbEsc;
+ function videoIdFromUrl(raw){try{const u=new URL(raw);if(!['youtube.com','www.youtube.com','m.youtube.com','youtu.be','www.youtube-nocookie.com','youtube-nocookie.com'].includes(u.hostname))return null;if(u.hostname.includes('youtu.be'))return u.pathname.split('/').filter(Boolean)[0]||null;if(u.pathname==='/watch')return u.searchParams.get('v');const m=u.pathname.match(/^\/(embed|shorts|live)\/([A-Za-z0-9_-]{6,})/);return m?m[2]:null;}catch(_){return null;}}
+ function playVideo(id,title='',channel=''){if(!/^[A-Za-z0-9_-]{6,}$/.test(id))throw new Error('Link ou ID de vídeo inválido.');player.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(id)+'?autoplay=1&rel=0';rbEl('rbYoutubeNowTitle').textContent=title||'Vídeo selecionado';rbEl('rbYoutubeNowChannel').textContent=channel||'';playerCard.classList.remove('hidden');playerCard.scrollIntoView({behavior:'smooth',block:'start'});}
+ function pinnedRead(){try{const v=JSON.parse(localStorage.getItem('rbYoutubePinned')||'[]');return Array.isArray(v)?v:[];}catch(_){return [];}}
+ function renderPinned(){const host=rbEl('rbYoutubePinned'),items=pinnedRead();if(!items.length){host.innerHTML='<div class="card"><p class="footnote">Nenhum vídeo fixado neste navegador ainda.</p></div>';return;}host.innerHTML=items.map(v=>'<article class="card"><img src="'+esc(v.thumbnail||'')+'" alt="" loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px"><h3 style="margin-top:8px">'+esc(v.title)+'</h3><p class="footnote">'+esc(v.channel||'')+'</p><div class="toolbar"><button type="button" data-rb-yt-play="'+esc(v.id)+'" data-title="'+esc(v.title)+'" data-channel="'+esc(v.channel||'')+'">▶ Assistir</button><button type="button" class="danger" data-rb-yt-unpin="'+esc(v.id)+'">Desafixar</button></div></article>').join('');}
+ function pin(v){const items=pinnedRead().filter(x=>x.id!==v.id);items.unshift(v);localStorage.setItem('rbYoutubePinned',JSON.stringify(items.slice(0,30)));renderPinned();}
+ results.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.rbYtPlay){playVideo(b.dataset.rbYtPlay,b.dataset.title,b.dataset.channel);}if(b.dataset.rbYtPin){const v=JSON.parse(decodeURIComponent(b.dataset.rbYtPin));pin(v);status.textContent='Vídeo fixado neste navegador. A lista ainda não é compartilhada entre dispositivos.';}});
+ rbEl('rbYoutubePinned')?.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;if(b.dataset.rbYtPlay)playVideo(b.dataset.rbYtPlay,b.dataset.title,b.dataset.channel);if(b.dataset.rbYtUnpin){localStorage.setItem('rbYoutubePinned',JSON.stringify(pinnedRead().filter(x=>x.id!==b.dataset.rbYtUnpin)));renderPinned();}});
+ form?.addEventListener('submit',async e=>{e.preventDefault();const q=String(query.value||'').trim();if(!q)return;const btn=rbEl('rbYoutubeSearch');btn.disabled=true;status.textContent='Pesquisando vídeos…';results.innerHTML='<div class="card"><p class="footnote">Consultando o YouTube…</p></div>';try{const response=await fetch('/api/youtube-search?q='+encodeURIComponent(q),{headers:{'Accept':'application/json'}});const data=await response.json().catch(()=>({}));if(!response.ok)throw new Error(data.error||'A pesquisa ainda não está configurada no servidor.');const items=Array.isArray(data.items)?data.items:[];if(!items.length){results.innerHTML='<div class="card"><p class="footnote">Nenhum vídeo encontrado.</p></div>';status.textContent='Pesquisa concluída.';return;}results.innerHTML=items.map(v=>{const safe={id:v.id,title:v.title||'Vídeo do YouTube',channel:v.channelTitle||'',thumbnail:v.thumbnail||''};return '<article class="card"><img src="'+esc(safe.thumbnail)+'" alt="" loading="lazy" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px"><h3 style="margin-top:8px">'+esc(safe.title)+'</h3><p class="footnote">'+esc(safe.channel)+'</p><div class="toolbar"><button type="button" data-rb-yt-play="'+esc(safe.id)+'" data-title="'+esc(safe.title)+'" data-channel="'+esc(safe.channel)+'">▶ Assistir aqui</button><button type="button" data-rb-yt-pin="'+encodeURIComponent(JSON.stringify(safe))+'">📌 Fixar</button></div></article>';}).join('');status.textContent=items.length+' resultado(s).';}catch(err){results.innerHTML='<div class="card"><p class="footnote">'+esc(err.message||String(err))+'</p></div>';status.textContent='Não foi possível pesquisar. Configure o endpoint seguro /api/youtube-search no Vercel.';}finally{btn.disabled=false;}});
+ rbEl('rbYoutubeUrlForm')?.addEventListener('submit',e=>{e.preventDefault();const id=videoIdFromUrl(rbEl('rbYoutubeUrl').value.trim());if(!id){status.textContent='Cole um link válido de vídeo do YouTube.';return;}playVideo(id);});
+ rbEl('rbYoutubeClose')?.addEventListener('click',()=>{player.src='about:blank';playerCard.classList.add('hidden');});
+ rbEl('rbYoutubeApiSave')?.addEventListener('click',async()=>{try{if(!rbIsOwner())throw new Error('Somente o proprietário pode configurar a API.');const key=rbEl('rbYoutubeApiKey').value.trim();if(!key)throw new Error('Cole a chave da YouTube Data API v3.');const {data,error}=await rbClient.rpc('owner_set_rabbitech_youtube_api_key',{p_api_key:key});if(error)throw error;if(data&&data.ok===false)throw new Error(data.message||'Supabase recusou salvar a chave.');rbEl('rbYoutubeApiKey').value='';rbEl('rbYoutubeApiStatus').textContent='Chave salva no Supabase. A pesquisa depende do endpoint seguro do Vercel.';}catch(err){rbEl('rbYoutubeApiStatus').textContent='Erro: '+(err.message||String(err));}});
+ rbEl('rbYoutubeApiRemove')?.addEventListener('click',async()=>{try{if(!rbIsOwner())throw new Error('Somente o proprietário pode remover a API.');if(!confirm('Remover a chave da YouTube Data API? A pesquisa deixará de funcionar.'))return;const {data,error}=await rbClient.rpc('owner_set_rabbitech_youtube_api_key',{p_api_key:null});if(error)throw error;if(data&&data.ok===false)throw new Error(data.message||'Supabase recusou remover a chave.');rbEl('rbYoutubeApiStatus').textContent='Chave removida.';}catch(err){rbEl('rbYoutubeApiStatus').textContent='Erro: '+(err.message||String(err));}});
+ document.querySelector('nav button[data-page="youtube"]')?.addEventListener('click',renderPinned);
+ renderPinned();
 })();
 </script>
 
