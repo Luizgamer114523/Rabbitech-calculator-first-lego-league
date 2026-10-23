@@ -1066,7 +1066,40 @@ async function rbSaveGlobalSettings(p){if(!rbIsAdmin)throw new Error('Apenas adm
 rbEl('rbGlobalNoticeSave')?.addEventListener('click',rbRun(async()=>{const t=rbEl('rbGlobalNoticeText').value.trim();if(!t)throw new Error('Escreva uma mensagem antes de publicar.');await rbSaveGlobalSettings({notice_text:t,notice_active:true,notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
 rbEl('rbGlobalNoticeClear')?.addEventListener('click',rbRun(async()=>{if(!confirm('Remover o aviso global para todos?'))return;await rbSaveGlobalSettings({notice_text:'',notice_active:false,notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
 rbEl('rbGlobalThemeSave')?.addEventListener('click',rbRun(async()=>{await rbSaveGlobalSettings({notice_text:rbGlobalSettingsCurrent.notice_text||rbEl('rbGlobalNoticeText').value.trim(),notice_active:rbGlobalSettingsCurrent.notice_active===true,notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
-rbEl('rbAdminAdd')?.addEventListener('click',rbRun(async()=>{const email=rbEl('rbAdminEmail').value.trim().toLowerCase();if(!email||!email.includes('@'))throw new Error('Digite um e-mail válido.');const {error}=await rbClient.rpc('admin_add_rabbitech_admin_by_email',{p_email:email});if(error)throw error;rbEl('rbAdminEmail').value='';await rbAdminLoadAdmins();rbAdminStatus('Administrador adicionado.');}));
+rbEl('rbAdminAdd')?.addEventListener('click',async()=>{
+ const button=rbEl('rbAdminAdd'),input=rbEl('rbAdminEmail');
+ if(button.disabled)return;
+ button.disabled=true;const oldLabel=button.textContent;button.textContent='Adicionando…';
+ try{
+  await rbInitIfNeeded();
+  if(!rbCloudUser)throw new Error('Sua sessão expirou. Entre novamente com a conta administradora.');
+  if(!rbIsAdmin)throw new Error('O Supabase não reconhece esta conta como administradora. Confirme public.app_admins e atualize a sessão.');
+  const email=String(input.value||'').trim().toLowerCase();
+  if(!email||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))throw new Error('Digite um endereço de e-mail válido.');
+  rbAdminStatus('Adicionando '+email+' como administrador…');
+  const result=await Promise.race([
+   rbClient.rpc('admin_add_rabbitech_admin_by_email',{p_email:email}),
+   new Promise((_,reject)=>setTimeout(()=>reject(new Error('A inclusão demorou mais de 12 segundos. Confira a conexão e a função SQL admin_add_rabbitech_admin_by_email.')),12000))
+  ]);
+  if(result.error)throw new Error(result.error.message||'O Supabase recusou a inclusão.');
+  const response=result.data;
+  if(response&&typeof response==='object'&&(response.ok===false||response.success===false||response.error)){
+   throw new Error(response.message||response.error||'A função SQL não confirmou a inclusão.');
+  }
+  await rbAdminLoadAdmins();
+  const host=rbEl('rbAdminList');
+  if(host?.querySelector('[role="alert"]'))throw new Error('A solicitação foi enviada, mas não foi possível confirmar a lista. Veja a mensagem exibida na lista de administradores.');
+  input.value='';
+  rbAdminStatus('Administrador adicionado: '+email+'. A lista foi atualizada.');
+ }catch(e){
+  const message=e?.message||String(e);
+  rbAdminStatus('Não foi possível adicionar o administrador: '+message);
+  const host=rbEl('rbAdminList');
+  if(host)host.innerHTML='<p class="footnote" role="alert">'+rbEsc(message)+'</p>';
+ }finally{
+  button.disabled=false;button.textContent=oldLabel;
+ }
+});
 const rbLoadAdminBeforeGlobal=rbLoadAdmin;rbLoadAdmin=async function(){await rbLoadAdminBeforeGlobal();if(rbIsAdmin&&!rbEl('rbAdminContent').classList.contains('hidden')){await rbAdminLoadAdmins();await rbLoadGlobalSettings();}};
 const rbInitBeforeGlobal=rbInit;rbInit=async function(){await rbInitBeforeGlobal();await rbLoadGlobalSettings();};
 setInterval(()=>{if(document.visibilityState==='visible'&&rbClient)rbLoadGlobalSettings();},5000);
