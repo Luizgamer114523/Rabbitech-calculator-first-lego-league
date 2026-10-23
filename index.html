@@ -957,11 +957,11 @@ const PENDING_TEAM_KEY='rbGooglePendingTeam';
 const UNASSIGNED_HISTORY_KEY=(typeof KEY!=='undefined'?KEY:'rabbitech-bioglow-fllc')+'.history.unassignedArchive';
 const RB_OWNER_USER_ID='7e799691-ba7e-42ea-ab6f-71ad11ca32ff'; const RB_OWNER_EMAIL='luiznarciso122@gmail.com'; let rbClient=null,rbCloudUser=null,rbCloudTeam=null,rbBusy=false,rbIsAdmin=false,rbLeaderboardSignature='',rbLeaderboardBusy=false,rbAdminBusy=false;
 const rbEl=id=>document.getElementById(id);
-function rbIsOwner(){return !!rbCloudUser && rbCloudUser.id===RB_OWNER_USER_ID && String(rbCloudUser.email||'').toLowerCase()===RB_OWNER_EMAIL;}
 function rbCloudStatus(msg){const el=rbEl('rbCloudStatus');if(el)el.textContent=msg;}
 function rbAdminStatus(msg){const el=rbEl('rbAdminStatus');if(el)el.textContent=msg;}
 function rbEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function rbNormalizeTeamName(name){return String(name||'').trim().replace(/\s+/g,' ');}
+function rbIsOwner(){return !!rbCloudUser && rbCloudUser.id===RB_OWNER_USER_ID && String(rbCloudUser.email||'').toLowerCase()===RB_OWNER_EMAIL;}
 function rbSetButtons(){
  const signed=!!rbCloudUser, linked=!!rbCloudTeam;
  rbEl('rbCloudGoogle').hidden=signed;
