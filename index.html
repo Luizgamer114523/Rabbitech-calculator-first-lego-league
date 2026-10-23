@@ -1075,7 +1075,7 @@ rbEl('rbAdminAdd')?.addEventListener('click',async()=>{
   if(!rbCloudUser)throw new Error('Sua sessão expirou. Entre novamente com a conta administradora.');
   if(!rbIsAdmin)throw new Error('O Supabase não reconhece esta conta como administradora. Confirme public.app_admins e atualize a sessão.');
   const email=String(input.value||'').trim().toLowerCase();
-  if(!email||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email))throw new Error('Digite um endereço de e-mail válido.');
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error('Digite um endereço de e-mail válido.');
   rbAdminStatus('Adicionando '+email+' como administrador…');
   const result=await Promise.race([
    rbClient.rpc('admin_add_rabbitech_admin_by_email',{p_email:email}),
