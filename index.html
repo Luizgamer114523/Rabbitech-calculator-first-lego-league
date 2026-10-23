@@ -1004,12 +1004,12 @@ async function rbLoadLeaderboard(showStatus=true){
  if(rbLeaderboardBusy)return;rbLeaderboardBusy=true;
  try{
   const {data,error}=await rbClient.rpc('get_public_leaderboard');if(error)throw error;
-  const rows=Array.isArray(data)?data:[];const signature=JSON.stringify(rows.map(r=>[r.position,r.team_name,r.average_score,r.rounds_count]));
+  const rows=Array.isArray(data)?data:[];const signature=JSON.stringify(rows.map(r=>[r.rank_position,r.team_name,r.average_score,r.rounds_count]));
   const host=rbEl('rbLeaderboardRows');
   if(signature!==rbLeaderboardSignature){
    rbLeaderboardSignature=signature;
    if(!rows.length)host.innerHTML='<p class="footnote">Ainda não há equipes com pelo menos 3 rounds sincronizados. Jogue, sincronize os rounds e volte para conferir o ranking.</p>';
-   else host.innerHTML=rows.map((r,i)=>`<div class="rb-rank-row"><div class="rb-rank-pos">${Number(r.position)||i+1}</div><div class="rb-rank-name">${rbEsc(r.team_name)}<small class="rb-rank-meta">${Number(r.rounds_count)||0} rounds considerados</small></div><div class="rb-rank-score">${Math.round(Number(r.average_score)||0)}<small class="rb-rank-meta">média</small></div></div>`).join('');
+   else host.innerHTML=rows.map((r,i)=>`<div class="rb-rank-row"><div class="rb-rank-pos">${Number(r.rank_position)||i+1}</div><div class="rb-rank-name">${rbEsc(r.team_name)}<small class="rb-rank-meta">${Number(r.rounds_count)||0} rounds considerados</small></div><div class="rb-rank-score">${Math.round(Number(r.average_score)||0)}<small class="rb-rank-meta">média</small></div></div>`).join('');
   }
   rbEl('rbLeaderboardUpdated').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR');
   if(showStatus)rbEl('rbLeaderboardStatus').textContent='Dados agregados do Supabase. Atualização automática a cada 5 segundos enquanto esta aba estiver aberta.';
