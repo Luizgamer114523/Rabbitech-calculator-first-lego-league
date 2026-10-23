@@ -324,6 +324,19 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
       <div class="rb-admin-stats"><div class="rb-admin-stat"><small>Equipes cadastradas</small><strong id="rbAdminTeamCount">0</strong></div><div class="rb-admin-stat"><small>Rounds registrados</small><strong id="rbAdminRoundCount">0</strong></div><div class="rb-admin-stat"><small>Equipes no ranking</small><strong id="rbAdminRankedCount">0</strong></div></div>
       <h3>Gerenciar equipes</h3><p class="footnote">Use os controles com cuidado: excluir uma equipe remove também os rounds dela. Os dados simulados permanecem até serem apagados aqui.</p>
       <div id="rbAdminTeams"><p class="footnote">Nenhuma equipe carregada.</p></div>
+      <hr style="margin:24px 0;border-color:var(--line)">
+      <h3>🌍 Aviso global do site</h3><p class="footnote">A mensagem aparece para todos os visitantes, em qualquer aparelho.</p>
+      <label class="field">Mensagem global<textarea id="rbGlobalNoticeText" rows="3" maxlength="500" placeholder="Ex.: O ranking será atualizado às 18h."></textarea></label>
+      <label class="field" style="margin-top:8px">Tipo de aviso<select id="rbGlobalNoticeType"><option value="info">Informação</option><option value="success">Sucesso</option><option value="warning">Atenção</option></select></label>
+      <div class="toolbar" style="margin-top:10px"><button type="button" id="rbGlobalNoticeSave" class="primary">Publicar aviso</button><button type="button" id="rbGlobalNoticeClear">Remover aviso</button></div>
+      <hr style="margin:24px 0;border-color:var(--line)">
+      <h3>🎨 Aparência global</h3><p class="footnote">Altera a cor de destaque para todos os visitantes.</p>
+      <div class="two"><label class="field">Cor de destaque<input id="rbGlobalAccent" type="color" value="#d0f477"></label><label class="field">Nome do tema<input id="rbGlobalThemeName" maxlength="40" placeholder="Ex.: BioGlow Verde"></label></div>
+      <button type="button" id="rbGlobalThemeSave" class="primary" style="margin-top:10px">Salvar aparência global</button>
+      <hr style="margin:24px 0;border-color:var(--line)">
+      <h3>🛡️ Administradores</h3><p class="footnote">Adicione pelo e-mail da conta Google já cadastrada no site. Evite remover a última conta administrativa.</p>
+      <div class="two"><label class="field">E-mail Google<input id="rbAdminEmail" maxlength="320" type="email" placeholder="pessoa@gmail.com"></label><div style="display:flex;align-items:end"><button type="button" id="rbAdminAdd" class="primary">Adicionar administrador</button></div></div>
+      <div id="rbAdminList" style="margin-top:12px"><p class="footnote">Carregando administradores…</p></div>
     </div>
   </div>
 </section>
@@ -430,6 +443,7 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
 </div>
 </section>
 </main>
+<div id="rbGlobalNotice" class="notice hidden" role="status" aria-live="polite" style="position:sticky;top:0;z-index:1000;margin:8px auto;max-width:1100px;white-space:pre-wrap"></div>
 <nav>
 <button class="active" data-page="score"><span class="dock-icon">🏁</span><span class="dock-label">Placar</span></button>
 <button data-page="history"><span class="dock-icon">📊</span><span class="dock-label">Histórico</span></button>
@@ -1042,6 +1056,20 @@ rbInit().then(()=>{window.rbCloudUser=rbCloudUser;}).catch(e=>rbCloudStatus('Nã
 setInterval(()=>{if(document.visibilityState==='visible'&&rbEl('page-leaderboard')?.classList.contains('active')&&rbClient)rbLoadLeaderboard(false);},5000);
 setInterval(()=>{if(document.visibilityState==='visible'&&rbEl('page-admin')?.classList.contains('active')&&rbIsAdmin&&rbClient)rbLoadAdmin();},15000);
 })();
+
+// Configurações globais e gestão segura de administradores via funções protegidas no Supabase.
+let rbGlobalSettingsSignature='';
+function rbApplyGlobalSettings(cfg){cfg=cfg||{};const n=rbEl('rbGlobalNotice');const active=!!cfg.notice_active&&String(cfg.notice_text||'').trim();if(n){n.classList.toggle('hidden',!active);n.textContent=active?String(cfg.notice_text):'';n.style.borderColor=cfg.notice_type==='warning'?'var(--amber)':cfg.notice_type==='success'?'var(--mint)':'var(--blue)';}const accent=/^#[0-9a-fA-F]{6}$/.test(cfg.accent_color||'')?cfg.accent_color:'#d0f477';document.documentElement.style.setProperty('--lime',accent);if(rbEl('rbGlobalAccent')&&document.activeElement!==rbEl('rbGlobalAccent'))rbEl('rbGlobalAccent').value=accent;if(rbEl('rbGlobalThemeName')&&document.activeElement!==rbEl('rbGlobalThemeName'))rbEl('rbGlobalThemeName').value=cfg.theme_name||'';if(rbEl('rbGlobalNoticeText')&&document.activeElement!==rbEl('rbGlobalNoticeText'))rbEl('rbGlobalNoticeText').value=cfg.notice_text||'';if(rbEl('rbGlobalNoticeType')&&document.activeElement!==rbEl('rbGlobalNoticeType'))rbEl('rbGlobalNoticeType').value=cfg.notice_type||'info';}
+async function rbLoadGlobalSettings(){if(!rbClient)return;try{const {data,error}=await rbClient.rpc('get_rabbitech_public_settings');if(error)throw error;const cfg=data||{},sig=JSON.stringify(cfg);if(sig!==rbGlobalSettingsSignature){rbGlobalSettingsSignature=sig;rbApplyGlobalSettings(cfg);}}catch(e){console.warn('Configuração global indisponível:',e.message||e);}}
+async function rbAdminLoadAdmins(){if(!rbIsAdmin||!rbClient)return;const host=rbEl('rbAdminList');try{const {data,error}=await rbClient.rpc('admin_list_rabbitech_admins');if(error)throw error;const rows=Array.isArray(data)?data:[];host.innerHTML=rows.length?rows.map(a=>`<div class="rb-admin-team" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0"><div><strong>${rbEsc(a.email||'Conta sem e-mail')}</strong><div class="footnote">${rbEsc(a.user_id||'')}</div></div><button type="button" data-rb-admin-remove="${rbEsc(a.user_id||'')}" ${a.user_id===rbCloudUser?.id?'disabled':''}>Remover</button></div>`).join(''):'<p class="footnote">Nenhum administrador listado.</p>';host.querySelectorAll('[data-rb-admin-remove]').forEach(b=>b.addEventListener('click',()=>rbRun(async()=>{if(!confirm('Remover esta conta da lista de administradores?'))return;const {error}=await rbClient.rpc('admin_remove_rabbitech_admin',{p_user_id:b.dataset.rbAdminRemove});if(error)throw error;await rbAdminLoadAdmins();rbAdminStatus('Lista de administradores atualizada.');})));}catch(e){host.innerHTML='<p class="footnote">Não foi possível carregar a lista. Execute o SQL global de administração.</p>';}}
+async function rbSaveGlobalSettings(p){if(!rbIsAdmin)throw new Error('Apenas administradores podem alterar configurações globais.');const {error}=await rbClient.rpc('admin_update_rabbitech_settings',{p_notice_text:p.notice_text,p_notice_active:p.notice_active,p_notice_type:p.notice_type,p_accent_color:p.accent_color,p_theme_name:p.theme_name});if(error)throw error;rbGlobalSettingsSignature='';await rbLoadGlobalSettings();rbAdminStatus('Configuração global publicada.');}
+rbEl('rbGlobalNoticeSave')?.addEventListener('click',rbRun(async()=>{const t=rbEl('rbGlobalNoticeText').value.trim();if(!t)throw new Error('Escreva uma mensagem antes de publicar.');await rbSaveGlobalSettings({notice_text:t,notice_active:true,notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
+rbEl('rbGlobalNoticeClear')?.addEventListener('click',rbRun(async()=>{if(!confirm('Remover o aviso global para todos?'))return;await rbSaveGlobalSettings({notice_text:'',notice_active:false,notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
+rbEl('rbGlobalThemeSave')?.addEventListener('click',rbRun(async()=>{await rbSaveGlobalSettings({notice_text:rbEl('rbGlobalNoticeText').value.trim(),notice_active:!rbEl('rbGlobalNotice').classList.contains('hidden'),notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
+rbEl('rbAdminAdd')?.addEventListener('click',rbRun(async()=>{const email=rbEl('rbAdminEmail').value.trim().toLowerCase();if(!email||!email.includes('@'))throw new Error('Digite um e-mail válido.');const {error}=await rbClient.rpc('admin_add_rabbitech_admin_by_email',{p_email:email});if(error)throw error;rbEl('rbAdminEmail').value='';await rbAdminLoadAdmins();rbAdminStatus('Administrador adicionado.');}));
+const rbLoadAdminBeforeGlobal=rbLoadAdmin;rbLoadAdmin=async function(){await rbLoadAdminBeforeGlobal();if(rbIsAdmin&&!rbEl('rbAdminContent').classList.contains('hidden')){await rbAdminLoadAdmins();await rbLoadGlobalSettings();}};
+const rbInitBeforeGlobal=rbInit;rbInit=async function(){await rbInitBeforeGlobal();await rbLoadGlobalSettings();};
+setInterval(()=>{if(document.visibilityState==='visible'&&rbClient)rbLoadGlobalSettings();},15000);
 </script>
 
 </body></html>
