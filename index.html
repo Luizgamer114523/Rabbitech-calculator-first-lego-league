@@ -957,6 +957,7 @@ const PENDING_TEAM_KEY='rbGooglePendingTeam';
 const UNASSIGNED_HISTORY_KEY=(typeof KEY!=='undefined'?KEY:'rabbitech-bioglow-fllc')+'.history.unassignedArchive';
 const RB_OWNER_USER_ID='7e799691-ba7e-42ea-ab6f-71ad11ca32ff'; const RB_OWNER_EMAIL='luiznarciso122@gmail.com'; let rbClient=null,rbCloudUser=null,rbCloudTeam=null,rbBusy=false,rbIsAdmin=false,rbLeaderboardSignature='',rbLeaderboardBusy=false,rbAdminBusy=false;
 const rbEl=id=>document.getElementById(id);
+function rbIsOwner(){return !!rbCloudUser && rbCloudUser.id===RB_OWNER_USER_ID && String(rbCloudUser.email||'').toLowerCase()===RB_OWNER_EMAIL;}
 function rbCloudStatus(msg){const el=rbEl('rbCloudStatus');if(el)el.textContent=msg;}
 function rbAdminStatus(msg){const el=rbEl('rbAdminStatus');if(el)el.textContent=msg;}
 function rbEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -968,7 +969,7 @@ function rbSetButtons(){
  rbEl('rbCloudSync').hidden=!(signed&&linked);rbEl('rbCloudSync').disabled=!(signed&&linked);
  rbEl('rbCloudLogout').hidden=!signed;
  rbEl('rbCloudTeam').readOnly=signed&&linked;
- rbEl('rbAdminNav').hidden=!rbIsAdmin; const ownerControls=rbEl('rbOwnerControls');if(ownerControls)ownerControls.classList.toggle('hidden',!owner); const ownerAdminSection=rbEl('rbOwnerAdminSection');if(ownerAdminSection)ownerAdminSection.classList.toggle('hidden',!owner);
+ rbEl('rbAdminNav').hidden=!rbIsAdmin; const ownerControls=rbEl('rbOwnerControls');if(ownerControls)ownerControls.classList.toggle('hidden',!rbIsOwner()); const ownerAdminSection=rbEl('rbOwnerAdminSection');if(ownerAdminSection)ownerAdminSection.classList.toggle('hidden',!rbIsOwner());
 }
 function rbLoadSdk(){return new Promise((resolve,reject)=>{if(window.supabase?.createClient){resolve();return;}const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';sc.onload=resolve;sc.onerror=()=>reject(new Error('Não foi possível carregar a biblioteca do Supabase.'));document.head.appendChild(sc);});}
 function rbReadArray(key){try{const v=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(v)?v:[]}catch(_){return []}}
