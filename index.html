@@ -961,7 +961,7 @@ function rbCloudStatus(msg){const el=rbEl('rbCloudStatus');if(el)el.textContent=
 function rbAdminStatus(msg){const el=rbEl('rbAdminStatus');if(el)el.textContent=msg;}
 function rbEsc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function rbNormalizeTeamName(name){return String(name||'').trim().replace(/\s+/g,' ');}
-function rbIsOwner(){return !!rbCloudUser && rbCloudUser.id===RB_OWNER_USER_ID && String(rbCloudUser.email||'').toLowerCase()===RB_OWNER_EMAIL;}
+function rbIsOwner(){return !!rbCloudUser && String(rbCloudUser.id||'')===RB_OWNER_USER_ID;}
 function rbSetButtons(){
  const signed=!!rbCloudUser, linked=!!rbCloudTeam;
  rbEl('rbCloudGoogle').hidden=signed;
