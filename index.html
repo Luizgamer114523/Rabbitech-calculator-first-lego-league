@@ -1462,4 +1462,72 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 <!-- Rabbitech main index update 2026-10-25 -->
 <style id="rb-rabbitech-final-ui">@media(max-width:650px){body{padding-bottom:calc(84px + env(safe-area-inset-bottom))!important}nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:1px!important;overflow:visible!important;justify-content:stretch!important;max-height:84px!important;padding:4px 5px calc(4px + env(safe-area-inset-bottom))!important}nav button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;flex:initial!important;min-width:0!important;max-width:none!important;width:100%!important;min-height:34px!important;padding:3px 1px!important;font-size:9px!important;line-height:1.05!important}nav button .dock-icon{font-size:14px!important;line-height:1.05!important}nav button .dock-label{font-size:8px!important;line-height:1.05!important}nav button[hidden]{display:none!important}}#rb-public-ranking-callout[hidden]{display:none!important}#rbGlobalNotice.rb-notice-warning:before{content:"⚠️ ATENÇÃO  "!important}#rbGlobalNotice.rb-notice-success:before{content:"✅ SUCESSO  "!important}#rbGlobalNotice.rb-notice-info:before{content:"ℹ️ INFORMAÇÃO  "!important}#rbLanguageConsent[hidden]{display:none!important}#rbLanguageConsent .rb-consent-card{overscroll-behavior:contain}</style>
+
+<style id="rb-language-emergency-fix">
+#rbLanguageConsent{pointer-events:auto!important;touch-action:pan-y!important}
+#rbLanguageConsent .rb-consent-card{pointer-events:auto!important;position:relative!important;z-index:1!important}
+#rbLanguageConsent select,#rbLanguageConsent button{position:relative!important;z-index:2!important;pointer-events:auto!important;touch-action:manipulation!important}
+#rbConsentClose{display:block!important;width:100%!important;margin-top:10px!important;padding:12px!important;border:1px solid #71916b!important;border-radius:12px!important;background:#142b1c!important;color:#f0f7eb!important;font:inherit!important;font-weight:700!important;cursor:pointer!important}
+</style>
+<script id="rb-language-emergency-fix">
+(function(){
+ 'use strict';
+ function setup(){
+  var overlay=document.getElementById('rbLanguageConsent');
+  if(!overlay)return;
+  var card=overlay.querySelector('.rb-consent-card');
+  if(!card)return;
+  var language=document.getElementById('rbConsentLanguage');
+  var accept=document.getElementById('rbConsentAccept');
+  var texts={
+   'pt-BR':['Privacidade e idioma','Escolha o idioma do site e leia o aviso de privacidade antes de continuar.','O Rabbitech BIOGLOW pode armazenar nomes de equipes, pontuações e rounds para sincronização e ranking. O login Google identifica sua conta e ajuda a proteger a equipe vinculada. Não informe senhas nem dados pessoais desnecessários.','Li e aceito continuar','Sair sem aceitar'],
+   en:['Privacy and language','Choose the site language and read the privacy notice before continuing.','Rabbitech BIOGLOW may store team names, scores, and rounds for synchronization and rankings. Google sign-in identifies your account and helps protect the linked team. Do not provide passwords or unnecessary personal data.','I have read and accept','Close without accepting'],
+   es:['Privacidad e idioma','Elige el idioma del sitio y lee el aviso de privacidad antes de continuar.','Rabbitech BIOGLOW puede almacenar nombres de equipos, puntuaciones y rondas para sincronización y clasificaciones. El acceso con Google identifica tu cuenta y ayuda a proteger el equipo vinculado.','He leído y acepto continuar','Salir sin aceptar'],
+   fr:['Confidentialité et langue','Choisissez la langue du site et lisez l’avis de confidentialité avant de continuer.','Rabbitech BIOGLOW peut stocker les noms des équipes, les scores et les manches pour la synchronisation et les classements. La connexion Google aide à protéger l’équipe associée.','J’ai lu et j’accepte','Fermer sans accepter'],
+   de:['Datenschutz und Sprache','Wähle die Sprache der Website und lies den Datenschutzhinweis, bevor du fortfährst.','Rabbitech BIOGLOW kann Teamnamen, Punktzahlen und Runden für Synchronisierung und Ranglisten speichern. Die Google-Anmeldung hilft, das verknüpfte Team zu schützen.','Gelesen und akzeptiert','Schließen ohne Zustimmung'],
+   it:['Privacy e lingua','Scegli la lingua del sito e leggi l’informativa sulla privacy prima di continuare.','Rabbitech BIOGLOW può memorizzare nomi delle squadre, punteggi e round per sincronizzazione e classifiche. L’accesso con Google aiuta a proteggere la squadra collegata.','Ho letto e accetto','Chiudi senza accettare']
+  };
+  function current(){var k=localStorage.getItem('rbPreferredLanguage')||'pt-BR';return texts[k]?k:'pt-BR';}
+  function syncLanguage(code){
+   if(!texts[code])code='pt-BR';
+   try{localStorage.setItem('rbPreferredLanguage',code);}catch(_){}
+   document.documentElement.lang=code;
+   if(language&&language.value!==code)language.value=code;
+   var quick=document.getElementById('rbLanguageQuickSelect');if(quick&&quick.value!==code)quick.value=code;
+   var t=texts[code];
+   var title=document.getElementById('rbConsentTitle'),intro=document.getElementById('rbConsentIntro'),policy=document.getElementById('rbConsentText'),acceptButton=document.getElementById('rbConsentAccept'),closeButton=document.getElementById('rbConsentClose');
+   if(title)title.textContent=t[0];if(intro)intro.textContent=t[1];if(policy)policy.textContent=t[2];if(acceptButton)acceptButton.textContent=t[3];if(closeButton)closeButton.textContent=t[4];
+  }
+  if(language){language.disabled=false;language.tabIndex=0;language.addEventListener('change',function(){syncLanguage(language.value);});}
+  var close=document.getElementById('rbConsentClose');
+  if(!close){
+   close=document.createElement('button');close.type='button';close.id='rbConsentClose';close.textContent='Sair sem aceitar';close.setAttribute('aria-label','Sair da tela de idioma sem registrar aceite');card.appendChild(close);
+  }
+  function dismiss(){
+   overlay.hidden=true;overlay.style.setProperty('display','none','important');document.body.style.overflow='';
+   try{sessionStorage.setItem('rbPrivacyDismissed','yes');}catch(_){}
+   var target=document.querySelector('nav button[data-page="score"]')||document.querySelector('main button');
+   if(target&&target.focus)target.focus({preventScroll:true});
+  }
+  if(!close.dataset.rbEmergencyBound){close.dataset.rbEmergencyBound='1';close.addEventListener('click',dismiss);}
+  if(accept&&!accept.dataset.rbEmergencyBound){
+   accept.dataset.rbEmergencyBound='1';
+   accept.addEventListener('click',function(){
+    try{localStorage.setItem('rbPrivacyAccepted','yes');sessionStorage.removeItem('rbPrivacyDismissed');}catch(_){}
+    overlay.hidden=true;overlay.style.setProperty('display','none','important');document.body.style.overflow='';
+   });
+  }
+  if(language)language.addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();dismiss();}});
+  overlay.addEventListener('click',function(e){if(e.target===overlay)dismiss();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!overlay.hidden&&overlay.style.display!=='none'){e.preventDefault();dismiss();}});
+  document.addEventListener('change',function(e){if(e.target&&e.target.id==='rbLanguageQuickSelect')syncLanguage(e.target.value);});
+  var accepted=false,dismissed=false;
+  try{accepted=localStorage.getItem('rbPrivacyAccepted')==='yes';dismissed=sessionStorage.getItem('rbPrivacyDismissed')==='yes';}catch(_){}
+  if(accepted||dismissed){overlay.hidden=true;overlay.style.setProperty('display','none','important');document.body.style.overflow='';}
+  else{overlay.hidden=false;overlay.style.removeProperty('display');syncLanguage(current());}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup,{once:true});else setup();
+})();
+</script>
+
 </body></html>
