@@ -1651,206 +1651,111 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
-<style id="rb-dock-language-whitelist-fixes">
+
+<!-- Rabbitech mobile navigation/language/admin cleanup -->
+<style id="rb-clean-layout">
 @media(max-width:650px){
- body{padding-bottom:calc(72px + env(safe-area-inset-bottom))!important}
- nav.rb-samsung-dock{display:flex!important;flex-wrap:wrap!important;align-items:center!important;justify-content:center!important;gap:4px!important;overflow:visible!important;padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important;max-height:none!important}
- nav.rb-samsung-dock button[data-page]{display:flex!important;flex:0 1 calc(20% - 4px)!important;min-width:0!important;max-width:none!important;min-height:43px!important;padding:4px 1px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;font-size:9px!important;line-height:1.05!important}
- nav.rb-samsung-dock button[data-page] .dock-label{font-size:9px!important;line-height:1.05!important}
+ body{padding-bottom:calc(82px + env(safe-area-inset-bottom))!important}
+ nav.rb-samsung-dock{
+  position:fixed!important;left:10px!important;right:10px!important;bottom:calc(7px + env(safe-area-inset-bottom))!important;z-index:9000!important;
+  display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:5px!important;
+  overflow:hidden!important;max-height:64px!important;padding:6px!important;border:1px solid rgba(208,244,119,.25)!important;border-radius:18px!important;
+  background:rgba(7,19,12,.95)!important;backdrop-filter:blur(20px) saturate(1.3)!important;box-shadow:0 8px 30px #0008!important;
+  transition:max-height .32s cubic-bezier(.2,.8,.2,1),border-radius .25s ease!important
+ }
+ nav.rb-samsung-dock button[data-page]{
+  display:flex!important;flex:0 0 54px!important;width:54px!important;min-width:54px!important;max-width:54px!important;height:48px!important;min-height:48px!important;
+  flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;padding:4px 2px!important;border-radius:12px!important;
+  font-size:9px!important;line-height:1!important;white-space:normal!important;transition:transform .25s cubic-bezier(.2,.8,.2,1),opacity .2s ease,background .2s ease!important
+ }
+ nav.rb-samsung-dock button[data-page] .dock-label{font-size:8px!important;line-height:1.05!important;display:block!important;overflow-wrap:anywhere!important}
+ nav.rb-samsung-dock button[data-page][hidden]{display:none!important}
  nav.rb-samsung-dock:not(.rb-dock-expanded) button[data-page]:nth-of-type(n+6){display:none!important}
- nav.rb-samsung-dock #rbDockExpand{flex:0 0 30px!important;min-width:30px!important;min-height:36px!important;border-radius:12px!important;font-size:18px!important}
+ nav.rb-samsung-dock.rb-dock-expanded{flex-wrap:wrap!important;justify-content:center!important;overflow-y:auto!important;max-height:min(40dvh,320px)!important;border-radius:22px!important}
+ nav.rb-samsung-dock.rb-dock-expanded button[data-page]{animation:rbDockPop .24s both}
+ nav.rb-samsung-dock #rbDockExpandOne{display:flex!important;flex:0 0 42px!important;width:42px!important;min-width:42px!important;max-width:42px!important;height:44px!important;min-height:44px!important;align-items:center!important;justify-content:center!important;
+  border:1px solid rgba(208,244,119,.45)!important;border-radius:14px!important;background:linear-gradient(145deg,#203b28,#0b1b11)!important;color:#d0f477!important;font-size:22px!important;font-weight:900!important}
+ nav.rb-samsung-dock.rb-dock-expanded #rbDockExpandOne{transform:rotate(45deg)}
 }
-#rbDockExpand{border:1px solid var(--line,#47634c);background:rgba(15,38,24,.94);color:var(--lime,#d0f477);font-weight:900}
-#rbLanguageQuickSelect{background:#07140d;color:#fff;border:1px solid #63805f;border-radius:9px;padding:8px;max-width:100%}
+@keyframes rbDockPop{from{opacity:0;transform:translateY(8px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){nav.rb-samsung-dock,nav.rb-samsung-dock *{animation:none!important;transition:none!important}}
+#rbLanguageQuickSelect,#rbLanguagePersistent{display:none!important}
+#rbLanguageReopen{position:fixed!important;top:142px!important;right:12px!important;z-index:8998!important;border:1px solid rgba(208,244,119,.45)!important;border-radius:12px!important;padding:8px 10px!important;background:#102419!important;color:#d0f477!important;font-weight:800!important}
+#rbLanguageConsent[hidden]{display:none!important}
+#rbGlobalNotice.rb-notice-warning{background:linear-gradient(110deg,#481010,#a51e1e,#481010)!important;background-size:220% 100%!important;border:2px solid #ff5151!important;box-shadow:0 0 12px #ff3333,0 0 24px #ff333366!important;animation:rbNoticePulse 2.6s ease-in-out infinite!important}
+#rbGlobalNotice.rb-notice-info{border:1px solid #49baff!important;box-shadow:0 0 14px #168dff44!important}
+#rbGlobalNotice.rb-notice-success{border:1px solid #56e69a!important;box-shadow:0 0 14px #25d87844!important}
+@keyframes rbNoticePulse{0%,100%{background-position:0% 50%;box-shadow:0 0 8px #ff333355}50%{background-position:100% 50%;box-shadow:0 0 18px #ff333399,0 0 30px #ff333344}}
 </style>
-<script id="rb-dock-language-whitelist-script">
+<script id="rb-clean-controller">
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
-const langs=[['pt-BR','Português'],['en','English'],['es','Español'],['fr','Français'],['de','Deutsch'],['it','Italiano']];
-function applyLanguage(code){
- if(!langs.some(x=>x[0]===code))code='pt-BR';
- localStorage.setItem('rbPreferredLanguage',code);
- document.documentElement.lang=code;
- const a=$('rbConsentLanguage');if(a)a.value=code;
- const b=$('rbLanguageQuickSelect');if(b)b.value=code;
- const render=window.rbRenderPrivacyLanguage;if(typeof render==='function')render(code);
-}
-function addLanguagePicker(){
- if($('rbLanguagePersistent'))return;
- const host=$('page-privacy')||document.querySelector('header')||document.body;
- const wrap=document.createElement('div');wrap.id='rbLanguagePersistent';
- wrap.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0;padding:10px;border:1px solid #49684b;border-radius:12px;background:rgba(5,20,12,.86);color:inherit';
- const label=document.createElement('label');label.htmlFor='rbLanguageQuickSelect';label.textContent='🌐 Idioma / Language';
- const select=document.createElement('select');select.id='rbLanguageQuickSelect';
- langs.forEach(([value,text])=>{const o=document.createElement('option');o.value=value;o.textContent=text;select.appendChild(o)});
- select.value=localStorage.getItem('rbPreferredLanguage')||'pt-BR';
- select.addEventListener('change',()=>applyLanguage(select.value));
- wrap.append(label,select);
- if(host===document.body)host.prepend(wrap);else host.prepend(wrap);
-}
-function addDockExpand(){
- const nav=document.querySelector('nav');
- if(!nav||$('rbDockExpand'))return;
- nav.classList.add('rb-samsung-dock');
- const btn=document.createElement('button');btn.id='rbDockExpand';btn.type='button';btn.setAttribute('aria-expanded','false');btn.setAttribute('aria-label','Mostrar mais opções');btn.textContent='＋';
- btn.addEventListener('click',()=>{const expanded=nav.classList.toggle('rb-dock-expanded');btn.textContent=expanded?'−':'＋';btn.setAttribute('aria-expanded',String(expanded));btn.setAttribute('aria-label',expanded?'Ocultar opções adicionais':'Mostrar mais opções')});
- nav.appendChild(btn);
-}
-function refreshAdmin(){
+function isAdminAllowed(){
  try{
-  const user=window.rbCloudUser;
-  const isAdmin=!!(user&&((typeof rbIsAdmin!=='undefined'&&rbIsAdmin)||(typeof rbIsOwner==='function'&&rbIsOwner())));
-  const nav=$('rbAdminNav'),page=$('page-admin');
-  if(nav)nav.hidden=!isAdmin;
-  if(page){page.hidden=!isAdmin;if(!isAdmin)page.classList.remove('active')}
- }catch(_){}
+  const u=(typeof rbCloudUser!=='undefined'&&rbCloudUser)?rbCloudUser:window.rbCloudUser;
+  const owner=!!(u&&String(u.id)==='7e799691-ba7e-42ea-ab6f-71ad11ca32ff');
+  const admin=!!(u&&((typeof rbIsAdmin!=='undefined'&&rbIsAdmin===true)||window.rbIsAdmin===true));
+  return !!(u&&(owner||admin));
+ }catch(_){return false}
 }
-function init(){addLanguagePicker();addDockExpand();refreshAdmin();
- const consent=$('rbConsentLanguage');if(consent)consent.addEventListener('change',()=>applyLanguage(consent.value));
- const logout=$('rbCloudLogout');if(logout)logout.addEventListener('click',()=>setTimeout(refreshAdmin,250),true);
- document.querySelectorAll('nav button[data-page]').forEach(b=>b.addEventListener('click',()=>setTimeout(refreshAdmin,0),true));
+function syncAdmin(){
+ const allow=isAdminAllowed(),nav=$('rbAdminNav'),page=$('page-admin');
+ if(nav)nav.hidden=!allow;
+ if(page){page.hidden=!allow;if(!allow&&page.classList.contains('active'))page.classList.remove('active')}
+}
+function setupDock(){
+ const nav=$('rbAdminNav')?.closest('nav')||document.querySelector('nav button[data-page]')?.parentElement;
+ if(!nav)return;
+ nav.classList.add('rb-samsung-dock');
+ // Clean up duplicate controls injected by previous hotfixes.
+ document.querySelectorAll('#rbDockMore,#rbDockExpand,#rbDockExpandOne').forEach(x=>x.remove());
+ const more=document.createElement('button');more.id='rbDockExpandOne';more.type='button';more.textContent='+';
+ more.setAttribute('aria-label','Mostrar mais abas');more.setAttribute('aria-expanded','false');more.title='Mostrar mais abas';
+ more.addEventListener('click',e=>{
+  e.preventDefault();e.stopPropagation();
+  const open=nav.classList.toggle('rb-dock-expanded');
+  more.textContent=open?'−':'+';more.setAttribute('aria-expanded',String(open));
+  more.setAttribute('aria-label',open?'Recolher abas':'Mostrar mais abas');more.title=open?'Recolher abas':'Mostrar mais abas';
+ });
+ nav.appendChild(more);
+ nav.querySelectorAll('button[data-page]').forEach(b=>b.addEventListener('click',()=>{
+  if(nav.classList.contains('rb-dock-expanded')){nav.classList.remove('rb-dock-expanded');more.textContent='+';more.setAttribute('aria-expanded','false')}
+  setTimeout(syncAdmin,60);
+ },true));
+}
+function setupLanguage(){
+ const overlay=$('rbLanguageConsent'),select=$('rbConsentLanguage');
+ // Remove the second visible selector; use the consent selector as the single source of truth.
+ $('rbLanguagePersistent')?.remove();
+ const quick=$('rbLanguageQuickSelect');if(quick)quick.closest('label')?.remove();
+ if(!overlay||!select)return;
+ let opener=$('rbLanguageReopen');
+ if(!opener){opener=document.createElement('button');opener.id='rbLanguageReopen';opener.type='button';opener.textContent='🌐 Idioma';opener.setAttribute('aria-label','Trocar idioma');document.body.appendChild(opener)}
+ opener.onclick=()=>{
+  overlay.hidden=false;overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';
+  try{select.value=localStorage.getItem('rbPreferredLanguage')||'pt-BR'}catch(_){}
+  select.disabled=false;select.focus({preventScroll:true});
+ };
+ select.addEventListener('change',()=>{
+  const code=select.value||'pt-BR';
+  try{localStorage.setItem('rbPreferredLanguage',code)}catch(_){}
+  document.documentElement.lang=code;
+  document.dispatchEvent(new Event('rb:language-change'));
+ });
+}
+function init(){
+ setupDock();setupLanguage();syncAdmin();
+ const logout=$('rbCloudLogout');
+ if(logout)logout.addEventListener('click',()=>{const n=$('rbAdminNav'),p=$('page-admin');if(n)n.hidden=true;if(p){p.hidden=true;p.classList.remove('active')}setTimeout(syncAdmin,300)},true);
+ document.addEventListener('visibilitychange',syncAdmin);
+ let prev='';
+ setInterval(()=>{
+  let key='out';try{const u=(typeof rbCloudUser!=='undefined'&&rbCloudUser)?rbCloudUser:window.rbCloudUser;key=u?String(u.id)+':'+String(isAdminAllowed()):'out'}catch(_){}
+  if(key!==prev){prev=key;syncAdmin()}
+ },700);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-</script>
-
-
-<!-- Rabbitech UI, language and whitelist UX hardening -->
-<style id="rb-final-dock-language-fixes">
-@media(max-width:650px){
- body{padding-bottom:82px!important}
- nav[aria-label="Main navigation"],body>nav,nav:last-of-type{position:fixed!important;left:10px!important;right:10px!important;bottom:calc(7px + env(safe-area-inset-bottom))!important;z-index:9000!important;display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:5px!important;overflow-x:auto!important;overflow-y:hidden!important;max-height:64px!important;padding:6px!important;border:1px solid rgba(208,244,119,.22)!important;border-radius:18px!important;background:rgba(7,19,12,.94)!important;backdrop-filter:blur(18px)!important;box-shadow:0 8px 30px #0008!important}
- nav button{display:flex!important;flex:0 0 54px!important;min-width:54px!important;max-width:54px!important;height:48px!important;min-height:48px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;padding:4px 2px!important;border-radius:12px!important;font-size:9px!important;line-height:1!important;white-space:normal!important}
- nav button .dock-label{font-size:8px!important;line-height:1!important;display:block!important;overflow-wrap:anywhere!important}
- nav button[hidden]{display:none!important}
- #rbDockMore{flex:0 0 40px!important;min-width:40px!important;max-width:40px!important;font-size:18px!important;border:1px solid rgba(208,244,119,.4)!important;color:#d0f477!important}
- nav.rb-dock-expanded{flex-wrap:wrap!important;max-height:42vh!important;overflow-y:auto!important;justify-content:center!important}
-}
-#rbLanguageReopen{position:fixed;right:12px;top:12px;z-index:8999;border:1px solid rgba(208,244,119,.45);border-radius:12px;padding:8px 10px;background:#102419;color:#d0f477;font-weight:800}
-#rbLanguageConsent[hidden]{display:none!important}
-#rbLanguageConsent{overflow:auto!important}
-#rbConsentText{max-height:42vh;overflow:auto!important;padding:12px;border:1px solid rgba(208,244,119,.22);border-radius:12px}
-</style>
-<script id="rb-final-dock-language-script">
-(function(){
-'use strict';
-function initRabbitechFinalFixes(){
- const nav=document.querySelector('nav button[data-page]')?.parentElement;
- if(nav&&!document.getElementById('rbDockMore')){
-  const more=document.createElement('button');more.id='rbDockMore';more.type='button';more.title='Mostrar mais abas';more.setAttribute('aria-expanded','false');more.textContent='＋';
-  more.addEventListener('click',()=>{const expanded=nav.classList.toggle('rb-dock-expanded');more.textContent=expanded?'−':'＋';more.setAttribute('aria-expanded',String(expanded));more.title=expanded?'Recolher abas':'Mostrar mais abas';});
-  nav.appendChild(more);
- }
- const overlay=document.getElementById('rbLanguageConsent');
- if(overlay&&!document.getElementById('rbLanguageReopen')){
-  const reopen=document.createElement('button');reopen.id='rbLanguageReopen';reopen.type='button';reopen.textContent='🌐 Idioma';
-  reopen.addEventListener('click',()=>{overlay.hidden=false;document.body.style.overflow='hidden';const select=document.getElementById('rbConsentLanguage');if(select){select.value=localStorage.getItem('rbPreferredLanguage')||'pt-BR';select.focus();}});
-  document.body.appendChild(reopen);
-  const accept=document.getElementById('rbConsentAccept');
-  if(accept)accept.addEventListener('click',()=>{overlay.hidden=true;document.body.style.overflow='';});
- }
- document.documentElement.lang=localStorage.getItem('rbPreferredLanguage')||'pt-BR';
- try{const user=window.rbCloudUser;const admin=window.rbIsAdmin===true;const navAdmin=document.getElementById('rbAdminNav');const adminPage=document.getElementById('page-admin');if(navAdmin)navAdmin.hidden=!(user&&admin);if(adminPage)adminPage.hidden=!(user&&admin);}catch(_){}
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initRabbitechFinalFixes,{once:true});else initRabbitechFinalFixes();
-})();
-</script>
-
-
-
-<!-- Final corrective layer: normalize legacy dock/language controls without replacing app logic -->
-<style id="rb-final-normalize-20261025">
-@media(max-width:650px){
- body{padding-bottom:calc(78px + env(safe-area-inset-bottom))!important}
- nav.rb-final-dock{
-  position:fixed!important;left:10px!important;right:10px!important;bottom:calc(7px + env(safe-area-inset-bottom))!important;
-  z-index:9000!important;display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;
-  gap:4px!important;overflow:hidden!important;max-height:64px!important;padding:6px!important;
-  border:1px solid rgba(208,244,119,.28)!important;border-radius:19px!important;background:rgba(5,18,11,.94)!important;
-  backdrop-filter:blur(20px) saturate(1.3)!important;box-shadow:0 10px 30px #0008!important;
-  transition:max-height .32s cubic-bezier(.2,.8,.2,1),border-radius .25s ease!important
- }
- nav.rb-final-dock button[data-page]{display:flex!important;flex:0 0 52px!important;width:52px!important;min-width:52px!important;max-width:52px!important;height:48px!important;min-height:48px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;padding:3px 1px!important;border-radius:12px!important;font-size:9px!important;line-height:1!important;transition:transform .25s ease,opacity .2s ease,background .2s ease!important}
- nav.rb-final-dock button[data-page] .dock-label{display:block!important;font-size:8px!important;line-height:1.05!important;overflow-wrap:anywhere!important}
- nav.rb-final-dock button[data-page][hidden]{display:none!important}
- nav.rb-final-dock:not(.rb-final-expanded) button[data-page]:nth-of-type(n+6){display:none!important}
- nav.rb-final-dock #rbFinalDockMore{display:flex!important;flex:0 0 42px!important;width:42px!important;min-width:42px!important;max-width:42px!important;height:44px!important;min-height:44px!important;align-items:center!important;justify-content:center!important;border:1px solid rgba(208,244,119,.5)!important;border-radius:14px!important;background:linear-gradient(145deg,#203b28,#0b1b11)!important;color:#d0f477!important;font-size:22px!important;font-weight:800!important;transition:transform .28s cubic-bezier(.2,.8,.2,1)!important}
- nav.rb-final-dock.rb-final-expanded{flex-wrap:wrap!important;justify-content:center!important;max-height:42dvh!important;overflow-y:auto!important;border-radius:24px!important}
- nav.rb-final-dock.rb-final-expanded button[data-page]{animation:rbFinalDockIn .25s both}
- nav.rb-final-dock.rb-final-expanded #rbFinalDockMore{transform:rotate(45deg)}
-}
-@keyframes rbFinalDockIn{from{opacity:0;transform:translateY(8px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
-#rbLanguagePersistent{display:none!important}
-#rbLanguageQuickSelect{max-width:100%;background:#07140d!important;color:#fff!important;border:1px solid #63805f!important;border-radius:9px!important;padding:8px!important}
-#rbLanguageReopen{position:fixed!important;right:12px!important;top:142px!important;z-index:8998!important}
-#rbGlobalNotice.rb-notice-warning{color:#fff!important;background:linear-gradient(110deg,#501010,#921c1c,#501010)!important;border:2px solid #ff4242!important;box-shadow:0 0 10px #ff3333,0 0 24px #ff333399!important;animation:rbFinalNoticePulse 2.5s ease-in-out infinite!important}
-#rbGlobalNotice.rb-notice-success{border:2px solid #48e79a!important;box-shadow:0 0 16px #25d87866!important}
-#rbGlobalNotice.rb-notice-info{border:2px solid #49baff!important;box-shadow:0 0 16px #168dff66!important}
-@keyframes rbFinalNoticePulse{0%,100%{filter:saturate(1)}50%{filter:saturate(1.5) brightness(1.12)}}
-@media(prefers-reduced-motion:reduce){nav.rb-final-dock,nav.rb-final-dock *,#rbGlobalNotice{animation:none!important;transition:none!important}}
-</style>
-<script id="rb-final-normalize-script-20261025">
-(function(){
- 'use strict';
- const $=id=>document.getElementById(id);
- function normalizeDock(){
-  const nav=document.querySelector('nav button[data-page]')?.parentElement;
-  if(!nav)return;
-  nav.classList.add('rb-final-dock');
-  // Remove duplicate expand controls inserted by older hotfixes, then create exactly one.
-  document.querySelectorAll('#rbDockMore,#rbDockExpand,#rbFinalDockMore').forEach(el=>el.remove());
-  const more=document.createElement('button');more.id='rbFinalDockMore';more.type='button';more.textContent='+';
-  more.setAttribute('aria-label','Mostrar mais abas');more.setAttribute('aria-expanded','false');
-  more.addEventListener('click',function(e){
-   e.preventDefault();e.stopPropagation();
-   const expanded=nav.classList.toggle('rb-final-expanded');
-   more.textContent=expanded?'−':'+';more.setAttribute('aria-expanded',String(expanded));
-   more.setAttribute('aria-label',expanded?'Recolher abas':'Mostrar mais abas');
-  });
-  nav.appendChild(more);
-  nav.querySelectorAll('button[data-page]').forEach(b=>{
-   b.addEventListener('click',()=>{nav.classList.remove('rb-final-expanded');more.textContent='+';more.setAttribute('aria-expanded','false');},true);
-  });
- }
- function normalizeLanguage(){
-  // Older scripts created two persistent selectors; keep the privacy modal selector and the single header opener.
-  const duplicate=$('rbLanguagePersistent');if(duplicate)duplicate.remove();
-  const overlay=$('rbLanguageConsent'),select=$('rbConsentLanguage');
-  if(!overlay)return;
-  let opener=$('rbLanguageReopen');
-  if(!opener){opener=document.createElement('button');opener.id='rbLanguageReopen';opener.type='button';opener.textContent='🌐 Idioma';document.body.appendChild(opener);}
-  opener.onclick=function(){
-   overlay.hidden=false;overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';
-   if(select){select.disabled=false;try{select.value=localStorage.getItem('rbPreferredLanguage')||'pt-BR'}catch(_){}select.focus({preventScroll:true});}
-  };
-  if(select&&!select.dataset.rbFinalNormalize){
-   select.dataset.rbFinalNormalize='1';
-   select.addEventListener('change',()=>{
-    const code=select.value||'pt-BR';
-    try{localStorage.setItem('rbPreferredLanguage',code)}catch(_){}
-    document.documentElement.lang=code;
-    const quick=$('rbLanguageQuickSelect');if(quick)quick.value=code;
-    document.dispatchEvent(new Event('rb:language-change'));
-   });
-  }
- }
- function normalizeAdmin(){
-  try{
-   const user=(typeof rbCloudUser!=='undefined')?rbCloudUser:null;
-   const isAdmin=(typeof rbIsAdmin!=='undefined'&&rbIsAdmin===true);
-   const isOwner=(typeof rbIsOwner==='function'&&rbIsOwner());
-   const allowed=!!(user&&(isAdmin||isOwner));
-   const nav=$('rbAdminNav'),page=$('page-admin');
-   if(nav)nav.hidden=!allowed;
-   if(page){page.hidden=!allowed;if(!allowed)page.classList.remove('active');}
-  }catch(_){const nav=$('rbAdminNav');if(nav)nav.hidden=true;}
- }
- function init(){normalizeDock();normalizeLanguage();normalizeAdmin();let last='';setInterval(()=>{
-  normalizeAdmin();
-  try{const user=(typeof rbCloudUser!=='undefined')?rbCloudUser:null;const key=user?String(user.id)+':'+String(typeof rbIsAdmin!=='undefined'&&rbIsAdmin):'signed-out';if(key!==last){last=key;normalizeAdmin()}}catch(_){}
- },700);}
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
 
