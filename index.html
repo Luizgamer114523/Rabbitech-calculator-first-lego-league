@@ -212,7 +212,32 @@ button{transition:none!important}
 @media(max-width:650px){.rb-rank-row{grid-template-columns:35px minmax(0,1fr) auto;gap:7px;padding:9px}.rb-rank-score{font-size:18px}.rb-admin-stats{grid-template-columns:1fr 1fr}.rb-admin-stats .rb-admin-stat:last-child{grid-column:1/-1}}
 nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
 
-.rb-admin-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.rb-admin-tools button{min-height:48px;text-align:left;font-size:12px}.rb-admin-tools button:hover{border-color:var(--lime)}@media(min-width:760px){.rb-admin-tools{grid-template-columns:repeat(3,minmax(0,1fr))}}</style>
+.rb-admin-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.rb-admin-tools button{min-height:48px;text-align:left;font-size:12px}.rb-admin-tools button:hover{border-color:var(--lime)}@media(min-width:760px){.rb-admin-tools{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* Rabbitech 2026 accessibility and admin remaster */
+nav{display:flex!important;gap:5px!important;overflow-x:auto!important;overflow-y:hidden!important;justify-content:flex-start!important;scrollbar-width:thin;overscroll-behavior-x:contain;padding:7px 10px calc(7px + env(safe-area-inset-bottom))!important}
+nav button{flex:0 0 78px!important;min-width:72px!important;max-width:110px!important;white-space:normal!important;line-height:1.2!important}
+nav button .dock-label{display:block!important;font-size:10px!important;overflow-wrap:anywhere}
+.rb-public-ranking-callout{max-width:1100px;margin:12px auto;padding:0 14px}
+.rb-public-ranking-inner{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px;border:1px solid rgba(208,244,119,.45);border-radius:18px;background:linear-gradient(120deg,rgba(34,69,42,.96),rgba(13,31,20,.96))}
+.rb-public-ranking-inner h2{margin:0 0 4px;font-size:19px;color:var(--lime)}
+.rb-public-ranking-inner p{margin:0;color:var(--muted);font-size:12px}
+.rb-public-ranking-inner button{flex:0 0 auto}
+.rb-admin-collapsible{margin:18px 0;border:1px solid var(--line);border-radius:16px;background:rgba(4,17,10,.35);overflow:hidden}
+.rb-admin-collapsible>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;padding:15px;font-weight:900;color:var(--lime)}
+.rb-admin-collapsible>summary::-webkit-details-marker{display:none}
+.rb-admin-collapsible>summary:after{content:"＋";font-size:20px}
+.rb-admin-collapsible[open]>summary:after{content:"−"}
+.rb-admin-collapsible-body{padding:0 14px 14px}
+.rb-privacy{display:grid;gap:14px}
+.rb-privacy section{padding:15px;border:1px solid var(--line);border-radius:15px;background:rgba(10,25,15,.7)}
+.rb-privacy h3{margin:0 0 7px;color:var(--lime);font-size:17px}
+.rb-privacy p,.rb-privacy li{color:#d0dfd2;font-size:13px;line-height:1.65}
+.rb-privacy p{margin:7px 0}
+.rb-privacy ul{padding-left:21px;margin:7px 0}
+.rb-privacy .rb-privacy-date{color:var(--muted);font-size:12px}
+@media(max-width:620px){.rb-public-ranking-inner{align-items:stretch;flex-direction:column}.rb-public-ranking-inner button{width:100%}.rb-admin-collapsible>summary{padding:13px}.rb-privacy section{padding:12px}}
+
+</style>
 
 </head>
 <body>
@@ -234,6 +259,12 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
   </div>
   <div id="rbCloudStatus" class="cloud-status" role="status" aria-live="polite">Digite o nome da equipe para continuar com Google. O nome não dá acesso a uma equipe já registrada.</div>
 </section>
+<div class="rb-public-ranking-callout" aria-label="Ranking público">
+  <div class="rb-public-ranking-inner">
+    <div><h2>🏆 Ranking público BIOGLOW</h2><p>Consulte as equipes classificadas, a média de pontuação e a quantidade de rounds registrados. Não é necessário ser administrador.</p></div>
+    <button type="button" class="primary" id="rbPublicRankingOpen">Ver ranking público →</button>
+  </div>
+</div>
 <button id="musicFab" class="music-fab" aria-label="Abrir biblioteca de músicas" title="Músicas">♫</button>
 <div id="musicOverlay" class="music-overlay" role="dialog" aria-modal="true" aria-labelledby="musicHeading">
  <div class="music-window">
@@ -365,8 +396,14 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
         <p id="rbAdminToolsStatus" class="footnote" role="status" aria-live="polite">Ferramentas administrativas prontas.</p>
        </div>
        <div id="rbAdminPublicRank" class="card" style="margin:14px 0;background:var(--panel2)"><div class="toolbar" style="justify-content:space-between;align-items:center"><h3 style="margin:0">🏆 Prévia do ranking público</h3><button type="button" id="rbAdminRankRefresh">Atualizar ranking</button></div><p class="footnote">Ordenado pela média de pontuação de cada equipe, não pela melhor partida. O ranking público completo também fica na aba Ranking.</p><div id="rbAdminRankPreview"><p class="footnote">Carregando ranking…</p></div><button type="button" data-admin-jump="rbAdminTeamFilter">Gerenciar equipes</button></div>
-       <h3 id="rbAdminTeamSection">Gerenciar equipes</h3><p class="footnote">Pesquise por nome, acompanhe os rounds e confirme ações destrutivas. Excluir uma equipe também remove seus rounds vinculados.</p><label class="field">Filtrar equipes<input id="rbAdminTeamFilter" type="search" maxlength="100" placeholder="Digite o nome da equipe..." autocomplete="off"></label>
-       <div id="rbAdminTeams"><p class="footnote">Nenhuma equipe carregada.</p></div>
+       <details class="rb-admin-collapsible" id="rbAdminTeamsDisclosure">
+        <summary><span>👥 Gerenciar equipes</span><span class="footnote">Abrir para pesquisar, renomear ou remover</span></summary>
+        <div class="rb-admin-collapsible-body">
+          <p class="footnote">A lista fica recolhida para manter o painel organizado. Abra esta seção quando precisar pesquisar equipes ou administrar seus registros. Excluir uma equipe também remove os rounds vinculados e exige confirmação.</p>
+          <label class="field">Filtrar equipes<input id="rbAdminTeamFilter" type="search" maxlength="100" placeholder="Digite o nome da equipe..." autocomplete="off"></label>
+          <div id="rbAdminTeams"><p class="footnote">Nenhuma equipe carregada.</p></div>
+        </div>
+       </details>
       <hr style="margin:24px 0;border-color:var(--line)">
       <h3 id="rbAdminNoticeSection">🌍 Aviso global do site</h3><p class="footnote">A mensagem aparece para todos os visitantes, em qualquer aparelho.</p>
       <label class="field">Mensagem global<textarea id="rbGlobalNoticeText" rows="3" maxlength="500" placeholder="Ex.: O ranking será atualizado às 18h."></textarea></label>
@@ -491,6 +528,27 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
 <p class="footnote">Rabbitech é um projeto independente de apoio a treinos. FIRST®, LEGO® e FIRST LEGO League® são marcas de seus respectivos proprietários. Este site não é produzido nem aprovado pela FIRST.</p>
 </div>
 </section>
+<section id="page-privacy" class="page">
+  <div class="section-title"><div><h2>Política de Privacidade e Proteção de Dados</h2><p>Como o Rabbitech BIOGLOW trata as informações utilizadas nas funções de treino, conta e classificação.</p></div></div>
+  <div class="card rb-privacy">
+    <p class="rb-privacy-date">Última atualização: 25 de outubro de 2026 · Aplicável ao site Rabbitech BIOGLOW FLLC – Founders Edition.</p>
+    <section><h3>1. Objetivo e âmbito</h3><p>Esta Política descreve quais informações podem ser tratadas durante a utilização do Rabbitech BIOGLOW, para que são utilizadas, onde podem ser armazenadas e quais opções estão disponíveis aos usuários. Aplica-se às páginas públicas, ao placar de treino, ao ranking, à sincronização de equipes, ao painel administrativo e aos módulos complementares oferecidos pelo site.</p><p>O Rabbitech é um projeto independente de apoio a treinos de robótica. Não é um serviço oficial da FIRST nem da LEGO. Ao utilizar funções opcionais de conta e sincronização, o usuário deve considerar também os avisos e as políticas dos provedores externos envolvidos.</p></section>
+    <section><h3>2. Informações que podem ser tratadas</h3><ul><li><strong>Dados de equipe:</strong> nome escolhido para identificar a equipe e identificador interno necessário para associar os registros.</li><li><strong>Dados de desempenho:</strong> pontuação de rounds, número da rodada, resultados de missões, médias calculadas e datas de registro.</li><li><strong>Dados de autenticação:</strong> identificador da conta e informações de perfil fornecidas pelo Google, como endereço de e-mail, quando necessário para autenticar o usuário, vincular uma equipe ou validar permissões administrativas.</li><li><strong>Dados locais do navegador:</strong> histórico de treino, estratégias, preferências e arquivos de áudio que o usuário decida importar. Parte desses dados pode permanecer somente no aparelho.</li><li><strong>Dados técnicos:</strong> informações operacionais processadas pelos provedores de hospedagem e infraestrutura, como registros de requisições, erros e dados técnicos de segurança.</li></ul><p>Não inclua senhas do Google, documentos de identificação, endereço residencial, dados financeiros ou outras informações pessoais desnecessárias nos campos de equipe, notas ou nomes de arquivo.</p></section>
+    <section><h3>3. Finalidades e fundamentos de utilização</h3><p>As informações são utilizadas para disponibilizar o placar e o histórico de treino, manter os rounds associados à equipe correta, calcular o ranking, sincronizar registros entre sessões autorizadas, proteger o acesso administrativo, investigar falhas e manter a estabilidade e a segurança do serviço. Quando aplicável, o tratamento deve observar as bases legais pertinentes da Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018), conforme a finalidade e o contexto de cada operação.</p></section>
+    <section><h3>4. Ranking e informações públicas</h3><p>O ranking público pode apresentar o nome da equipe, sua posição, a média de pontuação e a quantidade de rounds considerados. O objetivo é permitir a comparação de resultados de treino. O ranking não deve exibir endereço de e-mail, credenciais, identificadores de autenticação ou pontuações privadas de cada partida. O acesso público é limitado aos dados agregados disponibilizados pela função de ranking do banco de dados.</p><p>O nome da equipe pode identificar indiretamente seus integrantes se contiver nomes pessoais ou outros detalhes. Recomendamos escolher um nome coletivo e evitar inserir informações pessoais no nome da equipe.</p></section>
+    <section><h3>5. Armazenamento local e sincronização</h3><p>Algumas funções guardam informações no armazenamento do navegador, inclusive histórico, preferências e arquivos importados. Esses dados podem não ser transferidos para outro aparelho e podem ser perdidos se os dados do navegador forem apagados. A biblioteca de músicas importadas é mantida no armazenamento local do dispositivo, salvo indicação expressa em contrário.</p><p>Quando o usuário entra com Google e vincula uma equipe, os rounds enviados para a nuvem são associados à conta e à equipe correspondentes. Registros locais antigos não são enviados automaticamente para uma equipe diferente, para evitar a mistura acidental de históricos.</p></section>
+    <section><h3>6. Provedores e compartilhamento</h3><p>Para funcionar, o site pode utilizar provedores de infraestrutura e serviços externos, incluindo Vercel para hospedagem e entrega do site, Supabase para banco de dados e autenticação, Google para login e YouTube para vídeos, além de bibliotecas distribuídas por CDN. Esses provedores podem processar dados técnicos ou informações necessárias à função solicitada, conforme seus próprios termos e políticas.</p><p>O Rabbitech não tem a finalidade de vender dados pessoais. O acesso a informações administrativas deve ser limitado a contas autorizadas e às funções de banco de dados correspondentes. Chaves privadas e credenciais não devem ser compartilhadas em campos públicos ou arquivos destinados aos visitantes.</p></section>
+    <section><h3>7. Segurança e controle de acesso</h3><p>O projeto utiliza autenticação para as funções de conta e controles administrativos para restringir ações sensíveis. Nenhum sistema conectado à internet pode garantir segurança absoluta. O usuário deve manter sua conta Google protegida, encerrar a sessão em dispositivos compartilhados e comunicar suspeitas de acesso indevido pelos canais oficiais do projeto.</p><p>Chaves secretas de servidor não devem ser incorporadas ao código entregue ao navegador. O acesso aos dados depende também da configuração correta das permissões, das políticas de segurança e das funções do banco de dados.</p></section>
+    <section><h3>8. Retenção, correção e exclusão</h3><p>Os registros podem ser mantidos enquanto forem necessários para disponibilizar o histórico, a classificação, a segurança e a operação do projeto, ou pelo período exigido por obrigações aplicáveis. Os dados locais podem ser removidos pelo usuário limpando o histórico ou o armazenamento correspondente no navegador. A remoção de dados sincronizados na nuvem pode exigir uma operação administrativa ou uma solicitação à equipe responsável; apagar dados do navegador não exclui automaticamente os registros do banco de dados.</p><p>Solicitações de acesso, correção, informação ou exclusão de dados pessoais serão avaliadas conforme a legislação aplicável, a possibilidade de identificar os registros e a necessidade de manter informações legítimas de segurança ou integridade da classificação.</p></section>
+    <section><h3>9. Crianças, adolescentes e responsáveis</h3><p>Como o site pode ser utilizado em contextos educacionais e de robótica, recomendamos que crianças e adolescentes utilizem as funções de conta e sincronização com orientação de um responsável ou educador. Não publique nomes completos de estudantes, contatos, imagens pessoais ou outros dados sensíveis no nome da equipe, nas notas ou em materiais compartilhados. O responsável deve avaliar a adequação do uso e as permissões de conta conforme a idade e o contexto.</p></section>
+    <section><h3>10. Serviços de terceiros e links externos</h3><p>Links, vídeos incorporados, login e recursos carregados de serviços externos estão sujeitos às políticas e à disponibilidade dos respectivos provedores. Ao abrir um serviço externo, o usuário passa a interagir com esse serviço e deve consultar as condições de privacidade aplicáveis. O Rabbitech não controla as políticas independentes desses provedores.</p></section>
+    <section><h3>11. Alterações nesta política</h3><p>Esta Política pode ser atualizada para refletir novas funções, mudanças técnicas, requisitos legais ou melhorias de segurança. A data no início da página indica a revisão mais recente. Alterações relevantes devem ser comunicadas de forma apropriada no próprio site, quando possível.</p></section>
+    <section><h3>12. Contato e solicitações</h3><p>Para dúvidas ou solicitações relacionadas à privacidade, aos dados de conta ou aos registros sincronizados, utilize os canais oficiais de contato do projeto Rabbitech BIOGLOW, descrevendo a solicitação e evitando enviar senhas, tokens ou outras credenciais. Para sua segurança, poderá ser necessário confirmar que você tem autorização para solicitar acesso ou alteração dos dados envolvidos.</p></section>
+    <section><h3>13. Termos de uso e limites do serviço</h3><p>O placar é uma ferramenta auxiliar de treino e pode depender dos dados informados pela equipe, da disponibilidade da conexão e dos serviços externos. Os resultados exibidos não substituem a avaliação oficial de árbitros ou organizadores. O usuário é responsável por conferir o regulamento oficial da temporada e por utilizar os recursos de acordo com as regras do evento.</p><p>O uso indevido do sistema, a tentativa de acessar dados de outras equipes ou de contornar controles de acesso não é autorizado. Recursos podem ser alterados, suspensos ou removidos para manutenção, segurança ou melhoria do serviço.</p></section>
+    <p class="footnote">Esta página apresenta as práticas previstas para o funcionamento do projeto e não constitui aconselhamento jurídico. A aplicação concreta depende da configuração ativa dos serviços, dos dados efetivamente processados e das circunstâncias de cada utilização.</p>
+  </div>
+</section>
+
 </main>
 
 <nav>
@@ -501,6 +559,7 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
 <button data-page="routes"><span class="dock-icon">🗺️</span><span class="dock-label">Rotas</span></button>
 <button data-page="rules"><span class="dock-icon">📘</span><span class="dock-label">Regras</span></button>
 <button data-page="youtube" id="rbYouTubeNav"><span class="dock-icon">▶️</span><span class="dock-label">Rabbitech TV</span></button>
+<button data-page="privacy"><span class="dock-icon">🔒</span><span class="dock-label">Privacidade</span></button>
 <button data-page="admin" id="rbAdminNav" hidden><span class="dock-icon">🔐</span><span class="dock-label">Admin</span></button>
 </nav>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -793,6 +852,7 @@ document.querySelectorAll(".dock").forEach(sel=>sel.addEventListener("change",()
  render();
 }));
 document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id==="page-"+b.dataset.page));window.scrollTo({top:0,behavior:"smooth"})}));
+document.getElementById('rbPublicRankingOpen')?.addEventListener('click',()=>document.querySelector('nav button[data-page="leaderboard"]')?.click());
 try{const saved=JSON.parse(localStorage.getItem(KEY+".current")||"null");if(saved&&saved.values)round=saved}catch(e){}
 try{const p=JSON.parse(localStorage.getItem(KEY+".plan")||"null");if(p){$("#teamName").value=p.team||"";$("#goal").value=p.goal||"Consistência";$("#priority").value=p.priority||"Missões próximas da base";$("#notes").value=p.notes||"";if(p.docks){$("#dock13").value=p.docks.m13||"mine";$("#dock14").value=p.docks.m14||"city";$("#dock15").value=p.docks.m15||"farm"}}}catch(e){}
 renderMissions();
@@ -1081,7 +1141,7 @@ async function rbLoadLeaderboard(showStatus=true){
  }catch(e){if(showStatus)rbEl('rbLeaderboardStatus').textContent='Ranking indisponível: '+(e.message||String(e))+' Confira se o SQL de ranking foi executado no Supabase.';}
  finally{rbLeaderboardBusy=false;}
 }
-function rbAdminJump(id){const target=rbEl(id);if(!target)return;target.scrollIntoView({behavior:'smooth',block:'center'});if(target.matches('input,textarea,select'))target.focus({preventScroll:true});}
+function rbAdminJump(id){const target=rbEl(id);if(!target)return;const disclosure=target.closest('details');if(disclosure)disclosure.open=true;target.scrollIntoView({behavior:'smooth',block:'center'});if(target.matches('input,textarea,select'))target.focus({preventScroll:true});}
 document.querySelectorAll('[data-admin-jump]').forEach(b=>b.addEventListener('click',()=>rbAdminJump(b.dataset.adminJump)));
 async function rbAdminRenderRankPreview(){const host=rbEl('rbAdminRankPreview');if(!host||!rbClient)return;host.innerHTML='<p class="footnote">Atualizando médias…</p>';try{const {data,error}=await rbClient.rpc('get_public_leaderboard');if(error)throw error;const rows=Array.isArray(data)?data:[];host.innerHTML=rows.length?'<div class="history-list">'+rows.slice(0,5).map(r=>'<div class="history-item"><div><b>#'+Number(r.rank_position)+'</b> '+rbEsc(r.team_name)+'<small>'+Number(r.rounds_count)+' round(s) computado(s)</small></div><strong>'+Number(r.average_score).toFixed(2).replace('.',',')+'</strong><span class="footnote">média</span></div>').join('')+'</div>':'<p class="footnote">Ainda não há rounds válidos para o ranking.</p>';}catch(e){host.innerHTML='<p class="footnote" role="alert">Não foi possível carregar o ranking: '+rbEsc(e.message||String(e))+'</p>';}}
 rbEl('rbAdminRankRefresh')?.addEventListener('click',()=>rbRun(rbAdminRenderRankPreview));
