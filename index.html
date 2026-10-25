@@ -1429,6 +1429,15 @@ nav.rb-stable-dock #rbDockToggle{display:none!important}
 }
 @keyframes rbStableDockPop{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
 @media(prefers-reduced-motion:reduce){#rbGlobalNotice.rb-notice-warning,nav.rb-stable-dock,nav.rb-stable-dock *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+@media(max-width:650px){
+ nav.rb-stable-dock:not(.rb-dock-expanded){display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:space-between!important;gap:3px!important;width:calc(100vw - 16px)!important;max-height:64px!important;overflow:hidden!important;padding:5px!important;border-radius:18px!important}
+ nav.rb-stable-dock:not(.rb-dock-expanded) button[data-page]:not([hidden]){display:flex!important;flex:1 1 0!important;min-width:0!important;max-width:70px!important;width:auto!important;min-height:46px!important}
+ nav.rb-stable-dock:not(.rb-dock-expanded) button[data-page][hidden]{display:none!important}
+ nav.rb-stable-dock.rb-dock-expanded{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;max-height:min(42dvh,330px)!important;overflow-y:auto!important;overflow-x:hidden!important}
+ nav.rb-stable-dock #rbDockToggle{display:flex!important;flex:0 0 42px!important;width:42px!important;min-width:42px!important;min-height:44px!important;align-items:center!important;justify-content:center!important;padding:0!important;border:1px solid rgba(208,244,119,.45)!important;border-radius:14px!important;background:linear-gradient(145deg,#203b28,#0b1b11)!important;color:#d0f477!important;font-size:22px!important;grid-column:auto!important}
+ nav.rb-stable-dock.rb-dock-expanded #rbDockToggle{grid-column:3!important;justify-self:center!important}
+}
 </style>
 <script id="rb-stable-controller">
 (function(){
@@ -1480,12 +1489,20 @@ function setupLanguage(){
 function setupDock(){
  var nav=byId('rbAdminNav')?byId('rbAdminNav').closest('nav'):document.querySelector('nav button[data-page]')?.parentElement;
  if(!nav)return;
- nav.classList.add('rb-stable-dock');
+ nav.classList.add('rb-stable-dock');nav.classList.remove('rb-dock-expanded');
  nav.querySelectorAll('#rbDockToggle,#rbDockExpandOne,#rbDockExpand,#rbDockMore').forEach(function(el){el.remove()});
+ var pages=Array.from(nav.querySelectorAll('button[data-page]'));
+ pages.forEach(function(b,i){b.dataset.rbDockOverflow=i>=5?'true':'false';b.hidden=i>=5;});
  var toggle=document.createElement('button');toggle.id='rbDockToggle';toggle.type='button';toggle.textContent='+';toggle.setAttribute('aria-label','Mostrar mais páginas');toggle.setAttribute('aria-expanded','false');toggle.title='Mostrar mais páginas';
- toggle.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();var open=nav.classList.toggle('rb-dock-expanded');toggle.textContent=open?'−':'+';toggle.setAttribute('aria-expanded',String(open));toggle.setAttribute('aria-label',open?'Recolher páginas':'Mostrar mais páginas');toggle.title=open?'Recolher páginas':'Mostrar mais páginas'});
+ function setExpanded(open){
+  nav.classList.toggle('rb-dock-expanded',open);
+  pages.forEach(function(b,i){b.hidden=!open&&i>=5});
+  toggle.textContent=open?'−':'+';toggle.setAttribute('aria-expanded',String(open));
+  toggle.setAttribute('aria-label',open?'Recolher páginas':'Mostrar mais páginas');toggle.title=open?'Recolher páginas':'Mostrar mais páginas';
+ }
+ toggle.addEventListener('click',function(e){e.preventDefault();e.stopPropagation();setExpanded(!nav.classList.contains('rb-dock-expanded'))});
  nav.appendChild(toggle);
- nav.addEventListener('click',function(e){var button=e.target&&e.target.closest?e.target.closest('button[data-page]'):null;if(button&&nav.classList.contains('rb-dock-expanded')){nav.classList.remove('rb-dock-expanded');toggle.textContent='+';toggle.setAttribute('aria-expanded','false');toggle.title='Mostrar mais páginas'}});
+ nav.addEventListener('click',function(e){var button=e.target&&e.target.closest?e.target.closest('button[data-page]'):null;if(button)setTimeout(function(){setExpanded(false)},100)});
 }
 function setupCloud(){
  var cloud=byId('rabbitechCloud');if(!cloud)return;
@@ -1597,6 +1614,26 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  ['13. Termos de uso e limites do serviço','13. Terms of use and service limitations','13. Condiciones de uso y límites del servicio','13. Conditions d’utilisation et limites du service','13. Nutzungsbedingungen und Dienstbeschränkungen','13. Termini di utilizzo e limiti del servizio'],
  ['Esta página apresenta as práticas previstas para o funcionamento do projeto e não constitui aconselhamento jurídico. A aplicação concreta depende da configuração ativa dos serviços, dos dados efetivamente processados e das circunstâncias de cada utilização.','This page describes the practices intended for the project and is not legal advice. Actual practices depend on active service settings, data processed, and the circumstances of each use.','Esta página describe las prácticas previstas para el proyecto y no constituye asesoramiento jurídico. La aplicación real depende de la configuración activa, los datos tratados y las circunstancias de cada uso.','Cette page décrit les pratiques prévues pour le projet et ne constitue pas un avis juridique. Les pratiques réelles dépendent de la configuration active, des données traitées et des circonstances de chaque utilisation.','Diese Seite beschreibt die vorgesehenen Praktiken des Projekts und stellt keine Rechtsberatung dar. Die tatsächlichen Praktiken hängen von den aktiven Einstellungen, den verarbeiteten Daten und den Umständen der Nutzung ab.','Questa pagina descrive le pratiche previste per il progetto e non costituisce consulenza legale. Le pratiche effettive dipendono dalle impostazioni attive, dai dati trattati e dalle circostanze di ogni utilizzo.'],
  ['Ainda não há equipes elegíveis. Cada equipe precisa ter ao menos 3 rounds sincronizados para aparecer no ranking.','No teams are eligible yet. Each team needs at least 3 synced rounds to appear on the leaderboard.','Todavía no hay equipos elegibles. Cada equipo necesita al menos 3 rondas sincronizadas para aparecer en la clasificación.','Aucune équipe n’est encore admissible. Chaque équipe doit avoir au moins 3 manches synchronisées pour apparaître au classement.','Noch sind keine Teams zugelassen. Jedes Team benötigt mindestens 3 synchronisierte Runden, um in der Rangliste zu erscheinen.','Nessuna squadra è ancora idonea. Ogni squadra deve avere almeno 3 round sincronizzati per apparire in classifica.']
+
+ ['Natureza em equilíbrio.','Nature in balance.','Naturaleza en equilibrio.','La nature en équilibre.','Natur im Gleichgewicht.','Natura in equilibrio.'],
+ ['Placar sob controle.','Scoring under control.','Puntuación bajo control.','Le score sous contrôle.','Punkte unter Kontrolle.','Punteggio sotto controllo.'],
+ ['PONTOS NESTE ROUND','POINTS THIS ROUND','PUNTOS EN ESTA RONDA','POINTS DE CETTE MANCHE','PUNKTE IN DIESER RUNDE','PUNTI IN QUESTO ROUND'],
+ ['MISSÕES PONTUADAS','MISSIONS SCORED','MISIONES PUNTUADAS','MISSIONS MARQUÉES','BEWERTETE MISSIONEN','MISSIONI CON PUNTEGGIO'],
+ ['CRONÔMETRO','TIMER','CRONÓMETRO','CHRONOMÈTRE','STOPPUHR','CRONOMETRO'],
+ ['RODADAS GUARDADAS','SAVED ROUNDS','RONDAS GUARDADAS','MANCHES ENREGISTRÉES','GESPEICHERTE RUNDEN','ROUND SALVATI'],
+ ['de um máximo de 510','out of a maximum of 510','de un máximo de 510','sur un maximum de 510','von maximal 510','su un massimo di 510'],
+ ['com pelo menos 1 ponto','with at least 1 point','con al menos 1 punto','avec au moins 1 point','mit mindestens 1 Punkt','con almeno 1 punto'],
+ ['neste dispositivo','on this device','en este dispositivo','sur cet appareil','auf diesem Gerät','su questo dispositivo'],
+ ['Pausado / pronto','Paused / ready','Pausado / listo','En pause / prêt','Pausiert / bereit','In pausa / pronto'],
+ ['Tempo oficial do Robot Game','Official Robot Game time','Tiempo oficial del Robot Game','Temps officiel du Robot Game','Offizielle Robot-Game-Zeit','Tempo ufficiale del Robot Game'],
+ ['Pronto para iniciar.','Ready to start.','Listo para comenzar.','Prêt à démarrer.','Bereit zum Start.','Pronto per iniziare.'],
+ ['Iniciar','Start','Iniciar','Démarrer','Starten','Avvia'],
+ ['Pausar','Pause','Pausar','Pause','Pausieren','Pausa'],
+ ['Resetar','Reset','Reiniciar','Réinitialiser','Zurücksetzen','Azzera'],
+ ['Política de Privacidade e Proteção de Dados','Privacy and Data Protection Policy','Política de Privacidad y Protección de Datos','Politique de confidentialité et de protection des données','Datenschutzrichtlinie','Informativa sulla privacy e sulla protezione dei dati'],
+ ['Como o Rabbitech BIOGLOW trata as informações utilizadas nas funções de treino, conta e classificação.','How Rabbitech BIOGLOW handles information used for training, accounts, and rankings.','Cómo Rabbitech BIOGLOW trata la información utilizada para entrenamientos, cuentas y clasificaciones.','Comment Rabbitech BIOGLOW traite les informations utilisées pour l’entraînement, les comptes et le classement.','Wie Rabbitech BIOGLOW Informationen für Training, Konten und Ranglisten verarbeitet.','Come Rabbitech BIOGLOW tratta le informazioni usate per allenamento, account e classifiche.'],
+ ['Mapa do tapete e estratégia de saída','Game mat map and launch strategy','Mapa del tapete y estrategia de salida','Carte du tapis et stratégie de départ','Spielfeldkarte und Startstrategie','Mappa del tappeto e strategia di partenza'],
+ ['Monte a sequência de missões que o robô fará a partir da base e calcule uma estimativa de pontos por saída.','Plan the mission sequence the robot will perform from base and estimate points for each launch.','Organiza la secuencia de misiones que hará el robot desde la base y calcula una estimación de puntos por salida.','Planifiez la séquence de missions que le robot effectuera depuis la base et estimez les points par départ.','Plane die Missionsreihenfolge ab der Basis und schätze die Punkte pro Start.','Pianifica la sequenza di missioni dalla base e stima i punti per ogni partenza.']
  ];
  const codes=['pt-BR','en','es','fr','de','it'];
  const lang=()=>{const v=localStorage.getItem('rbPreferredLanguage')||'pt-BR';return codes.includes(v)?v:'pt-BR';};
