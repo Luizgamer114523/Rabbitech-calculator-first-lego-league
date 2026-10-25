@@ -320,7 +320,7 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
 <section id="page-youtube" class="page">
   <div class="section-title"><div><h2>▶️ Rabbitech TV</h2><p>Pesquise vídeos e assista sem sair do Rabbitech BIOGLOW.</p></div></div>
   <div class="card">
-    <form id="rbYoutubeSearchForm" class="two" style="align-items:end">
+    <form id="rbYoutubeSearchForm" class="two" style="align-items:end" onsubmit="event.preventDefault()">
       <label class="field">Pesquisar vídeos no YouTube<input id="rbYoutubeQuery" maxlength="160" placeholder="Ex.: robótica LEGO SPIKE Prime" autocomplete="off" required></label>
       <button class="primary" type="submit" id="rbYoutubeSearch">🔎 Pesquisar</button>
     </form>
