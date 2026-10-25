@@ -26,7 +26,7 @@ export default async function handler(req, res) {
     yt.searchParams.set('safeSearch', 'moderate');
     yt.searchParams.set('q', q);
     yt.searchParams.set('key', apiKey);
-    const response = await fetch(yt);
+    const response = await fetch(yt, { headers: { Referer: 'https://rabbitech-fllc.vercel.app/', Origin: 'https://rabbitech-fllc.vercel.app' } });
     const data = await response.json();
     if (!response.ok) return res.status(502).json({ error: data?.error?.message || 'O YouTube recusou a pesquisa.' });
     const items = (data.items || []).map(v => ({
