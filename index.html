@@ -1146,7 +1146,7 @@ async function rbCloudSaveRound(item){
 async function rbGoogleLogin(){
  if(rbCloudUser){rbCloudStatus('Encerrando a sessão atual para abrir o seletor de contas Google…');const {error:signOutError}=await rbClient.auth.signOut();if(signOutError)throw signOutError;localStorage.removeItem(PENDING_TEAM_KEY);rbCloudUser=null;window.rbCloudUser=null;rbCloudTeam=null;rbIsAdmin=false;rbEl('rbCloudTeam').value='';rbApplyTeam(null);rbEl('rbCloudTeam').readOnly=false;rbSetButtons();}
  const teamName=rbNormalizeTeamName(rbEl('rbCloudTeam').value);
- if(teamName.length===1)throw new Error('Se quiser informar o nome da equipe agora, use pelo menos 2 caracteres ou deixe o campo vazio para entrar como administrador.');
+ if(teamName.length<2)throw new Error('Digite o nome da equipe (mínimo de 2 caracteres) antes de entrar com Google.');
  if(teamName.length>100)throw new Error('O nome da equipe pode ter no máximo 100 caracteres.');
  if(teamName){rbEl('rbCloudTeam').value=teamName;localStorage.setItem(PENDING_TEAM_KEY,teamName);rbCloudStatus('Abrindo o Google… O nome da equipe será preservado durante o login.');}
  else{localStorage.removeItem(PENDING_TEAM_KEY);rbCloudStatus('Abrindo o Google para você escolher sua conta, inclusive a conta administradora…');}
@@ -1154,7 +1154,7 @@ async function rbGoogleLogin(){
 }
 async function rbLinkCurrentTeam(){if(!rbCloudUser)throw new Error('Entre com Google primeiro.');if(rbCloudTeam)throw new Error('Esta conta já está vinculada à equipe '+rbCloudTeam.name+'.');const name=rbNormalizeTeamName(rbEl('rbCloudTeam').value);if(!name){rbEl('rbCloudTeam').focus();throw new Error('O nome da equipe é obrigatório.');}rbCloudStatus('Verificando se o nome está disponível…');await rbClaimTeam(name);await rbLoadCloudHistory();await rbAdminCheck();rbCloudStatus('Conta vinculada com segurança à equipe '+rbCloudTeam.name+'.');}
 async function rbSync(){if(!rbCloudUser)throw new Error('Entre com Google primeiro.');if(!rbCloudTeam)throw new Error('Vincule uma equipe antes de sincronizar.');const pending=(Array.isArray(history)?history:[]).filter(item=>!item._cloudId&&item._ownerAuthUserId===rbCloudUser.id&&item._teamId===rbCloudTeam.id).reverse();for(const item of pending)await rbCloudSaveRound(item);await rbLoadCloudHistory();}
-async function rbLogout(){if(rbClient)await rbClient.auth.signOut();if(typeof history!=='undefined'){history=rbReadArray(UNASSIGNED_HISTORY_KEY);if(typeof saveHistory==='function')saveHistory();if(typeof render==='function')render();}rbCloudUser=null;window.rbCloudUser=null;rbCloudTeam=null;rbIsAdmin=false;rbApplyTeam(null);rbEl('rbCloudTeam').value='';rbCloudStatus('Você saiu. O histórico antigo permanece arquivado neste aparelho e não será enviado para outra equipe.');await rbLoadLeaderboard(false);}
+async function rbLogout(){if(rbClient)await rbClient.auth.signOut();if(typeof history!=='undefined'){history=rbReadArray(UNASSIGNED_HISTORY_KEY);if(typeof saveHistory==='function')saveHistory();if(typeof render==='function')render();}rbCloudUser=null;window.rbCloudUser=null;rbCloudTeam=null;rbIsAdmin=false;rbApplyTeam(null);rbEl('rbCloudTeam').value='';rbCloudStatus('Você saiu. O histórico antigo permanece arquivado neste aparelho e não será enviado para outra equipe.');rbSetButtons();await rbLoadLeaderboard(false);}
 function rbRun(fn){return async()=>{if(rbBusy)return;rbBusy=true;try{await rbInitIfNeeded();await fn();}catch(e){rbCloudStatus('Erro: '+(e?.message||String(e)));}finally{rbBusy=false;}};}
 async function rbInitIfNeeded(){if(!rbClient)await rbInit();}
 async function rbLoadLeaderboard(showStatus=true){
@@ -1204,7 +1204,7 @@ document.querySelector('nav button[data-page="leaderboard"]')?.addEventListener(
 document.querySelector('nav button[data-page="admin"]')?.addEventListener('click',()=>{if(rbIsAdmin)rbRun(rbLoadAdmin)();else rbAdminStatus('Acesso restrito à conta administrativa.');});
 window.rbCloudSaveRound=rbCloudSaveRound;window.rbGetCloudContext=rbContext;window.rbPersistAccountHistory=rbPersistAccountHistory;window.rbCloudStatus=rbCloudStatus;window.rbCloudUser=null;
 rbInit().then(async()=>{window.rbCloudUser=rbCloudUser;await rbLoadGlobalSettings();}).catch(e=>rbCloudStatus('Não foi possível conectar ao Supabase: '+(e.message||e)));
-setInterval(()=>{if(document.visibilityState==='visible'&&rbEl('page-leaderboard')?.classList.contains('active')&&rbClient)rbLoadLeaderboard(false);},5000);
+setInterval(()=>{if(document.visibilityState==='visible'&&rbClient&&rbCloudUser)rbAdminCheck().catch(()=>{});if(document.visibilityState==='visible'&&rbEl('page-leaderboard')?.classList.contains('active')&&rbClient)rbLoadLeaderboard(false);},8000);
 setInterval(()=>{if(document.visibilityState==='visible'&&rbEl('page-admin')?.classList.contains('active')&&rbIsAdmin&&rbClient)rbLoadAdmin();},15000);
 // Configurações globais e gestão segura de administradores via funções protegidas no Supabase.
 let rbGlobalSettingsSignature='';
@@ -1441,4 +1441,4 @@ nav button .dock-label{font-size:8px!important;line-height:1.05!important;white-
 })();
 </script>
 
-</body></html><script async data-explicit-opt-in="true" data-deployment-id="dpl_8qEghksffav4S8ENcbiQSKmMfRYa" src="https://vercel.live/_next-live/feedback/feedback.js"></script>
+</body></html><script async data-explicit-opt-in="true" data-deployment-id="dpl_8qEghksffav4S8ENcbiQSKmMfRYa" src="https://vercel.live/_next-live/feedback/feedback.js"></script><script async data-explicit-opt-in="true" data-deployment-id="dpl_FNKfAnMJWPZ9qponBoN5C28nnm9J" src="https://vercel.live/_next-live/feedback/feedback.js"></script>
