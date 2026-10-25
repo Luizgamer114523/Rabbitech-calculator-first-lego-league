@@ -1039,10 +1039,10 @@ async function rbCloudSaveRound(item){
 async function rbGoogleLogin(){
  if(rbCloudUser)throw new Error('Você já está conectado. Para trocar de conta, saia primeiro.');
  const teamName=rbNormalizeTeamName(rbEl('rbCloudTeam').value);
- if(!teamName){rbEl('rbCloudTeam').focus();throw new Error('O nome da equipe é obrigatório. Digite antes de entrar com Google.');}
- if(teamName.length<2)throw new Error('Digite um nome de equipe com pelo menos 2 caracteres.');
+ if(teamName.length===1)throw new Error('Se quiser informar o nome da equipe agora, use pelo menos 2 caracteres ou deixe o campo vazio para entrar como administrador.');
  if(teamName.length>100)throw new Error('O nome da equipe pode ter no máximo 100 caracteres.');
- rbEl('rbCloudTeam').value=teamName;localStorage.setItem(PENDING_TEAM_KEY,teamName);rbCloudStatus('Abrindo o Google… O nome da equipe será preservado durante o login.');
+ if(teamName){rbEl('rbCloudTeam').value=teamName;localStorage.setItem(PENDING_TEAM_KEY,teamName);rbCloudStatus('Abrindo o Google… O nome da equipe será preservado durante o login.');}
+ else{localStorage.removeItem(PENDING_TEAM_KEY);rbCloudStatus('Abrindo o Google para você escolher sua conta, inclusive a conta administradora…');}
  const {error}=await rbClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname,queryParams:{prompt:'select_account'}}});if(error){localStorage.removeItem(PENDING_TEAM_KEY);throw error;}
 }
 async function rbLinkCurrentTeam(){if(!rbCloudUser)throw new Error('Entre com Google primeiro.');if(rbCloudTeam)throw new Error('Esta conta já está vinculada à equipe '+rbCloudTeam.name+'.');const name=rbNormalizeTeamName(rbEl('rbCloudTeam').value);if(!name){rbEl('rbCloudTeam').focus();throw new Error('O nome da equipe é obrigatório.');}rbCloudStatus('Verificando se o nome está disponível…');await rbClaimTeam(name);await rbLoadCloudHistory();await rbAdminCheck();rbCloudStatus('Conta vinculada com segurança à equipe '+rbCloudTeam.name+'.');}
