@@ -1844,4 +1844,77 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+<!-- Rabbitech production hotfix: single mobile dock and usable language consent -->
+
+<style id="rb-production-dock-language-hotfix">
+@media(max-width:650px){
+ body{padding-bottom:calc(100px + env(safe-area-inset-bottom))!important}
+ nav.rb-samsung-dock,body>nav:has(button[data-page]){
+  position:fixed!important;left:10px!important;right:10px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;
+  top:auto!important;z-index:9000!important;box-sizing:border-box!important;
+  display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;
+  gap:4px!important;overflow:hidden!important;max-height:66px!important;width:auto!important;padding:6px!important;
+  border:1px solid rgba(208,244,119,.3)!important;border-radius:18px!important;
+  background:rgba(7,19,12,.96)!important;backdrop-filter:blur(20px) saturate(1.3)!important;box-shadow:0 8px 30px #0008!important
+ }
+ nav.rb-samsung-dock button[data-page],body>nav:has(button[data-page]) button[data-page]{
+  flex:0 0 52px!important;width:52px!important;min-width:52px!important;max-width:52px!important;
+  height:48px!important;min-height:44px!important;display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;gap:3px!important;padding:3px 1px!important;
+  font-size:9px!important;line-height:1.05!important;white-space:normal!important
+ }
+ nav.rb-samsung-dock:not(.rb-dock-expanded) button[data-page]:nth-of-type(n+6),
+ body>nav:has(button[data-page]):not(.rb-dock-expanded) button[data-page]:nth-of-type(n+6){display:none!important}
+ nav.rb-samsung-dock #rbDockExpandOne,body>nav:has(button[data-page]) #rbDockExpandOne{
+  display:flex!important;flex:0 0 42px!important;width:42px!important;min-width:42px!important;max-width:42px!important;
+  height:44px!important;min-height:44px!important;align-items:center!important;justify-content:center!important;
+  border:1px solid rgba(208,244,119,.5)!important;border-radius:14px!important;background:#102419!important;
+  color:#d0f477!important;font-size:22px!important;font-weight:900!important
+ }
+ nav.rb-samsung-dock.rb-dock-expanded,body>nav:has(button[data-page]).rb-dock-expanded{
+  flex-wrap:wrap!important;justify-content:center!important;overflow-y:auto!important;max-height:min(42dvh,340px)!important
+ }
+ nav.rb-samsung-dock.rb-dock-expanded button[data-page],body>nav:has(button[data-page]).rb-dock-expanded button[data-page]{display:flex!important}
+}
+#rbLanguageConsent[hidden]{display:none!important}
+#rbLanguageConsent{max-height:100dvh!important;overflow-y:auto!important}
+#rbConsentText{max-height:42dvh;overflow-y:auto!important}
+#rbLanguageReopen{position:fixed!important;top:12px!important;right:12px!important;z-index:8998!important}
+</style>
+
+<script id="rb-production-dock-language-hotfix-script">
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+function fixDock(){
+ const nav=document.querySelector('nav button[data-page]')?.parentElement;
+ if(!nav||nav.dataset.rbProductionDock==='1')return;
+ nav.dataset.rbProductionDock='1';nav.classList.add('rb-samsung-dock');
+ document.querySelectorAll('#rbDockMore,#rbDockExpand,#rbFinalDockMore,#rbDockExpandOne').forEach(el=>el.remove());
+ const more=document.createElement('button');more.id='rbDockExpandOne';more.type='button';more.textContent='+';
+ more.title='Mostrar mais abas';more.setAttribute('aria-label',more.title);more.setAttribute('aria-expanded','false');
+ more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const open=nav.classList.toggle('rb-dock-expanded');more.textContent=open?'−':'+';more.title=open?'Recolher abas':'Mostrar mais abas';more.setAttribute('aria-label',more.title);more.setAttribute('aria-expanded',String(open))});
+ nav.appendChild(more);
+ nav.querySelectorAll('button[data-page]').forEach(btn=>btn.addEventListener('click',()=>{nav.classList.remove('rb-dock-expanded');more.textContent='+';more.setAttribute('aria-expanded','false')},true));
+}
+function fixLanguage(){
+ const overlay=$('rbLanguageConsent'),select=$('rbConsentLanguage');
+ $('rbLanguagePersistent')?.remove();
+ const quick=$('rbLanguageQuickSelect');if(quick)quick.closest('label')?.remove();
+ if(!overlay||!select)return;
+ let opener=$('rbLanguageReopen');
+ if(!opener){opener=document.createElement('button');opener.id='rbLanguageReopen';opener.type='button';opener.textContent='🌐 Idioma';document.body.appendChild(opener)}
+ opener.onclick=()=>{overlay.hidden=false;overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';select.disabled=false;try{select.value=localStorage.getItem('rbPreferredLanguage')||'pt-BR'}catch(_){}select.focus({preventScroll:true})};
+ select.disabled=false;
+ if(!select.dataset.rbProductionLanguage){
+  select.dataset.rbProductionLanguage='1';
+  select.addEventListener('change',()=>{const code=select.value||'pt-BR';try{localStorage.setItem('rbPreferredLanguage',code)}catch(_){}document.documentElement.lang=code;try{if(typeof window.rbRenderPrivacyLanguage==='function')window.rbRenderPrivacyLanguage(code)}catch(_){}document.dispatchEvent(new Event('rb:language-change'))});
+ }
+ const close=()=>{overlay.hidden=true;overlay.style.setProperty('display','none','important');document.body.style.overflow='';try{sessionStorage.setItem('rbPrivacyDismissed','yes')}catch(_){}};
+ const x=$('rbConsentClose');if(x&&!x.dataset.rbProductionClose){x.dataset.rbProductionClose='1';x.addEventListener('click',close,true)}
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden&&overlay.style.display!=='none')close()});
+}
+function init(){fixDock();fixLanguage()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
 </body></html>
