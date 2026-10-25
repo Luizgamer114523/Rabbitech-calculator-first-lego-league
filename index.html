@@ -1175,7 +1175,7 @@ async function rbCloudSaveRound(item){
 async function rbGoogleLogin(){
  if(rbCloudUser){rbCloudStatus('Encerrando a sessão atual para abrir o seletor de contas Google…');const {error:signOutError}=await rbClient.auth.signOut();if(signOutError)throw signOutError;localStorage.removeItem(PENDING_TEAM_KEY);rbCloudUser=null;window.rbCloudUser=null;rbCloudTeam=null;rbIsAdmin=false;rbEl('rbCloudTeam').value='';rbApplyTeam(null);rbEl('rbCloudTeam').readOnly=false;rbSetButtons();}
  const teamName=rbNormalizeTeamName(rbEl('rbCloudTeam').value);
- if(teamName.length===1)throw new Error('Se quiser informar o nome da equipe agora, use pelo menos 2 caracteres ou deixe o campo vazio para entrar como administrador.');
+ if(teamName.length<2)throw new Error('Digite o nome da equipe (mínimo de 2 caracteres) antes de entrar com Google.');
  if(teamName.length>100)throw new Error('O nome da equipe pode ter no máximo 100 caracteres.');
  if(teamName){rbEl('rbCloudTeam').value=teamName;localStorage.setItem(PENDING_TEAM_KEY,teamName);rbCloudStatus('Abrindo o Google… O nome da equipe será preservado durante o login.');}
  else{localStorage.removeItem(PENDING_TEAM_KEY);rbCloudStatus('Abrindo o Google para você escolher sua conta, inclusive a conta administradora…');}
@@ -1183,7 +1183,7 @@ async function rbGoogleLogin(){
 }
 async function rbLinkCurrentTeam(){if(!rbCloudUser)throw new Error('Entre com Google primeiro.');if(rbCloudTeam)throw new Error('Esta conta já está vinculada à equipe '+rbCloudTeam.name+'.');const name=rbNormalizeTeamName(rbEl('rbCloudTeam').value);if(!name){rbEl('rbCloudTeam').focus();throw new Error('O nome da equipe é obrigatório.');}rbCloudStatus('Verificando se o nome está disponível…');await rbClaimTeam(name);await rbLoadCloudHistory();await rbAdminCheck();rbCloudStatus('Conta vinculada com segurança à equipe '+rbCloudTeam.name+'.');}
 async function rbSync(){if(!rbCloudUser)throw new Error('Entre com Google primeiro.');if(!rbCloudTeam)throw new Error('Vincule uma equipe antes de sincronizar.');const pending=(Array.isArray(history)?history:[]).filter(item=>!item._cloudId&&item._ownerAuthUserId===rbCloudUser.id&&item._teamId===rbCloudTeam.id).reverse();for(const item of pending)await rbCloudSaveRound(item);await rbLoadCloudHistory();}
-async function rbLogout(){if(rbClient)await rbClient.auth.signOut();if(typeof history!=='undefined'){history=rbReadArray(UNASSIGNED_HISTORY_KEY);if(typeof saveHistory==='function')saveHistory();if(typeof render==='function')render();}rbCloudUser=null;window.rbCloudUser=null;rbCloudTeam=null;rbIsAdmin=false;rbApplyTeam(null);rbEl('rbCloudTeam').value='';rbCloudStatus('Você saiu. O histórico antigo permanece arquivado neste aparelho e não será enviado para outra equipe.');await rbLoadLeaderboard(false);}
+async function rbLogout(){if(rbClient)await rbClient.auth.signOut();if(typeof history!=='undefined'){history=rbReadArray(UNASSIGNED_HISTORY_KEY);if(typeof saveHistory==='function')saveHistory();if(typeof render==='function')render();}rbCloudUser=null;window.rbCloudUser=null;rbCloudTeam=null;rbIsAdmin=false;rbApplyTeam(null);rbEl('rbCloudTeam').value='';rbCloudStatus('Você saiu. O histórico antigo permanece arquivado neste aparelho e não será enviado para outra equipe.');rbSetButtons();await rbLoadLeaderboard(false);}
 function rbRun(fn){return async()=>{if(rbBusy)return;rbBusy=true;try{await rbInitIfNeeded();await fn();}catch(e){rbCloudStatus('Erro: '+(e?.message||String(e)));}finally{rbBusy=false;}};}
 async function rbInitIfNeeded(){if(!rbClient)await rbInit();}
 async function rbLoadLeaderboard(showStatus=true){
@@ -1233,7 +1233,7 @@ document.querySelector('nav button[data-page="leaderboard"]')?.addEventListener(
 document.querySelector('nav button[data-page="admin"]')?.addEventListener('click',()=>{if(rbIsAdmin)rbRun(rbLoadAdmin)();else rbAdminStatus('Acesso restrito à conta administrativa.');});
 window.rbCloudSaveRound=rbCloudSaveRound;window.rbGetCloudContext=rbContext;window.rbPersistAccountHistory=rbPersistAccountHistory;window.rbCloudStatus=rbCloudStatus;window.rbCloudUser=null;
 rbInit().then(async()=>{window.rbCloudUser=rbCloudUser;await rbLoadGlobalSettings();}).catch(e=>rbCloudStatus('Não foi possível conectar ao Supabase: '+(e.message||e)));
-setInterval(()=>{if(document.visibilityState==='visible'&&rbEl('page-leaderboard')?.classList.contains('active')&&rbClient)rbLoadLeaderboard(false);},5000);
+setInterval(()=>{if(document.visibilityState==='visible'&&rbClient&&rbCloudUser)rbAdminCheck().catch(()=>{});if(document.visibilityState==='visible'&&rbEl('page-leaderboard')?.classList.contains('active')&&rbClient)rbLoadLeaderboard(false);},8000);
 setInterval(()=>{if(document.visibilityState==='visible'&&rbEl('page-admin')?.classList.contains('active')&&rbIsAdmin&&rbClient)rbLoadAdmin();},15000);
 // Configurações globais e gestão segura de administradores via funções protegidas no Supabase.
 let rbGlobalSettingsSignature='';
@@ -1380,4 +1380,200 @@ setInterval(()=>{if(document.visibilityState==='visible'&&rbClient)rbLoadGlobalS
 
 <style id="rb-remaster-hotfix">#rb-public-ranking-callout{display:none!important}#page-leaderboard #rb-public-ranking-callout{display:block!important}#rbGlobalNotice.rb-notice-warning{background:linear-gradient(110deg,#551010,#8b1717,#551010)!important;color:#fff!important;border:2px solid #ff4545!important;box-shadow:0 0 8px #ff3434,0 0 22px #ff343499!important;animation:rbAlertPulse 1.25s ease-in-out infinite}#rbGlobalNotice.rb-notice-success{background:linear-gradient(110deg,#063c25,#0b6338,#063c25)!important;color:#effff4!important;border:2px solid #40f58a!important;box-shadow:0 0 12px #24e87899!important}#rbGlobalNotice.rb-notice-info{background:linear-gradient(110deg,#0c3154,#174f7d,#0c3154)!important;color:#eff8ff!important;border:2px solid #59baff!important;box-shadow:0 0 12px #40b4ff88!important}#rbLanguageConsent{position:fixed;inset:0;z-index:999999;background:rgba(2,8,5,.94);backdrop-filter:blur(16px);display:grid;place-items:center;padding:16px}#rbLanguageConsent[hidden]{display:none!important}#rbLanguageConsent .rb-consent-card{width:min(680px,100%);max-height:92dvh;overflow:auto;background:#0d2116;color:#edf7ed;border:1px solid #52734e;border-radius:22px;padding:20px;box-shadow:0 18px 70px #000b}#rbLanguageConsent h2{color:#d0f477;margin:0 0 12px}#rbLanguageConsent select,#rbLanguageConsent button{font:inherit;padding:12px;border-radius:12px}#rbLanguageConsent select{width:100%;background:#07140d;color:#fff;border:1px solid #63805f;margin:8px 0 14px}#rbConsentText{white-space:pre-wrap;line-height:1.55;overflow-wrap:anywhere}#rbConsentAccept{width:100%;background:#d0f477;color:#13200b;font-weight:900;border:0;margin-top:16px}#rbGlobalNotice.rb-notice-warning:before{content:"⚠️";width:auto;height:auto;background:none;color:inherit;font-size:20px}#rbGlobalNotice.rb-notice-success:before{content:"✅";width:auto;height:auto;background:none;color:inherit;font-size:20px}#rbGlobalNotice.rb-notice-info:before{content:"ℹ️";width:auto;height:auto;background:none;color:inherit;font-size:20px}</style>
 <script id="rb-remaster-hotfix-script">(function(){'use strict';const L={'pt-BR':{name:'Português',title:'Privacidade e idioma',intro:'Escolha o idioma do site e leia o aviso de privacidade antes de continuar.',policy:'O Rabbitech BIOGLOW pode armazenar dados de equipe, pontuações e rodadas para oferecer sincronização e ranking. O login Google identifica a conta e ajuda a proteger a equipe vinculada. Não informe senhas ou dados pessoais desnecessários. Os recursos conectados dependem do Google e do Supabase. Ao continuar, você confirma que leu este aviso.',accept:'Li e aceito continuar',team:'Nome da equipe (obrigatório)',need:'Digite o nome da equipe antes de entrar com Google.'},en:{name:'English',title:'Privacy and language',intro:'Choose the site language and read the privacy notice before continuing.',policy:'Rabbitech BIOGLOW may store team names, scores, and rounds to provide synchronization and rankings. Google sign-in identifies your account and helps protect the linked team. Do not provide passwords or unnecessary personal data. Connected features depend on Google and Supabase. By continuing, you confirm that you have read this notice.',accept:'I have read and accept',team:'Team name (required)',need:'Enter a team name before signing in with Google.'},es:{name:'Español',title:'Privacidad e idioma',intro:'Elige el idioma del sitio y lee el aviso de privacidad antes de continuar.',policy:'Rabbitech BIOGLOW puede almacenar nombres de equipos, puntuaciones y rondas para ofrecer sincronización y clasificaciones. El inicio de sesión de Google identifica tu cuenta y ayuda a proteger el equipo vinculado. No compartas contraseñas ni datos personales innecesarios. Las funciones conectadas dependen de Google y Supabase. Al continuar, confirmas que has leído este aviso.',accept:'He leído y acepto continuar',team:'Nombre del equipo (obligatorio)',need:'Introduce el nombre del equipo antes de iniciar sesión con Google.'},fr:{name:'Français',title:'Confidentialité et langue',intro:'Choisissez la langue du site et lisez l’avis de confidentialité avant de continuer.',policy:'Rabbitech BIOGLOW peut stocker les noms des équipes, les scores et les manches pour assurer la synchronisation et les classements. La connexion Google identifie votre compte et contribue à protéger l’équipe associée. Ne partagez pas de mots de passe ni de données personnelles inutiles. Les fonctions connectées dépendent de Google et Supabase. En continuant, vous confirmez avoir lu cet avis.',accept:'J’ai lu et j’accepte',team:'Nom de l’équipe (obligatoire)',need:'Saisissez le nom de l’équipe avant de vous connecter avec Google.'},de:{name:'Deutsch',title:'Datenschutz und Sprache',intro:'Wähle die Sprache der Website und lies den Datenschutzhinweis, bevor du fortfährst.',policy:'Rabbitech BIOGLOW kann Teamnamen, Punktzahlen und Runden speichern, um Synchronisierung und Ranglisten bereitzustellen. Die Google-Anmeldung identifiziert dein Konto und hilft, das verknüpfte Team zu schützen. Gib keine Passwörter oder unnötigen persönlichen Daten an. Verbundene Funktionen hängen von Google und Supabase ab. Wenn du fortfährst, bestätigst du, dass du diesen Hinweis gelesen hast.',accept:'Gelesen und akzeptiert',team:'Teamname (erforderlich)',need:'Gib vor der Google-Anmeldung einen Teamnamen ein.'},it:{name:'Italiano',title:'Privacy e lingua',intro:'Scegli la lingua del sito e leggi l’informativa sulla privacy prima di continuare.',policy:'Rabbitech BIOGLOW può memorizzare nomi delle squadre, punteggi e round per offrire sincronizzazione e classifiche. L’accesso con Google identifica il tuo account e aiuta a proteggere la squadra collegata. Non condividere password o dati personali non necessari. Le funzioni collegate dipendono da Google e Supabase. Continuando, confermi di aver letto questa informativa.',accept:'Ho letto e accetto',team:'Nome della squadra (obbligatorio)',need:'Inserisci il nome della squadra prima di accedere con Google.'}};function $(x){return document.getElementById(x)}function lang(){return localStorage.getItem('rbPreferredLanguage')||'pt-BR'}function render(){let t=L[lang()]||L['pt-BR'];if($('rbConsentTitle'))$('rbConsentTitle').textContent=t.title;if($('rbConsentIntro'))$('rbConsentIntro').textContent=t.intro;if($('rbConsentText'))$('rbConsentText').textContent=t.policy;if($('rbConsentAccept'))$('rbConsentAccept').textContent=t.accept}function setup(){let call=$('rb-public-ranking-callout'),rank=$('page-leaderboard');if(call&&rank&&!rank.contains(call))rank.prepend(call);let b=document.querySelector('#rb-public-ranking-callout button,.rb-public-ranking-inner button');if(b)b.addEventListener('click',()=>{let n=document.querySelector('[data-page="leaderboard"]');if(n)n.click();else{document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-leaderboard'));scrollTo({top:0,behavior:'smooth'})}});let team=$('rbCloudTeam'),g=$('rbCloudGoogle');if(g)g.addEventListener('click',e=>{if(!team||team.value.trim().length<2){e.preventDefault();e.stopImmediatePropagation();alert((L[lang()]||L['pt-BR']).need);if(team)team.focus()}else localStorage.setItem('rabbitech_pending_team_name',team.value.trim())},true);let n=$('rbGlobalNotice');if(n){let apply=()=>{let cfg=(typeof rbGlobalSettingsCurrent!=='undefined'?rbGlobalSettingsCurrent:{}),type=cfg.notice_type||'info';type=/atenção|atencao|warning/i.test(type)?'warning':/sucesso|success/i.test(type)?'success':'info';n.classList.remove('rb-notice-warning','rb-notice-success','rb-notice-info');n.classList.add('rb-notice-'+type);n.setAttribute('role',type==='warning'?'alert':'status')};apply();new MutationObserver(apply).observe(n,{attributes:true,childList:true,characterData:true,subtree:true})}let overlay=document.createElement('div');overlay.id='rbLanguageConsent';overlay.innerHTML='<div class="rb-consent-card" role="dialog" aria-modal="true" aria-labelledby="rbConsentTitle"><h2 id="rbConsentTitle"></h2><p id="rbConsentIntro"></p><label for="rbConsentLanguage">🌐 Language / Idioma</label><select id="rbConsentLanguage"></select><div id="rbConsentText"></div><button id="rbConsentAccept" type="button"></button></div>';document.body.appendChild(overlay);let s=$('rbConsentLanguage');Object.keys(L).forEach(k=>{let o=document.createElement('option');o.value=k;o.textContent=L[k].name;s.appendChild(o)});s.value=lang();s.addEventListener('change',()=>{localStorage.setItem('rbPreferredLanguage',s.value);render();});$('rbConsentAccept').addEventListener('click',()=>{localStorage.setItem('rbPrivacyAccepted','yes');overlay.hidden=true});render();let quick=document.createElement('label');quick.id='rbLanguageQuick';quick.style.cssText='display:block;margin:12px;padding:10px;border:1px solid #49684b;border-radius:12px';quick.textContent='🌐 Idioma / Language ';let qs=document.createElement('select');qs.style.cssText='margin-left:8px;background:#0a1a10;color:inherit;padding:6px;border-radius:8px';Object.keys(L).forEach(k=>{let o=document.createElement('option');o.value=k;o.textContent=L[k].name;qs.appendChild(o)});qs.value=lang();qs.addEventListener('change',()=>{localStorage.setItem('rbPreferredLanguage',qs.value);s.value=qs.value;render()});quick.appendChild(qs);let privacy=$('page-privacy');if(privacy)privacy.prepend(quick);let logout=$('rbCloudLogout'),admin=$('rbAdminNav');if(logout)logout.addEventListener('click',()=>{if(admin)admin.hidden=true;let ap=$('page-admin');if(ap)ap.classList.remove('active')},true)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup,{once:true});else setup()})();</script>
-</body></html>
+
+<style id="rb-safe-ui-fixes">
+/* Corrige o callout do ranking, o dock e o cartão Cloud no celular. */
+.rb-public-ranking-callout{display:none!important}
+#page-leaderboard .rb-public-ranking-callout{display:block!important}
+nav{display:grid!important;grid-template-columns:repeat(9,minmax(0,1fr))!important;gap:2px!important;overflow:visible!important;overflow-x:visible!important;overflow-y:visible!important;justify-content:stretch!important;width:100%;padding:5px 5px calc(5px + env(safe-area-inset-bottom))!important;scrollbar-width:none!important}
+nav button{flex:initial!important;min-width:0!important;max-width:none!important;width:100%!important;padding:4px 1px!important;min-height:44px!important;gap:2px!important;border-radius:10px!important}
+nav button .dock-icon{font-size:15px!important}
+nav button .dock-label{font-size:8px!important;line-height:1.05!important;white-space:normal!important;overflow-wrap:anywhere!important}
+@media(max-width:390px){nav button .dock-label{font-size:7px!important}nav button .dock-icon{font-size:14px!important}}
+#rabbitechCloud:has(#rbCloudSync:not([hidden])) .cloud-fields{display:none!important}
+#rabbitechCloud:has(#rbCloudSync:not([hidden]))>p{display:none!important}
+#rabbitechCloud:has(#rbCloudSync:not([hidden])){padding:10px 12px!important}
+#rabbitechCloud:has(#rbCloudSync:not([hidden]))>h2{font-size:16px!important;margin-bottom:6px!important}
+#rbGlobalNotice.rb-notice-warning{background:linear-gradient(110deg,#4a0808,#991b1b,#4a0808)!important;color:#fff!important;border:2px solid #ff4545!important;box-shadow:0 0 9px #ff3434,0 0 24px #ff343477!important;animation:rbAlertPulse 1.25s ease-in-out infinite}
+#rbGlobalNotice.rb-notice-success{background:linear-gradient(110deg,#063c25,#0b6338,#063c25)!important;color:#effff4!important;border:2px solid #40f58a!important;box-shadow:0 0 12px #24e87899!important}
+#rbGlobalNotice.rb-notice-info{background:linear-gradient(110deg,#0c3154,#174f7d,#0c3154)!important;color:#eff8ff!important;border:2px solid #59baff!important;box-shadow:0 0 12px #40b4ff88!important}
+@media(prefers-reduced-motion:reduce){#rbGlobalNotice.rb-notice-warning{animation:none!important}}
+</style>
+<script id="rb-safe-ui-fixes-script">
+(function(){
+ 'use strict';
+ const byId=id=>document.getElementById(id);
+ const normalize=v=>String(v||'').trim().replace(/\s+/g,' ');
+ function placeRanking(){
+   const callout=document.querySelector('.rb-public-ranking-callout');
+   const page=byId('page-leaderboard');
+   if(callout&&page&&!page.contains(callout)) page.prepend(callout);
+   const button=byId('rbPublicRankingOpen');
+   if(button&&!button.dataset.rbSafeBound){
+     button.dataset.rbSafeBound='1';
+     button.addEventListener('click',function(event){
+       event.preventDefault();
+       const nav=document.querySelector('nav button[data-page="leaderboard"]');
+       if(nav) nav.click();
+       else {document.querySelectorAll('main .page').forEach(p=>p.classList.toggle('active',p.id==='page-leaderboard'));window.scrollTo({top:0,behavior:'smooth'});}
+     });
+   }
+ }
+ function requireTeam(event){
+   const field=byId('rbCloudTeam');
+   const name=normalize(field&&field.value);
+   if(!field||name.length<2){
+     event.preventDefault();
+     event.stopImmediatePropagation();
+     if(field){field.focus();field.setAttribute('aria-invalid','true');}
+     const language=localStorage.getItem('rbPreferredLanguage')||'pt-BR';
+     const messages={'pt-BR':'Digite o nome da equipe (mínimo de 2 caracteres) antes de entrar com Google.','en':'Enter your team name (at least 2 characters) before signing in with Google.','es':'Escribe el nombre del equipo (mínimo 2 caracteres) antes de iniciar sesión con Google.','fr':'Saisissez le nom de l’équipe (au moins 2 caractères) avant de vous connecter avec Google.','de':'Gib vor der Google-Anmeldung deinen Teamnamen ein (mindestens 2 Zeichen).','it':'Inserisci il nome della squadra (almeno 2 caratteri) prima di accedere con Google.'};
+     alert(messages[language]||messages['pt-BR']);
+     return;
+   }
+   field.removeAttribute('aria-invalid');
+   field.value=name;
+   localStorage.setItem('rbGooglePendingTeam',name);
+ }
+ function hideAdminAfterLogout(){
+   const logout=byId('rbCloudLogout');
+   if(logout&&!logout.dataset.rbSafeBound){
+     logout.dataset.rbSafeBound='1';
+     logout.addEventListener('click',function(){
+       const nav=byId('rbAdminNav');
+       if(nav)nav.hidden=true;
+       const page=byId('page-admin');
+       if(page)page.classList.remove('active');
+       try{if(typeof rbIsAdmin!=='undefined')rbIsAdmin=false;}catch(_){}
+     },true);
+   }
+   const google=byId('rbCloudGoogle');
+   if(google&&!google.dataset.rbTeamGuardBound){
+     google.dataset.rbTeamGuardBound='1';
+     google.addEventListener('click',requireTeam,true);
+   }
+ }
+ function updateNotice(){
+   const notice=byId('rbGlobalNotice');
+   if(!notice)return;
+   let cfg={};
+   try{if(typeof rbGlobalSettingsCurrent!=='undefined')cfg=rbGlobalSettingsCurrent||{};}catch(_){}
+   const selected=String(cfg.notice_type||byId('rbGlobalNoticeType')?.value||'info').toLowerCase();
+   const type=/warning|atenção|atencao/.test(selected)?'warning':/success|sucesso/.test(selected)?'success':'info';
+   const wanted='rb-notice-'+type;
+   for(const c of ['rb-notice-warning','rb-notice-success','rb-notice-info'])if(c!==wanted&&notice.classList.contains(c))notice.classList.remove(c);
+   if(!notice.classList.contains(wanted))notice.classList.add(wanted);
+   const role=type==='warning'?'alert':'status';
+   if(notice.getAttribute('role')!==role)notice.setAttribute('role',role);
+ }
+ function protectAdminState(){
+   if(typeof rbClient==='undefined'||!rbClient||typeof rbCloudUser==='undefined'||!rbCloudUser)return;
+   const userId=String(rbCloudUser.id||'');
+   const owner=(typeof RB_OWNER_USER_ID!=='undefined'&&userId===RB_OWNER_USER_ID);
+   if(owner)return;
+   rbClient.rpc('is_rabbitech_admin').then(({data,error})=>{
+     if(error)return;
+     const allowed=data===true;
+     if(typeof rbIsAdmin!=='undefined'&&rbIsAdmin!==allowed)rbIsAdmin=allowed;
+     const nav=byId('rbAdminNav');
+     if(nav)nav.hidden=!allowed;
+     const page=byId('page-admin');
+     if(!allowed&&page)page.classList.remove('active');
+   }).catch(()=>{});
+ }
+ function init(){
+   placeRanking();
+   hideAdminAfterLogout();
+   const field=byId('rbCloudTeam');
+   if(field)field.addEventListener('input',()=>field.removeAttribute('aria-invalid'));
+   const notice=byId('rbGlobalNotice');
+   if(notice)new MutationObserver(updateNotice).observe(notice,{attributes:true,childList:true,characterData:true,subtree:true});
+   const typeInput=byId('rbGlobalNoticeType');
+   if(typeInput)typeInput.addEventListener('change',updateNotice);
+   updateNotice();
+   protectAdminState();
+   document.querySelectorAll('nav button[data-page]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.page==='leaderboard')placeRanking();if(b.dataset.page==='admin')protectAdminState();}));
+   window.addEventListener('pageshow',()=>{placeRanking();hideAdminAfterLogout();protectAdminState();});
+   setInterval(()=>{placeRanking();hideAdminAfterLogout();protectAdminState();},8000);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
+
+
+<script id="rb-site-i18n">
+(function(){
+ 'use strict';
+ const rows=[
+ ['Placar','Score','Marcador','Score','Spielstand','Punteggio'],
+ ['Histórico','History','Historial','Historique','Verlauf','Cronologia'],
+ ['Ranking','Leaderboard','Clasificación','Classement','Rangliste','Classifica'],
+ ['Estratégia','Strategy','Estrategia','Stratégie','Strategie','Strategia'],
+ ['Rotas','Routes','Rutas','Itinéraires','Routen','Percorsi'],
+ ['Regras','Rules','Reglas','Règles','Regeln','Regole'],
+ ['Rabbitech TV','Rabbitech TV','Rabbitech TV','Rabbitech TV','Rabbitech TV','Rabbitech TV'],
+ ['Privacidade','Privacy','Privacidad','Confidentialité','Datenschutz','Privacy'],
+ ['Admin','Admin','Admin','Admin','Admin','Admin'],
+ ['Rabbitech Cloud · Founders Edition','Rabbitech Cloud · Founders Edition','Rabbitech Cloud · Founders Edition','Rabbitech Cloud · Founders Edition','Rabbitech Cloud · Founders Edition','Rabbitech Cloud · Founders Edition'],
+ ['Primeiro informe o nome da equipe e depois entre com Google. Cada nome pode pertencer a uma única conta Google. Os rounds privados ficam separados por equipe.','Enter your team name before signing in with Google. Each name can belong to only one Google account. Private rounds stay separate for each team.','Primero escribe el nombre del equipo y luego inicia sesión con Google. Cada nombre puede pertenecer a una sola cuenta de Google. Las rondas privadas se mantienen separadas por equipo.','Saisissez d’abord le nom de l’équipe puis connectez-vous avec Google. Chaque nom ne peut appartenir qu’à un seul compte Google. Les manches privées restent séparées par équipe.','Gib zuerst den Teamnamen ein und melde dich dann mit Google an. Jeder Name kann nur einem Google-Konto gehören. Private Runden bleiben pro Team getrennt.','Inserisci prima il nome della squadra e poi accedi con Google. Ogni nome può appartenere a un solo account Google. I round privati restano separati per squadra.'],
+ ['Nome da equipe (obrigatório)','Team name (required)','Nombre del equipo (obligatorio)','Nom de l’équipe (obligatoire)','Teamname (erforderlich)','Nome della squadra (obbligatorio)'],
+ ['Entrar com Google','Sign in with Google','Iniciar sesión con Google','Se connecter avec Google','Mit Google anmelden','Accedi con Google'],
+ ['Trocar conta Google','Switch Google account','Cambiar cuenta de Google','Changer de compte Google','Google-Konto wechseln','Cambia account Google'],
+ ['Vincular este nome à minha conta','Link this team to my account','Vincular este nombre a mi cuenta','Associer ce nom à mon compte','Diesen Namen mit meinem Konto verknüpfen','Collega questo nome al mio account'],
+ ['Sincronizar histórico e atualizar nuvem','Sync history and update cloud','Sincronizar historial y actualizar la nube','Synchroniser l’historique et mettre à jour le cloud','Verlauf synchronisieren und Cloud aktualisieren','Sincronizza cronologia e aggiorna il cloud'],
+ ['Sair','Sign out','Cerrar sesión','Se déconnecter','Abmelden','Esci'],
+ ['Digite o nome da equipe para continuar com Google. O nome não dá acesso a uma equipe já registrada.','Enter a team name to continue with Google. A name does not grant access to an existing team.','Escribe el nombre del equipo para continuar con Google. El nombre no da acceso a un equipo ya registrado.','Saisissez le nom de l’équipe pour continuer avec Google. Le nom ne donne pas accès à une équipe déjà enregistrée.','Gib einen Teamnamen ein, um mit Google fortzufahren. Der Name gewährt keinen Zugriff auf ein bestehendes Team.','Inserisci il nome della squadra per continuare con Google. Il nome non dà accesso a una squadra già registrata.'],
+ ['🏆 Ranking público BIOGLOW','🏆 Public BIOGLOW leaderboard','🏆 Clasificación pública BIOGLOW','🏆 Classement public BIOGLOW','🏆 Öffentliche BIOGLOW-Rangliste','🏆 Classifica pubblica BIOGLOW'],
+ ['Consulte as equipes classificadas, a média de pontuação e a quantidade de rounds registrados. Não é necessário ser administrador.','View ranked teams, average scores, and the number of recorded rounds. No administrator access is required.','Consulta los equipos clasificados, la puntuación media y el número de rondas registradas. No necesitas ser administrador.','Consultez les équipes classées, les scores moyens et le nombre de manches enregistrées. Aucun accès administrateur n’est nécessaire.','Sieh dir Teams, Durchschnittspunktzahlen und die Anzahl der erfassten Runden an. Ein Administratorkonto ist nicht erforderlich.','Consulta le squadre in classifica, i punteggi medi e il numero di round registrati. Non è necessario essere amministratore.'],
+ ['Ver ranking público →','View public leaderboard →','Ver clasificación pública →','Voir le classement public →','Öffentliche Rangliste ansehen →','Vedi classifica pubblica →'],
+ ['Natureza em equilíbrio.','Nature in balance.','Naturaleza en equilibrio.','La nature en équilibre.','Natur im Gleichgewicht.','Natura in equilibrio.'],
+ ['Placar sob controle.','Scoring under control.','Puntuación bajo control.','Le score sous contrôle.','Punktestand unter Kontrolle.','Punteggio sotto controllo.'],
+ ['Placar de treino da BIOGLOW FLLC 2026–2027. Registre condições verificadas, pratique rounds de 2min30s e revise as regras e atualizações oficiais.','BIOGLOW FLLC 2026–2027 practice scoreboard. Record verified conditions, practice 2 min 30 sec rounds, and review official rules and updates.','Marcador de práctica de BIOGLOW FLLC 2026–2027. Registra condiciones verificadas, practica rondas de 2 min 30 s y revisa las reglas y actualizaciones oficiales.','Tableau d’entraînement BIOGLOW FLLC 2026–2027. Enregistrez les conditions vérifiées, entraînez-vous sur des manches de 2 min 30 et consultez les règles et mises à jour officielles.','Trainings-Spielstand für BIOGLOW FLLC 2026–2027. Erfasse geprüfte Bedingungen, übe Runden von 2 Min. 30 Sek. und prüfe offizielle Regeln und Updates.','Tabellone di allenamento BIOGLOW FLLC 2026–2027. Registra le condizioni verificate, esercitati con round da 2 min e 30 sec e consulta regole e aggiornamenti ufficiali.'],
+ ['15 missões','15 missions','15 misiones','15 missions','15 Missionen','15 missioni'],
+ ['150 segundos por round','150 seconds per round','150 segundos por ronda','150 secondes par manche','150 Sekunden pro Runde','150 secondi per round'],
+ ['Máximo teórico: 510 pts','Theoretical maximum: 510 pts','Máximo teórico: 510 pts','Maximum théorique : 510 pts','Theoretisches Maximum: 510 Punkte','Massimo teorico: 510 punti'],
+ ['Informação','Information','Información','Information','Information','Informazione'],
+ ['Sucesso','Success','Éxito','Succès','Erfolg','Successo'],
+ ['Atenção','Warning','Atención','Attention','Achtung','Attenzione'],
+ ['Publicar aviso','Publish notice','Publicar aviso','Publier l’avis','Hinweis veröffentlichen','Pubblica avviso'],
+ ['Remover aviso','Remove notice','Eliminar aviso','Supprimer l’avis','Hinweis entfernen','Rimuovi avviso'],
+ ['Aviso global do site','Global site notice','Aviso global del sitio','Avis global du site','Globaler Website-Hinweis','Avviso globale del sito'],
+ ['Mensagem global','Global message','Mensaje global','Message global','Globale Nachricht','Messaggio globale'],
+ ['Tipo de aviso','Notice type','Tipo de aviso','Type d’avis','Hinweistyp','Tipo di avviso'],
+ ['Aparência global','Global appearance','Apariencia global','Apparence globale','Globales Erscheinungsbild','Aspetto globale'],
+ ['Cor de destaque','Accent color','Color de acento','Couleur d’accentuation','Akzentfarbe','Colore di evidenziazione'],
+ ['Nome do tema','Theme name','Nombre del tema','Nom du thème','Themenname','Nome del tema'],
+ ['Salvar aparência global','Save global appearance','Guardar apariencia global','Enregistrer l’apparence globale','Globales Erscheinungsbild speichern','Salva aspetto globale'],
+ ['Administradores','Administrators','Administradores','Administrateurs','Administratoren','Amministratori'],
+ ['Somente o proprietário pode adicionar ou remover administradores.','Only the owner can add or remove administrators.','Solo el propietario puede añadir o quitar administradores.','Seul le propriétaire peut ajouter ou supprimer des administrateurs.','Nur der Eigentümer kann Administratoren hinzufügen oder entfernen.','Solo il proprietario può aggiungere o rimuovere amministratori.'],
+ ['E-mail Google','Google email','Correo de Google','E-mail Google','Google-E-Mail','E-mail Google'],
+ ['Adicionar administrador','Add administrator','Añadir administrador','Ajouter un administrateur','Administrator hinzufügen','Aggiungi amministratore'],
+ ['Histórico de segurança','Security history','Historial de seguridad','Historique de sécurité','Sicherheitsverlauf','Cronologia sicurezza'],
+ ['Atualizar histórico','Refresh history','Actualizar historial','Actualiser l’historique','Verlauf aktualisieren','Aggiorna cronologia']
+ ];
+ const codes=['pt-BR','en','es','fr','de','it'];
+ const lang=()=>{const v=localStorage.getItem('rbPreferredLanguage')||'pt-BR';return codes.includes(v)?v:'pt-BR';};
+ const byOriginal=new Map(rows.map(r=>[r[0],r]));
+ const reverse=new Map();
+ for(const r of rows)for(let i=1;i<r.length;i++)if(!reverse.has(r[i]))reverse.set(r[i],r[0]);
+ function apply(){
+   const target=codes.indexOf(lang());
+   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+   const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
+   for(const node of nodes){
+     const raw=node.nodeValue||'',trim=raw.trim();if(!trim)continue;
+     const original=byOriginal.has(trim)?trim:reverse.get(trim);
+     if(!original)continue;
+     const row=byOriginal.get(original);if(!row)continue;
+     const next=row[target]||original;
+     if(next!==trim){const lead=raw.match(/^\s*/)?.[0]||'',trail=raw.match(/\s*$/)?.[0]||'';node.nodeValue=lead+next+trail;}
+   }
+   document.documentElement.lang=lang();
+ }
+ document.addEventListener('change',e=>{if(e.target?.id==='rbConsentLanguage'||e.target?.closest('#rbLanguageQuick'))setTimeout(apply,0);});
+ const start=()=>{apply();const observer=new MutationObserver(()=>apply());observer.observe(document.body,{subtree:true,childList:true,characterData:true});};
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
+})();
+</script>
+
+</body></html><script async data-explicit-opt-in="true" data-deployment-id="dpl_8qEghksffav4S8ENcbiQSKmMfRYa" src="https://vercel.live/_next-live/feedback/feedback.js"></script><script async data-explicit-opt-in="true" data-deployment-id="dpl_FNKfAnMJWPZ9qponBoN5C28nnm9J" src="https://vercel.live/_next-live/feedback/feedback.js"></script><script async data-explicit-opt-in="true" data-deployment-id="dpl_DeZoG8o8Ztq2BKGXYMtGdc97uirK" src="https://vercel.live/_next-live/feedback/feedback.js"></script>
