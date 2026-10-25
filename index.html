@@ -1497,6 +1497,7 @@ function setupDock(){
  function setExpanded(open){
   nav.classList.toggle('rb-dock-expanded',open);
   pages.forEach(function(b,i){b.hidden=!open&&i>=5});
+  syncAdmin();
   toggle.textContent=open?'−':'+';toggle.setAttribute('aria-expanded',String(open));
   toggle.setAttribute('aria-label',open?'Recolher páginas':'Mostrar mais páginas');toggle.title=open?'Recolher páginas':'Mostrar mais páginas';
  }
