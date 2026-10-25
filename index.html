@@ -237,6 +237,38 @@ nav button .dock-label{display:block!important;font-size:10px!important;overflow
 .rb-privacy .rb-privacy-date{color:var(--muted);font-size:12px}
 @media(max-width:620px){.rb-public-ranking-inner{align-items:stretch;flex-direction:column}.rb-public-ranking-inner button{width:100%}.rb-admin-collapsible>summary{padding:13px}.rb-privacy section{padding:12px}}
 
+
+/* Rabbitech mobile refinement */
+nav{display:flex;justify-content:flex-start;gap:5px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:5px 8px calc(5px + env(safe-area-inset-bottom));}
+nav::-webkit-scrollbar{display:none}
+nav button{flex:0 0 68px;min-width:60px;min-height:44px;padding:5px 3px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:12px;font-size:10px;line-height:1.1;white-space:normal}
+nav .dock-icon{font-size:17px;line-height:1.1}nav .dock-label{font-size:9px;max-width:100%;overflow-wrap:anywhere}
+body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+#rabbitechCloud{margin:10px auto;padding:12px;max-width:1100px}
+#rabbitechCloud>h2{font-size:clamp(16px,4vw,20px);margin:0 0 7px}
+#rabbitechCloud>p{font-size:12px;line-height:1.45;margin:0 0 10px}
+#rabbitechCloud .cloud-fields{gap:8px}
+#rabbitechCloud .cloud-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:9px}
+#rabbitechCloud .cloud-actions button{padding:9px 12px;font-size:12px}
+#rbGlobalNotice{white-space:pre-wrap;padding:14px 16px;border-radius:14px;font-weight:750;line-height:1.45;box-shadow:0 8px 24px #0005}
+#rbGlobalNotice.rb-notice-warning{background:#651b1b;color:#fff;border:2px solid #ff4b4b!important;animation:rbAlertPulse 1.25s ease-in-out infinite}
+#rbGlobalNotice.rb-notice-success{background:#0d4a2d;color:#eafff1;border:2px solid #46e58b!important}
+#rbGlobalNotice.rb-notice-info{background:#123b60;color:#eff8ff;border:2px solid #56baff!important}
+#rbGlobalNotice:before{display:inline-flex;align-items:center;justify-content:center;width:25px;height:25px;margin-right:9px;border-radius:50%;font-weight:1000;background:#fff;color:#101010}
+#rbGlobalNotice.rb-notice-warning:before{content:"!";color:#b30000}
+#rbGlobalNotice.rb-notice-success:before{content:"✓";color:#08723a}
+#rbGlobalNotice.rb-notice-info:before{content:"?";color:#075ba0}
+@keyframes rbAlertPulse{0%,100%{box-shadow:0 0 0 0 #ff242455}50%{box-shadow:0 0 0 5px #ff242422}}
+#rbPrivacyGate{position:fixed;inset:0;z-index:1000;background:#020805f5;display:none;overflow:auto;padding:18px}
+#rbPrivacyGate.rb-gate-open{display:flex;align-items:center;justify-content:center}
+#rbPrivacyGate .rb-gate-card{width:min(900px,100%);max-height:92dvh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:clamp(16px,4vw,28px);box-shadow:0 24px 80px #000b}
+#rbPrivacyGate h2{margin-top:0}
+#rbPrivacyGate .rb-gate-copy{max-height:55dvh;overflow:auto;padding:12px;border:1px solid var(--line);border-radius:12px;line-height:1.55}
+#rbPrivacyGate .rb-gate-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:14px}
+#rbPrivacyGate button{min-height:44px}
+@media(max-width:700px){nav button{flex-basis:61px;min-width:58px}#rbGlobalNotice{top:60px!important;margin:7px 8px!important}}
+@media(prefers-reduced-motion:reduce){#rbGlobalNotice.rb-notice-warning{animation:none}}
+
 </style>
 
 </head>
@@ -1243,6 +1275,47 @@ setInterval(()=>{if(document.visibilityState==='visible'&&rbClient)rbLoadGlobalS
  el('rbYoutubeClose')?.addEventListener('click',()=>{player.src='about:blank';playerCard.classList.add('hidden');});
  document.querySelector('nav button[data-page="youtube"]')?.addEventListener('click',renderPinned);
  renderPinned();
+})();
+</script>
+
+
+<div id="rbPrivacyGate" role="dialog" aria-modal="true" aria-labelledby="rbPrivacyGateTitle">
+ <div class="rb-gate-card">
+  <p class="eyebrow">RABBITECH · BIOGLOW FLLC</p>
+  <h2 id="rbPrivacyGateTitle">Privacidade e condições de uso</h2>
+  <p>Antes de continuar, leia as informações sobre dados, conta e funcionamento do site.</p>
+  <div class="rb-gate-copy">
+   <h3>1. Dados utilizados</h3><p>O site pode processar o nome da equipe, dados básicos da conta Google quando você decide entrar, pontuações e rounds enviados para sincronização, além de preferências necessárias ao funcionamento local.</p>
+   <h3>2. Finalidade</h3><p>Essas informações servem para registrar treinos, sincronizar rounds entre dispositivos, identificar a equipe vinculada à conta e apresentar o ranking público conforme as regras do site.</p>
+   <h3>3. Ranking público</h3><p>Os dados apresentados no ranking podem ser vistos por outros visitantes. Não envie informações pessoais no nome da equipe ou em campos públicos.</p>
+   <h3>4. Serviços externos</h3><p>Login e sincronização podem depender do Google, Supabase e da hospedagem Vercel. Cada serviço possui suas próprias condições e políticas. Vídeos e conteúdos incorporados podem conectar-se ao YouTube.</p>
+   <h3>5. Segurança e retenção</h3><p>São adotadas medidas técnicas compatíveis com o projeto, mas nenhum serviço online pode garantir segurança absoluta. A retenção e a exclusão dependem dos dados e serviços efetivamente utilizados; para solicitar correção ou exclusão, contate o responsável pelo projeto.</p>
+   <h3>6. Crianças e adolescentes</h3><p>O projeto é voltado a atividades educacionais. Menores devem utilizar o serviço com orientação de um responsável e não publicar dados pessoais desnecessários.</p>
+   <h3>7. Suas escolhas</h3><p>Você pode usar as funções locais sem entrar com Google, quando disponíveis. A sincronização em nuvem e recursos vinculados à conta exigem autenticação. Ao aceitar, você confirma que leu estas informações e deseja continuar.</p>
+   <p><strong>Importante:</strong> este texto descreve o funcionamento pretendido do projeto e não substitui orientação jurídica. Consulte a página Privacidade para a versão detalhada.</p>
+  </div>
+  <label style="display:flex;gap:10px;align-items:flex-start;margin-top:14px"><input id="rbPrivacyGateCheck" type="checkbox" style="margin-top:4px"><span>Li e aceito a política de privacidade e as condições de uso.</span></label>
+  <div class="rb-gate-actions"><button type="button" id="rbPrivacyGateConfirm" class="primary" disabled>Confirmar e entrar no site</button></div>
+ </div>
+</div>
+
+
+<script>
+(function(){
+ const gate=document.getElementById('rbPrivacyGate'),check=document.getElementById('rbPrivacyGateCheck'),confirmBtn=document.getElementById('rbPrivacyGateConfirm');
+ if(gate&&check&&confirmBtn){
+  check.addEventListener('change',()=>confirmBtn.disabled=!check.checked);
+  confirmBtn.addEventListener('click',()=>{if(!check.checked)return;try{sessionStorage.setItem('rb-privacy-accepted-v1','yes')}catch(e){}gate.classList.remove('rb-gate-open');document.body.style.overflow='';});
+  let accepted=false;try{accepted=sessionStorage.getItem('rb-privacy-accepted-v1')==='yes'}catch(e){}
+  if(!accepted){gate.classList.add('rb-gate-open');document.body.style.overflow='hidden'}
+ }
+ const notice=document.getElementById('rbGlobalNotice');
+ if(notice){
+  const applyNoticeType=()=>{const t=(window.rbGlobalSettingsCurrent&&window.rbGlobalSettingsCurrent.notice_type)||'info';notice.classList.remove('rb-notice-info','rb-notice-success','rb-notice-warning');notice.classList.add(t==='warning'?'rb-notice-warning':t==='success'?'rb-notice-success':'rb-notice-info');notice.setAttribute('role',t==='warning'?'alert':'status');};
+  applyNoticeType();const oldApply=window.rbApplyGlobalSettings;
+  if(typeof oldApply==='function'&&!oldApply.__rbNoticeEnhanced){const wrapped=function(cfg){const out=oldApply.apply(this,arguments);applyNoticeType();return out};wrapped.__rbNoticeEnhanced=true;window.rbApplyGlobalSettings=wrapped;}
+  const typeInput=document.getElementById('rbGlobalNoticeType');typeInput?.addEventListener('change',applyNoticeType);
+ }
 })();
 </script>
 
