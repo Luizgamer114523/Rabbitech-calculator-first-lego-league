@@ -17,12 +17,14 @@
  function setupDock(){
   const nav=document.querySelector('nav button[data-page]')?.closest('nav'); if(!nav)return;
   nav.classList.add('rb-samsung-dock');
+  nav.querySelectorAll('button[data-page="admin"]').forEach(btn=>{if(btn.id!=='rbAdminNav')btn.id='rbAdminNav'});
+  if(nav.dataset.rbDockController==='1' && $('rbDockExpandOne'))return;
+  nav.dataset.rbDockController='1';
   nav.querySelectorAll('#rbDockMore,#rbDockExpand,#rbDockExpandOne,#rbFinalDockMore').forEach(el=>el.remove());
   const more=document.createElement('button');more.id='rbDockExpandOne';more.type='button';more.textContent='+';
   more.title='Mostrar mais abas';more.setAttribute('aria-label','Mostrar mais abas');more.setAttribute('aria-expanded','false');
   more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const open=nav.classList.toggle('rb-dock-expanded');more.textContent=open?'−':'+';more.title=open?'Recolher abas':'Mostrar mais abas';more.setAttribute('aria-label',more.title);more.setAttribute('aria-expanded',String(open))});
   nav.appendChild(more);
-  nav.querySelectorAll('button[data-page="admin"]').forEach(btn=>{if(btn.id!=='rbAdminNav')btn.id='rbAdminNav'});
  }
  function placeLanguageButton(){
   const btn=$('rbLanguageReopen'),header=document.querySelector('body>header'); if(!btn||!header)return;
