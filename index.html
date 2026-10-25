@@ -964,7 +964,7 @@ function rbNormalizeTeamName(name){return String(name||'').trim().replace(/\s+/g
 function rbIsOwner(){return !!rbCloudUser && String(rbCloudUser.id||'')===RB_OWNER_USER_ID;}
 function rbSetButtons(){
  const signed=!!rbCloudUser, linked=!!rbCloudTeam;
- rbEl('rbCloudGoogle').hidden=signed;
+ rbEl('rbCloudGoogle').hidden=false;rbEl('rbCloudGoogle').textContent=signed?'Trocar conta Google':'Entrar com Google';
  rbEl('rbCloudLinkTeam').hidden=!(signed&&!linked);
  rbEl('rbCloudSync').hidden=!(signed&&linked);rbEl('rbCloudSync').disabled=!(signed&&linked);
  rbEl('rbCloudLogout').hidden=!signed;
@@ -990,7 +990,7 @@ async function rbClaimTeam(name){
  rbApplyTeam({id:team.id,name:team.name,auth_user_id:team.auth_user_id||rbCloudUser.id});
  return rbCloudTeam;
 }
-async function rbAdminCheck(){rbIsAdmin=false;if(rbCloudUser){try{const {data,error}=await rbClient.rpc('is_rabbitech_admin');if(!error)rbIsAdmin=data===true;}catch(_){rbIsAdmin=false;}}rbSetButtons();if(rbIsAdmin&&document.querySelector('#page-admin')?.classList.contains('active'))await rbLoadAdmin();}
+async function rbAdminCheck(){rbIsAdmin=rbIsOwner();if(rbCloudUser&&!rbIsAdmin){try{const {data,error}=await rbClient.rpc('is_rabbitech_admin');if(!error)rbIsAdmin=data===true;}catch(_){rbIsAdmin=false;}}rbSetButtons();if(rbIsAdmin&&document.querySelector('#page-admin')?.classList.contains('active'))await rbLoadAdmin();}
 async function rbHandleSignedIn(){
  if(!rbCloudUser)return;
  const pending=rbNormalizeTeamName(localStorage.getItem(PENDING_TEAM_KEY)||'');
@@ -1037,7 +1037,7 @@ async function rbCloudSaveRound(item){
  item._cloudId=data.id;item._cloudRoundNumber=data.round_number;if(typeof saveHistory==='function')saveHistory();rbCloudStatus('Round '+data.round_number+' sincronizado na nuvem para '+rbCloudTeam.name+'.');
 }
 async function rbGoogleLogin(){
- if(rbCloudUser)throw new Error('Você já está conectado. Para trocar de conta, saia primeiro.');
+ if(rbCloudUser){rbCloudStatus('Encerrando a sessão atual para abrir o seletor de contas Google…');const {error:signOutError}=await rbClient.auth.signOut();if(signOutError)throw signOutError;localStorage.removeItem(PENDING_TEAM_KEY);rbCloudUser=null;window.rbCloudUser=null;rbCloudTeam=null;rbIsAdmin=false;rbEl('rbCloudTeam').value='';rbApplyTeam(null);rbEl('rbCloudTeam').readOnly=false;rbSetButtons();}
  const teamName=rbNormalizeTeamName(rbEl('rbCloudTeam').value);
  if(teamName.length===1)throw new Error('Se quiser informar o nome da equipe agora, use pelo menos 2 caracteres ou deixe o campo vazio para entrar como administrador.');
  if(teamName.length>100)throw new Error('O nome da equipe pode ter no máximo 100 caracteres.');
