@@ -2058,4 +2058,71 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+<!-- Rabbitech final mobile header/dock/admin navigation fix 2026-10-25 -->
+
+<style id="rb-final-mobile-layout">
+@media(max-width:650px){
+ body{padding-bottom:calc(96px + env(safe-area-inset-bottom))!important}
+ nav.rb-samsung-dock,body>nav:has(button[data-page]){
+  position:fixed!important;left:50%!important;right:auto!important;top:auto!important;
+  bottom:calc(8px + env(safe-area-inset-bottom))!important;transform:translateX(-50%)!important;
+  width:max-content!important;max-width:calc(100vw - 24px)!important;box-sizing:border-box!important;
+  display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:center!important;
+  gap:3px!important;overflow:hidden!important;max-height:64px!important;padding:6px!important;
+  border:1px solid rgba(208,244,119,.3)!important;border-radius:20px!important;
+  background:rgba(7,19,12,.96)!important;backdrop-filter:blur(20px)!important;box-shadow:0 8px 30px #0008!important;
+ }
+ nav.rb-samsung-dock button[data-page],body>nav:has(button[data-page]) button[data-page]{
+  flex:0 1 52px!important;width:52px!important;min-width:0!important;max-width:52px!important;
+  height:48px!important;min-height:44px!important;display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;gap:3px!important;padding:3px 1px!important;
+  font-size:9px!important;line-height:1.05!important;white-space:normal!important
+ }
+ nav.rb-samsung-dock:not(.rb-dock-expanded) button[data-page]:nth-of-type(n+6),
+ body>nav:has(button[data-page]):not(.rb-dock-expanded) button[data-page]:nth-of-type(n+6){display:none!important}
+ nav.rb-samsung-dock #rbDockExpandOne,body>nav:has(button[data-page]) #rbDockExpandOne{
+  display:flex!important;flex:0 0 38px!important;width:38px!important;min-width:38px!important;max-width:38px!important;
+  height:42px!important;min-height:42px!important;align-items:center!important;justify-content:center!important;
+  border:1px solid rgba(208,244,119,.5)!important;border-radius:14px!important;background:#102419!important;
+  color:#d0f477!important;font-size:22px!important;font-weight:900!important
+ }
+ nav.rb-samsung-dock.rb-dock-expanded,body>nav:has(button[data-page]).rb-dock-expanded{
+  left:12px!important;right:12px!important;transform:none!important;width:auto!important;max-width:none!important;
+  flex-wrap:wrap!important;justify-content:center!important;overflow-y:auto!important;max-height:min(42dvh,340px)!important
+ }
+ nav.rb-samsung-dock.rb-dock-expanded button[data-page],body>nav:has(button[data-page]).rb-dock-expanded button[data-page]{display:flex!important}
+}
+#rbLanguageReopen{position:absolute!important;top:12px!important;right:12px!important;z-index:5!important}
+@media(max-width:650px){
+ #rbLanguageReopen{position:static!important;display:inline-flex!important;align-items:center!important;gap:5px!important;
+  margin:8px 10px 8px auto!important;max-width:max-content!important;float:right!important;top:auto!important;right:auto!important}
+ header:after{content:"";display:block;clear:both}
+}
+#rbLanguageConsent[hidden]{display:none!important}
+#rbLanguageConsent{max-height:100dvh!important;overflow-y:auto!important}
+</style>
+<script id="rb-final-admin-nav-guard">
+(function(){
+ function adminIsAuthorized(){
+  try{
+   var u=(typeof rbCloudUser!=="undefined"&&rbCloudUser)||window.rbCloudUser;
+   var owner=!!(u&&String(u.id)==="7e799691-ba7e-42ea-ab6f-71ad11ca32ff");
+   var admin=(typeof rbIsAdmin!=="undefined"&&rbIsAdmin===true)||window.rbIsAdmin===true;
+   return !!(u&&(owner||admin));
+  }catch(e){return false}
+ }
+ document.addEventListener("click",function(e){
+  var btn=e.target&&e.target.closest?e.target.closest('nav button[data-page="admin"]'):null;
+  if(!btn)return;
+  if(!adminIsAuthorized()){
+   e.preventDefault();e.stopImmediatePropagation();
+   var page=document.getElementById("page-admin");if(page){page.classList.remove("active");page.hidden=true}
+   btn.hidden=true;
+   return;
+  }
+  var page=document.getElementById("page-admin");
+  if(page)page.hidden=false;
+ },true);
+})();
+</script>
 </body></html>
