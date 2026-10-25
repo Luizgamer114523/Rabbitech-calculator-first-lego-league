@@ -1160,7 +1160,10 @@ setInterval(()=>{if(document.visibilityState==='visible'&&rbClient)rbLoadGlobalS
 // Remove the API-key setup controls after Supabase confirms the key is stored.
  document.querySelector('nav button[data-page="youtube"]')?.addEventListener('click',renderPinned);
  document.querySelector('nav button[data-page="admin"]')?.addEventListener('click',()=>{setTimeout(()=>rbYoutubeApiConfigState(),0);});
- rbYoutubeApiConfigState();
+ // A sessão do Supabase é carregada de forma assíncrona. A verificação inicial anterior podia ocorrer antes de rbCloudUser existir e sair silenciosamente.
+ const rbOriginalInitForYoutube=rbInit;
+ rbInit=async function(){await rbOriginalInitForYoutube();await rbYoutubeApiConfigState();};
+ if(rbClient&&rbCloudUser)rbYoutubeApiConfigState();else{const state=rbEl('rbYoutubeApiStatus');if(state)state.textContent='Verificando a sessão e o estado da API…';}
  renderPinned();
 })();
 </script>
