@@ -1393,7 +1393,7 @@ setInterval(()=>{if(document.visibilityState==='visible'&&rbClient)rbLoadGlobalS
  #rbCloudCompactToggle{width:100%;margin:0 0 8px;padding:8px 12px;font-size:12px}
 }
 #rbCloudCompactToggle{border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--lime);font-weight:800}
-#rabbitechCloud.rb-cloud-compact .cloud-fields,#rabbitechCloud.rb-cloud-compact .cloud-actions{display:none!important}
+#rabbitechCloud.rb-cloud-compact .cloud-fields{display:none!important}
 #rabbitechCloud.rb-cloud-compact #rbCloudStatus{margin-top:7px}
 #rb-public-ranking-callout[hidden]{display:none!important}
 #rbGlobalNotice.rb-notice-warning{font-size:16px;letter-spacing:.1px}
@@ -1421,17 +1421,20 @@ function fixNavAndRanking(){
 }
 function compactCloud(){
  const cloud=byId('rabbitechCloud');
- if(!cloud||byId('rbCloudCompactToggle'))return;
- const toggle=document.createElement('button');
+ if(!cloud)return;
+ let toggle=byId('rbCloudCompactToggle');
+ if(!toggle){toggle=document.createElement('button');
  toggle.type='button';toggle.id='rbCloudCompactToggle';
  toggle.textContent='☁️ Mostrar opções da nuvem';
  cloud.insertBefore(toggle,cloud.querySelector('.cloud-fields')||cloud.firstChild);
  toggle.addEventListener('click',()=>{
    const compact=cloud.classList.toggle('rb-cloud-compact');
-   toggle.textContent=compact?'☁️ Mostrar opções da nuvem':'☁️ Ocultar opções da nuvem';
- });
- let signed=false;try{signed=!!(typeof rbCloudUser!=='undefined'&&rbCloudUser&&typeof rbCloudTeam!=='undefined'&&rbCloudTeam)}catch(_){}
- if(signed){cloud.classList.add('rb-cloud-compact');toggle.textContent='☁️ Mostrar opções da nuvem';}
+   cloud.dataset.rbUserExpanded=compact?'false':'true';
+   toggle.textContent=compact?'☁️ Mostrar nome da equipe':'☁️ Ocultar nome da equipe';
+ });}
+ let linked=false;try{linked=!!(typeof rbCloudUser!=='undefined'&&rbCloudUser&&typeof rbCloudTeam!=='undefined'&&rbCloudTeam)}catch(_){}
+ if(linked&&cloud.dataset.rbUserExpanded!=='true'){cloud.classList.add('rb-cloud-compact');toggle.textContent='☁️ Mostrar nome da equipe';}
+ else if(!linked){cloud.classList.remove('rb-cloud-compact');cloud.dataset.rbUserExpanded='';toggle.textContent='☁️ Mostrar opções da nuvem';}
 }
 function enforceAuthUi(){
  try{
