@@ -1401,9 +1401,11 @@ nav button .dock-label{font-size:8px!important;line-height:1.05!important;white-
    try{if(typeof rbGlobalSettingsCurrent!=='undefined')cfg=rbGlobalSettingsCurrent||{};}catch(_){}
    const selected=String(cfg.notice_type||byId('rbGlobalNoticeType')?.value||'info').toLowerCase();
    const type=/warning|atenção|atencao/.test(selected)?'warning':/success|sucesso/.test(selected)?'success':'info';
-   notice.classList.remove('rb-notice-warning','rb-notice-success','rb-notice-info');
-   notice.classList.add('rb-notice-'+type);
-   notice.setAttribute('role',type==='warning'?'alert':'status');
+   const wanted='rb-notice-'+type;
+   for(const c of ['rb-notice-warning','rb-notice-success','rb-notice-info'])if(c!==wanted&&notice.classList.contains(c))notice.classList.remove(c);
+   if(!notice.classList.contains(wanted))notice.classList.add(wanted);
+   const role=type==='warning'?'alert':'status';
+   if(notice.getAttribute('role')!==role)notice.setAttribute('role',role);
  }
  function protectAdminState(){
    if(typeof rbClient==='undefined'||!rbClient||typeof rbCloudUser==='undefined'||!rbCloudUser)return;
@@ -1439,4 +1441,4 @@ nav button .dock-label{font-size:8px!important;line-height:1.05!important;white-
 })();
 </script>
 
-</body></html>
+</body></html><script async data-explicit-opt-in="true" data-deployment-id="dpl_8qEghksffav4S8ENcbiQSKmMfRYa" src="https://vercel.live/_next-live/feedback/feedback.js"></script>
