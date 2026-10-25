@@ -1481,7 +1481,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 <!-- Rabbitech main index update 2026-10-25 -->
 <style id="rb-rabbitech-final-ui">@media(max-width:650px){body{padding-bottom:calc(84px + env(safe-area-inset-bottom))!important}nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:1px!important;overflow:visible!important;justify-content:stretch!important;max-height:84px!important;padding:4px 5px calc(4px + env(safe-area-inset-bottom))!important}nav button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;flex:initial!important;min-width:0!important;max-width:none!important;width:100%!important;min-height:34px!important;padding:3px 1px!important;font-size:9px!important;line-height:1.05!important}nav button .dock-icon{font-size:14px!important;line-height:1.05!important}nav button .dock-label{font-size:8px!important;line-height:1.05!important}nav button[hidden]{display:none!important}}#rb-public-ranking-callout[hidden]{display:none!important}#rbGlobalNotice.rb-notice-warning:before{content:"⚠️ ATENÇÃO  "!important}#rbGlobalNotice.rb-notice-success:before{content:"✅ SUCESSO  "!important}#rbGlobalNotice.rb-notice-info:before{content:"ℹ️ INFORMAÇÃO  "!important}#rbLanguageConsent[hidden]{display:none!important}#rbLanguageConsent .rb-consent-card{overscroll-behavior:contain}</style>
 
-<style id="rb-language-emergency-fix">
+<style id="rb-language-emergency-fix-style">
 #rbLanguageConsent{pointer-events:auto!important;touch-action:pan-y!important}
 #rbLanguageConsent .rb-consent-card{pointer-events:auto!important;position:relative!important;z-index:1!important}
 #rbLanguageConsent select,#rbLanguageConsent button{position:relative!important;z-index:2!important;pointer-events:auto!important;touch-action:manipulation!important}
@@ -1580,6 +1580,33 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 (function(){
  'use strict';
  const rows=[
+ ['Natureza em equilíbrio.','Nature in balance.','Naturaleza en equilibrio.','La nature en équilibre.','Natur im Gleichgewicht.','Natura in equilibrio.'],
+ ['Placar sob controle.','Scoring under control.','Puntuación bajo control.','Le score sous contrôle.','Punkte unter Kontrolle.','Punteggio sotto controllo.'],
+ ['Robot Game · Founders Edition','Robot Game · Founders Edition','Robot Game · Founders Edition','Robot Game · Founders Edition','Robot Game · Founders Edition','Robot Game · Founders Edition'],
+ ['Placar de treino da BIOGLOW FLLC 2026–2027. Registre condições verificadas, pratique rounds de 2min30s e revise as regras e atualizações oficiais.','BIOGLOW FLLC 2026–2027 practice scoreboard. Record verified conditions, practice 2 min 30 sec rounds, and review official rules and updates.','Marcador de práctica BIOGLOW FLLC 2026–2027. Registra condiciones verificadas, practica rondas de 2 min 30 s y revisa las reglas y actualizaciones oficiales.','Tableau d’entraînement BIOGLOW FLLC 2026–2027. Enregistrez les conditions vérifiées, entraînez-vous sur des manches de 2 min 30 s et consultez les règles et mises à jour officielles.','Trainingsanzeige BIOGLOW FLLC 2026–2027. Halte geprüfte Bedingungen fest, übe Runden von 2 Min. 30 Sek. und lies die offiziellen Regeln und Updates.','Tabellone di allenamento BIOGLOW FLLC 2026–2027. Registra le condizioni verificate, esercitati con round di 2 min e 30 sec e consulta le regole e gli aggiornamenti ufficiali.'],
+ ['PONTOS NESTE ROUND','POINTS THIS ROUND','PUNTOS EN ESTA RONDA','POINTS DE CETTE MANCHE','PUNKTE IN DIESER RUNDE','PUNTI IN QUESTO ROUND'],
+ ['MISSÕES PONTUADAS','MISSIONS SCORED','MISIONES PUNTUADAS','MISSIONS MARQUÉES','BEWERTETE MISSIONEN','MISSIONI CON PUNTEGGIO'],
+ ['CRONÔMETRO','TIMER','CRONÓMETRO','CHRONOMÈTRE','STOPPUHR','CRONOMETRO'],
+ ['RODADAS GUARDADAS','SAVED ROUNDS','RONDAS GUARDADAS','MANCHES ENREGISTRÉES','GESPEICHERTE RUNDEN','ROUND SALVATI'],
+ ['de um máximo de 510','out of a maximum of 510','de un máximo de 510','sur un maximum de 510','von maximal 510','su un massimo di 510'],
+ ['com pelo menos 1 ponto','with at least 1 point','con al menos 1 punto','avec au moins 1 point','mit mindestens 1 Punkt','con almeno 1 punto'],
+ ['Pronto','Ready','Listo','Prêt','Bereit','Pronto'],
+ ['neste dispositivo','on this device','en este dispositivo','sur cet appareil','auf diesem Gerät','su questo dispositivo'],
+ ['Pausado / pronto','Paused / ready','Pausado / listo','En pause / prêt','Pausiert / bereit','In pausa / pronto'],
+ ['Tempo oficial do Robot Game','Official Robot Game time','Tiempo oficial del Robot Game','Temps officiel du Robot Game','Offizielle Robot-Game-Zeit','Tempo ufficiale del Robot Game'],
+ ['Pronto para iniciar.','Ready to start.','Listo para comenzar.','Prêt à démarrer.','Bereit zum Start.','Pronto per iniziare.'],
+ ['Iniciar','Start','Iniciar','Démarrer','Starten','Avvia'],
+ ['Pausar','Pause','Pausar','Pause','Pausieren','Pausa'],
+ ['Resetar','Reset','Reiniciar','Réinitialiser','Zurücksetzen','Azzera'],
+ ['Missões M01–M15','Missions M01–M15','Misiones M01–M15','Missions M01–M15','Missionen M01–M15','Missioni M01–M15'],
+ ['Política de Privacidade e Proteção de Dados','Privacy and Data Protection Policy','Política de Privacidad y Protección de Datos','Politique de confidentialité et de protection des données','Datenschutzrichtlinie','Informativa sulla privacy e sulla protezione dei dati'],
+ ['Como o Rabbitech BIOGLOW trata as informações utilizadas nas funções de treino, conta e classificação.','How Rabbitech BIOGLOW handles information used for training, accounts, and rankings.','Cómo Rabbitech BIOGLOW trata la información utilizada para entrenamientos, cuentas y clasificaciones.','Comment Rabbitech BIOGLOW traite les informations utilisées pour l’entraînement, les comptes et le classement.','Wie Rabbitech BIOGLOW Informationen für Training, Konten und Ranglisten verarbeitet.','Come Rabbitech BIOGLOW tratta le informazioni usate per allenamento, account e classifiche.'],
+ ['Mapa do tapete e estratégia de saída','Game mat map and launch strategy','Mapa del tapete y estrategia de salida','Carte du tapis et stratégie de départ','Spielfeldkarte und Startstrategie','Mappa del tappeto e strategia di partenza'],
+ ['Monte a sequência de missões que o robô fará a partir da base e calcule uma estimativa de pontos por saída.','Plan the mission sequence the robot will perform from base and estimate points for each launch.','Organiza la secuencia de misiones que hará el robot desde la base y calcula una estimación de puntos por salida.','Planifiez la séquence de missions que le robot effectuera depuis la base et estimez les points par départ.','Plane die Missionsreihenfolge ab der Basis und schätze die Punkte pro Start.','Pianifica la sequenza di missioni dalla base e stima i punti per ogni partenza.'],
+ ['Mostrar opções da nuvem','Show cloud options','Mostrar opciones de la nube','Afficher les options du cloud','Cloud-Optionen anzeigen','Mostra opzioni cloud'],
+ ['Nome da equipe (obrigatório)','Team name (required)','Nombre del equipo (obligatorio)','Nom de l’équipe (obligatoire)','Teamname (erforderlich)','Nome della squadra (obbligatorio)'],
+ ['Digite o nome da equipe e depois toque em “Entrar com Google”. O mesmo nome não pode ser usado por outra conta.','Enter the team name, then tap “Sign in with Google”. The same name cannot be used by another account.','Escribe el nombre del equipo y después pulsa «Iniciar sesión con Google». Otra cuenta no puede usar el mismo nombre.','Saisissez le nom de l’équipe, puis appuyez sur « Se connecter avec Google ». Le même nom ne peut pas être utilisé par un autre compte.','Gib den Teamnamen ein und tippe dann auf „Mit Google anmelden“. Derselbe Name kann nicht von einem anderen Konto verwendet werden.','Inserisci il nome della squadra e poi tocca “Accedi con Google”. Lo stesso nome non può essere usato da un altro account.'],
+ ['Idioma','Language','Idioma','Langue','Sprache','Lingua'],
  ['Placar','Score','Marcador','Score','Spielstand','Punteggio'],
  ['Histórico','History','Historial','Historique','Verlauf','Cronologia'],
  ['Ranking','Leaderboard','Clasificación','Classement','Rangliste','Classifica'],
@@ -1652,111 +1679,126 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 
 
-<!-- Rabbitech mobile navigation/language/admin cleanup -->
-<style id="rb-clean-layout">
-@media(max-width:650px){
- body{padding-bottom:calc(82px + env(safe-area-inset-bottom))!important}
- nav.rb-samsung-dock{
-  position:fixed!important;left:10px!important;right:10px!important;bottom:calc(7px + env(safe-area-inset-bottom))!important;z-index:9000!important;
-  display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:5px!important;
-  overflow:hidden!important;max-height:64px!important;padding:6px!important;border:1px solid rgba(208,244,119,.25)!important;border-radius:18px!important;
-  background:rgba(7,19,12,.95)!important;backdrop-filter:blur(20px) saturate(1.3)!important;box-shadow:0 8px 30px #0008!important;
-  transition:max-height .32s cubic-bezier(.2,.8,.2,1),border-radius .25s ease!important
- }
- nav.rb-samsung-dock button[data-page]{
-  display:flex!important;flex:0 0 54px!important;width:54px!important;min-width:54px!important;max-width:54px!important;height:48px!important;min-height:48px!important;
-  flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;padding:4px 2px!important;border-radius:12px!important;
-  font-size:9px!important;line-height:1!important;white-space:normal!important;transition:transform .25s cubic-bezier(.2,.8,.2,1),opacity .2s ease,background .2s ease!important
- }
- nav.rb-samsung-dock button[data-page] .dock-label{font-size:8px!important;line-height:1.05!important;display:block!important;overflow-wrap:anywhere!important}
- nav.rb-samsung-dock button[data-page][hidden]{display:none!important}
- nav.rb-samsung-dock:not(.rb-dock-expanded) button[data-page]:nth-of-type(n+6){display:none!important}
- nav.rb-samsung-dock.rb-dock-expanded{flex-wrap:wrap!important;justify-content:center!important;overflow-y:auto!important;max-height:min(40dvh,320px)!important;border-radius:22px!important}
- nav.rb-samsung-dock.rb-dock-expanded button[data-page]{animation:rbDockPop .24s both}
- nav.rb-samsung-dock #rbDockExpandOne{display:flex!important;flex:0 0 42px!important;width:42px!important;min-width:42px!important;max-width:42px!important;height:44px!important;min-height:44px!important;align-items:center!important;justify-content:center!important;
-  border:1px solid rgba(208,244,119,.45)!important;border-radius:14px!important;background:linear-gradient(145deg,#203b28,#0b1b11)!important;color:#d0f477!important;font-size:22px!important;font-weight:900!important}
- nav.rb-samsung-dock.rb-dock-expanded #rbDockExpandOne{transform:rotate(45deg)}
-}
-@keyframes rbDockPop{from{opacity:0;transform:translateY(8px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
-@media(prefers-reduced-motion:reduce){nav.rb-samsung-dock,nav.rb-samsung-dock *{animation:none!important;transition:none!important}}
-#rbLanguageQuickSelect,#rbLanguagePersistent{display:none!important}
-#rbLanguageReopen{position:fixed!important;top:142px!important;right:12px!important;z-index:8998!important;border:1px solid rgba(208,244,119,.45)!important;border-radius:12px!important;padding:8px 10px!important;background:#102419!important;color:#d0f477!important;font-weight:800!important}
+<!-- Rabbitech consolidated mobile navigation, language and notice fixes -->
+<style id="rb-consolidated-ui-fix">
+/* The global notice stays in document flow. Sticky banners were covering headings while scrolling. */
+#rbGlobalNotice{position:relative!important;top:auto!important;z-index:1!important;margin:8px auto!important;scroll-margin-top:84px}
+#rbGlobalNotice.rb-notice-warning{background:linear-gradient(110deg,#501010,#921c1c,#501010)!important;color:#fff!important;border:2px solid #ff4545!important;box-shadow:0 0 10px #ff3333,0 0 22px #ff333399!important}
+#rbGlobalNotice.rb-notice-success{background:linear-gradient(110deg,#063c25,#0b6338,#063c25)!important;color:#effff4!important;border:2px solid #40f58a!important;box-shadow:0 0 12px #24e87899!important}
+#rbGlobalNotice.rb-notice-info{background:linear-gradient(110deg,#0c3154,#174f7d,#0c3154)!important;color:#eff8ff!important;border:2px solid #59baff!important;box-shadow:0 0 12px #40b4ff88!important}
 #rbLanguageConsent[hidden]{display:none!important}
-#rbGlobalNotice.rb-notice-warning{background:linear-gradient(110deg,#481010,#a51e1e,#481010)!important;background-size:220% 100%!important;border:2px solid #ff5151!important;box-shadow:0 0 12px #ff3333,0 0 24px #ff333366!important;animation:rbNoticePulse 2.6s ease-in-out infinite!important}
-#rbGlobalNotice.rb-notice-info{border:1px solid #49baff!important;box-shadow:0 0 14px #168dff44!important}
-#rbGlobalNotice.rb-notice-success{border:1px solid #56e69a!important;box-shadow:0 0 14px #25d87844!important}
-@keyframes rbNoticePulse{0%,100%{background-position:0% 50%;box-shadow:0 0 8px #ff333355}50%{background-position:100% 50%;box-shadow:0 0 18px #ff333399,0 0 30px #ff333344}}
+#rbLanguageConsent{z-index:2147483000!important;overscroll-behavior:contain}
+#rbLanguageConsent .rb-consent-card{max-height:calc(100dvh - 24px)!important;overflow-y:auto!important;overscroll-behavior:contain}
+#rbLanguageConsent select,#rbLanguageConsent button{touch-action:manipulation!important}
+#rbLanguageQuickSelect,#rbLanguagePersistent{display:none!important}
+#rbLanguageReopen{display:inline-flex!important;align-items:center;justify-content:center;gap:5px;white-space:nowrap;min-height:32px!important;padding:5px 9px!important;margin-top:4px;border-radius:999px!important;border:1px solid rgba(208,244,119,.4)!important;background:rgba(23,46,32,.95)!important;color:var(--lime)!important;font-size:12px!important;font-weight:800}
+nav.rb-samsung-dock button[hidden]{display:none!important}
+nav.rb-samsung-dock button.rb-dock-overflow-item[hidden]{display:none!important}
+@media(max-width:650px){
+ body{padding-bottom:calc(88px + env(safe-area-inset-bottom))!important}
+ nav.rb-samsung-dock{position:fixed!important;left:8px!important;right:8px!important;bottom:calc(7px + env(safe-area-inset-bottom))!important;z-index:9000!important;display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:space-between!important;gap:3px!important;width:auto!important;max-height:66px!important;overflow:hidden!important;padding:5px!important;border:1px solid rgba(208,255,221,.22)!important;border-radius:18px!important;background:rgba(7,19,12,.96)!important;backdrop-filter:blur(20px) saturate(1.25)!important;box-shadow:0 8px 30px #0008!important;transition:max-height .24s ease,border-radius .24s ease!important}
+ nav.rb-samsung-dock button[data-page]{display:flex!important;flex:1 1 0!important;width:auto!important;min-width:0!important;max-width:70px!important;height:48px!important;min-height:48px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;padding:4px 2px!important;border:0!important;border-radius:12px!important;font-size:9px!important;line-height:1.05!important;white-space:normal!important;overflow-wrap:anywhere!important}
+ nav.rb-samsung-dock button[data-page] .dock-label{display:block!important;font-size:8px!important;line-height:1.05!important;overflow-wrap:anywhere!important}
+ nav.rb-samsung-dock:not(.rb-dock-expanded) button.rb-dock-overflow-item:not([hidden]){display:none!important}
+ nav.rb-samsung-dock.rb-dock-expanded{flex-wrap:wrap!important;justify-content:center!important;overflow-y:auto!important;max-height:min(42dvh,330px)!important;border-radius:22px!important}
+ nav.rb-samsung-dock.rb-dock-expanded button[data-page]:not([hidden]){animation:rbDockPop .2s both}
+ nav.rb-samsung-dock #rbDockExpandOne{display:flex!important;flex:0 0 42px!important;width:42px!important;min-width:42px!important;max-width:42px!important;height:44px!important;min-height:44px!important;align-items:center!important;justify-content:center!important;border:1px solid rgba(208,244,119,.45)!important;border-radius:14px!important;background:linear-gradient(145deg,#203b28,#0b1b11)!important;color:#d0f477!important;font-size:22px!important;font-weight:900!important}
+ nav.rb-samsung-dock #rbDockExpandOne[hidden]{display:none!important}
+ #rbLanguageReopen{margin-top:3px;font-size:11px!important;padding:4px 7px!important;min-height:29px!important}
+}
+@keyframes rbDockPop{from{opacity:0;transform:translateY(7px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){nav.rb-samsung-dock,nav.rb-samsung-dock *,#rbGlobalNotice.rb-notice-warning{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
-<script id="rb-clean-controller">
+<script id="rb-consolidated-ui-controller">
 (function(){
-'use strict';
-const $=id=>document.getElementById(id);
-function isAdminAllowed(){
- try{
-  const u=(typeof rbCloudUser!=='undefined'&&rbCloudUser)?rbCloudUser:window.rbCloudUser;
-  const owner=!!(u&&String(u.id)==='7e799691-ba7e-42ea-ab6f-71ad11ca32ff');
-  const admin=!!(u&&((typeof rbIsAdmin!=='undefined'&&rbIsAdmin===true)||window.rbIsAdmin===true));
-  return !!(u&&(owner||admin));
- }catch(_){return false}
-}
-function syncAdmin(){
- const allow=isAdminAllowed(),nav=$('rbAdminNav'),page=$('page-admin');
- if(nav)nav.hidden=!allow;
- if(page){page.hidden=!allow;if(!allow&&page.classList.contains('active'))page.classList.remove('active')}
-}
-function setupDock(){
- const nav=$('rbAdminNav')?.closest('nav')||document.querySelector('nav button[data-page]')?.parentElement;
- if(!nav)return;
- nav.classList.add('rb-samsung-dock');
- // Clean up duplicate controls injected by previous hotfixes.
- document.querySelectorAll('#rbDockMore,#rbDockExpand,#rbDockExpandOne').forEach(x=>x.remove());
- const more=document.createElement('button');more.id='rbDockExpandOne';more.type='button';more.textContent='+';
- more.setAttribute('aria-label','Mostrar mais abas');more.setAttribute('aria-expanded','false');more.title='Mostrar mais abas';
- more.addEventListener('click',e=>{
-  e.preventDefault();e.stopPropagation();
-  const open=nav.classList.toggle('rb-dock-expanded');
-  more.textContent=open?'−':'+';more.setAttribute('aria-expanded',String(open));
-  more.setAttribute('aria-label',open?'Recolher abas':'Mostrar mais abas');more.title=open?'Recolher abas':'Mostrar mais abas';
- });
- nav.appendChild(more);
- nav.querySelectorAll('button[data-page]').forEach(b=>b.addEventListener('click',()=>{
-  if(nav.classList.contains('rb-dock-expanded')){nav.classList.remove('rb-dock-expanded');more.textContent='+';more.setAttribute('aria-expanded','false')}
-  setTimeout(syncAdmin,60);
- },true));
-}
-function setupLanguage(){
- const overlay=$('rbLanguageConsent'),select=$('rbConsentLanguage');
- // Remove the second visible selector; use the consent selector as the single source of truth.
- $('rbLanguagePersistent')?.remove();
- const quick=$('rbLanguageQuickSelect');if(quick)quick.closest('label')?.remove();
- if(!overlay||!select)return;
- let opener=$('rbLanguageReopen');
- if(!opener){opener=document.createElement('button');opener.id='rbLanguageReopen';opener.type='button';opener.textContent='🌐 Idioma';opener.setAttribute('aria-label','Trocar idioma');document.body.appendChild(opener)}
- opener.onclick=()=>{
-  overlay.hidden=false;overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';
-  try{select.value=localStorage.getItem('rbPreferredLanguage')||'pt-BR'}catch(_){}
-  select.disabled=false;select.focus({preventScroll:true});
- };
- select.addEventListener('change',()=>{
-  const code=select.value||'pt-BR';
-  try{localStorage.setItem('rbPreferredLanguage',code)}catch(_){}
-  document.documentElement.lang=code;
-  document.dispatchEvent(new Event('rb:language-change'));
- });
-}
-function init(){
- setupDock();setupLanguage();syncAdmin();
- const logout=$('rbCloudLogout');
- if(logout)logout.addEventListener('click',()=>{const n=$('rbAdminNav'),p=$('page-admin');if(n)n.hidden=true;if(p){p.hidden=true;p.classList.remove('active')}setTimeout(syncAdmin,300)},true);
- document.addEventListener('visibilitychange',syncAdmin);
- let prev='';
- setInterval(()=>{
-  let key='out';try{const u=(typeof rbCloudUser!=='undefined'&&rbCloudUser)?rbCloudUser:window.rbCloudUser;key=u?String(u.id)+':'+String(isAdminAllowed()):'out'}catch(_){}
-  if(key!==prev){prev=key;syncAdmin()}
- },700);
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ const ownerId='7e799691-ba7e-42ea-ab6f-71ad11ca32ff';
+ const langs={'pt-BR':'🌐 Idioma','en':'🌐 Language','es':'🌐 Idioma','fr':'🌐 Langue','de':'🌐 Sprache','it':'🌐 Lingua'};
+ let logoutPendingFor='';
+ function user(){try{return (typeof rbCloudUser!=='undefined'&&rbCloudUser)||window.rbCloudUser||null}catch(_){return window.rbCloudUser||null}}
+ function adminFlag(){try{return (typeof rbIsAdmin!=='undefined'&&rbIsAdmin===true)||window.rbIsAdmin===true}catch(_){return window.rbIsAdmin===true}}
+ function allowed(){const u=user();if(!u)return false;if(logoutPendingFor&&String(u.id)===logoutPendingFor)return false;return String(u.id)===ownerId||adminFlag()}
+ function syncAdmin(){
+  const nav=$('rbAdminNav'),page=$('page-admin'),ok=allowed();
+  if(nav){nav.dataset.rbAdminAuthorized=String(ok);nav.hidden=!ok}
+  if(page){page.hidden=!ok;if(!ok&&page.classList.contains('active')){page.classList.remove('active');const score=document.querySelector('nav button[data-page="score"]');if(score)score.click()}}
+ }
+ function setupDock(){
+  const nav=$('rbAdminNav')?.closest('nav')||document.querySelector('body > nav')||document.querySelector('nav button[data-page]')?.parentElement;
+  if(!nav)return;
+  nav.classList.add('rb-samsung-dock');nav.classList.remove('rb-dock-expanded');
+  nav.querySelectorAll('button:not([data-page])').forEach(b=>b.remove());
+  document.querySelectorAll('#rbDockMore,#rbDockExpand,#rbDockExpandOne').forEach(b=>b.remove());
+  const buttons=Array.from(nav.querySelectorAll('button[data-page]'));
+  buttons.forEach((b,i)=>{b.classList.toggle('rb-dock-overflow-item',i>=5);b.removeAttribute('aria-controls')});
+  const more=document.createElement('button');more.id='rbDockExpandOne';more.type='button';more.textContent='+';more.setAttribute('aria-label','Mostrar mais abas');more.title='Mostrar mais abas';more.setAttribute('aria-expanded','false');more.setAttribute('aria-controls','rabbitech-main-dock');nav.id=nav.id||'rabbitech-main-dock';nav.appendChild(more);
+  let expanded=false;
+  function apply(){
+   const mobile=window.matchMedia('(max-width:650px)').matches;
+   if(!mobile)expanded=false;
+   nav.classList.toggle('rb-dock-expanded',mobile&&expanded);
+   more.hidden=!mobile;
+   more.textContent=expanded?'−':'+';
+   more.setAttribute('aria-expanded',String(mobile&&expanded));
+   const code=readLanguage();
+   more.setAttribute('aria-label',expanded?({'pt-BR':'Recolher abas',en:'Collapse tabs',es:'Contraer pestañas',fr:'Réduire les onglets',de:'Tabs einklappen',it:'Riduci schede'}[code]||'Recolher abas'):({'pt-BR':'Mostrar mais abas',en:'Show more tabs',es:'Mostrar más pestañas',fr:'Afficher plus d’onglets',de:'Weitere Tabs anzeigen',it:'Mostra altre schede'}[code]||'Mostrar mais abas'));
+  }
+  function collapse(){expanded=false;apply()}
+  more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();expanded=!expanded;apply()});
+  nav.addEventListener('click',e=>{const b=e.target.closest('button[data-page]');if(!b)return;setTimeout(()=>{collapse();syncAdmin()},100)});
+  window.addEventListener('resize',apply,{passive:true});apply();
+ }
+ function readLanguage(){try{const k=localStorage.getItem('rbPreferredLanguage')||'pt-BR';return Object.prototype.hasOwnProperty.call(langs,k)?k:'pt-BR'}catch(_){return 'pt-BR'}}
+ function closeLanguage(rememberDismissal){
+  const overlay=$('rbLanguageConsent');if(!overlay)return;
+  overlay.hidden=true;overlay.style.removeProperty('display');overlay.style.setProperty('display','none','important');overlay.setAttribute('aria-hidden','true');
+  if(rememberDismissal){try{sessionStorage.setItem('rbPrivacyDismissed','yes')}catch(_){}}
+  if(document.querySelector('#rbPrivacyGate.rb-gate-open'))document.body.style.overflow='hidden';else document.body.style.removeProperty('overflow');
+ }
+ function openLanguage(){
+  const overlay=$('rbLanguageConsent'),select=$('rbConsentLanguage');if(!overlay||!select)return;
+  overlay.hidden=false;overlay.style.removeProperty('display');overlay.style.removeProperty('visibility');overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';
+  const code=readLanguage();if(select.value!==code)select.value=code;
+  select.dispatchEvent(new Event('change',{bubbles:true}));
+  setTimeout(()=>select.focus({preventScroll:true}),0);
+ }
+ function cleanupLanguageDuplicates(){
+  const quick=$('rbLanguageQuickSelect');if(quick){const label=quick.closest('label');if(label)label.remove();else quick.remove()}
+  $('rbLanguagePersistent')?.remove();
+  document.querySelectorAll('[id="rbLanguageReopen"]').forEach((b,i)=>{if(i>0)b.remove()});
+ }
+ function setupLanguage(){
+  const overlay=$('rbLanguageConsent'),select=$('rbConsentLanguage');if(!overlay||!select)return;
+  cleanupLanguageDuplicates();
+  let opener=$('rbLanguageReopen');
+  if(!opener){opener=document.createElement('button');opener.id='rbLanguageReopen';opener.type='button';opener.className='rb-language-reopen';}
+  opener.type='button';opener.textContent=langs[readLanguage()];opener.setAttribute('aria-label',({'pt-BR':'Trocar idioma',en:'Change language',es:'Cambiar idioma',fr:'Changer de langue',de:'Sprache ändern',it:'Cambia lingua'}[readLanguage()]||'Trocar idioma'));
+  const header=document.querySelector('header'),season=header?.querySelector('.season');
+  if(season&&opener.parentElement!==season)season.appendChild(opener);else if(!season&&header&&opener.parentElement!==header)header.appendChild(opener);else if(!header&&opener.parentElement!==document.body)document.body.appendChild(opener);
+  opener.addEventListener('click',openLanguage);
+  select.addEventListener('change',()=>{
+   const code=langs[select.value]?select.value:'pt-BR';
+   try{localStorage.setItem('rbPreferredLanguage',code)}catch(_){}
+   document.documentElement.lang=code;opener.textContent=langs[code];
+   opener.setAttribute('aria-label',({'pt-BR':'Trocar idioma',en:'Change language',es:'Cambiar idioma',fr:'Changer de langue',de:'Sprache ändern',it:'Cambia lingua'}[code]||'Trocar idioma'));
+   document.dispatchEvent(new CustomEvent('rb:language-change',{detail:{language:code}}));
+  });
+  const close=$('rbConsentClose');if(close)close.addEventListener('click',()=>closeLanguage(true));
+  overlay.addEventListener('click',e=>{if(e.target===overlay)closeLanguage(true)});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden&&overlay.getAttribute('aria-hidden')!=='true'){e.preventDefault();closeLanguage(true)}});
+ }
+ function init(){
+  setupDock();setupLanguage();syncAdmin();
+  const logout=$('rbCloudLogout');
+  if(logout)logout.addEventListener('click',()=>{const u=user();logoutPendingFor=u?String(u.id):'pending';if(typeof rbIsAdmin!=='undefined')try{rbIsAdmin=false}catch(_){};window.rbIsAdmin=false;const nav=$('rbAdminNav'),page=$('page-admin');if(nav){nav.hidden=true;nav.dataset.rbAdminAuthorized='false'}if(page){page.hidden=true;page.classList.remove('active')}},true);
+  let previous='';
+  setInterval(()=>{const u=user();if(!u)logoutPendingFor='';else if(logoutPendingFor&&String(u.id)!==logoutPendingFor)logoutPendingFor='';const key=(u?String(u.id):'out')+':'+String(allowed())+':'+String(adminFlag());if(key!==previous){previous=key;syncAdmin()}},850);
+  document.addEventListener('visibilitychange',syncAdmin);
+  const duplicateObserver=new MutationObserver(()=>{cleanupLanguageDuplicates();});
+  duplicateObserver.observe(document.body,{subtree:true,childList:true});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
 </script>
-
 </body></html>
