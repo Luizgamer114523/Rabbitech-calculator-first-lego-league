@@ -437,6 +437,23 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
         </div>
        </details>
       <hr style="margin:24px 0;border-color:var(--line)">
+      <hr style="margin:24px 0;border-color:var(--line)">
+      <div id="rbFeatureControls" class="card" style="margin:14px 0;background:var(--panel2)">
+        <h3>🧩 Controle de funcionalidades</h3>
+        <p class="footnote">Ative ou desative módulos para todos os visitantes. As escolhas ficam salvas no Supabase.</p>
+        <div class="two" style="margin-top:12px">
+          <label class="field"><span><input type="checkbox" id="rbFeatureYoutube" checked> Rabbitech TV</span><small class="footnote">Pesquisa e reprodução de vídeos.</small></label>
+          <label class="field"><span><input type="checkbox" id="rbFeatureRanking" checked> Ranking público</span><small class="footnote">Aba e chamada do ranking.</small></label>
+          <label class="field"><span><input type="checkbox" id="rbFeatureMusic" checked> Música</span><small class="footnote">Reprodutor de áudio do site.</small></label>
+          <label class="field"><span><input type="checkbox" id="rbFeatureNotices" checked> Avisos globais</span><small class="footnote">Mensagens publicadas para todos.</small></label>
+          <label class="field"><span><input type="checkbox" id="rbFeatureStrategy" checked> Estratégia</span><small class="footnote">Ferramentas de planejamento.</small></label>
+          <label class="field"><span><input type="checkbox" id="rbFeatureRoutes" checked> Rotas</span><small class="footnote">Área de rotas e navegação.</small></label>
+          <label class="field"><span><input type="checkbox" id="rbFeatureRules" checked> Regras</span><small class="footnote">Regras e informações da competição.</small></label>
+        </div>
+        <div class="toolbar" style="margin-top:12px"><button type="button" id="rbFeatureFlagsSave" class="primary">Salvar funcionalidades</button></div>
+        <p id="rbFeatureFlagsStatus" class="footnote" role="status" aria-live="polite">Configurações carregadas do banco de dados.</p>
+      </div>
+      <hr style="margin:24px 0;border-color:var(--line)">
       <h3 id="rbAdminNoticeSection">🌍 Aviso global do site</h3><p class="footnote">A mensagem aparece para todos os visitantes, em qualquer aparelho.</p>
       <label class="field">Mensagem global<textarea id="rbGlobalNoticeText" rows="3" maxlength="500" placeholder="Ex.: O ranking será atualizado às 18h."></textarea></label>
       <label class="field" style="margin-top:8px">Tipo de aviso<select id="rbGlobalNoticeType"><option value="info">Informação</option><option value="success">Sucesso</option><option value="warning">Atenção</option></select></label>
@@ -560,6 +577,17 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 <p class="footnote">Rabbitech é um projeto independente de apoio a treinos. FIRST®, LEGO® e FIRST LEGO League® são marcas de seus respectivos proprietários. Este site não é produzido nem aprovado pela FIRST.</p>
 </div>
 </section>
+<section id="page-music" class="page">
+  <div class="section-title"><div><h2>🎵 Rabbitech Música</h2><p>Reproduza um arquivo de áudio do seu aparelho ou informe um link direto para um arquivo de áudio.</p></div></div>
+  <div class="card">
+    <label class="field">Escolher áudio do aparelho<input id="rbMusicFile" type="file" accept="audio/*"></label>
+    <label class="field" style="margin-top:12px">Ou URL direta de áudio<input id="rbMusicUrl" type="url" maxlength="1500" placeholder="https://exemplo.com/musica.mp3" autocomplete="url"></label>
+    <div class="toolbar" style="margin-top:12px"><button type="button" class="primary" id="rbMusicLoad">Carregar áudio</button><button type="button" id="rbMusicStop">Parar</button></div>
+    <p id="rbMusicStatus" class="footnote" role="status" aria-live="polite">Arquivos locais são reproduzidos apenas neste aparelho. Use links diretos para arquivos de áudio.</p>
+    <audio id="rbMusicAudio" controls preload="none" style="display:block;width:100%;margin-top:14px"></audio>
+  </div>
+</section>
+
 <section id="page-privacy" class="page">
   <div class="section-title"><div><h2>Política de Privacidade e Proteção de Dados</h2><p>Como o Rabbitech BIOGLOW trata as informações utilizadas nas funções de treino, conta e classificação.</p></div></div>
   <div class="card rb-privacy">
@@ -591,6 +619,7 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 <button data-page="routes"><span class="dock-icon">🗺️</span><span class="dock-label">Rotas</span></button>
 <button data-page="rules"><span class="dock-icon">📘</span><span class="dock-label">Regras</span></button>
 <button data-page="youtube" id="rbYouTubeNav"><span class="dock-icon">▶️</span><span class="dock-label">Rabbitech TV</span></button>
+<button data-page="music" id="rbMusicNav"><span class="dock-icon">🎵</span><span class="dock-label">Música</span></button>
 <button data-page="privacy"><span class="dock-icon">🔒</span><span class="dock-label">Privacidade</span></button>
 <button data-page="admin" id="rbAdminNav" hidden><span class="dock-icon">🔐</span><span class="dock-label">Admin</span></button>
 </nav>
@@ -1208,15 +1237,45 @@ setInterval(()=>{if(document.visibilityState==='visible'&&rbEl('page-leaderboard
 setInterval(()=>{if(document.visibilityState==='visible'&&rbEl('page-admin')?.classList.contains('active')&&rbIsAdmin&&rbClient)rbLoadAdmin();},15000);
 // Configurações globais e gestão segura de administradores via funções protegidas no Supabase.
 let rbGlobalSettingsSignature='';
-let rbGlobalSettingsCurrent={notice_text:'',notice_active:false,notice_type:'info',accent_color:'#d0f477',theme_name:'BioGlow Verde'};
-function rbApplyGlobalSettings(cfg){cfg=cfg||{};rbGlobalSettingsCurrent={...rbGlobalSettingsCurrent,...cfg};const n=rbEl('rbGlobalNotice');const active=!!cfg.notice_active&&String(cfg.notice_text||'').trim();if(n){n.classList.toggle('hidden',!active);n.textContent=active?String(cfg.notice_text):'';n.style.borderColor=cfg.notice_type==='warning'?'var(--amber)':cfg.notice_type==='success'?'var(--mint)':'var(--blue)';}const accent=/^#[0-9a-fA-F]{6}$/.test(cfg.accent_color||'')?cfg.accent_color:'#d0f477';document.documentElement.style.setProperty('--lime',accent);if(rbEl('rbGlobalAccent')&&document.activeElement!==rbEl('rbGlobalAccent'))rbEl('rbGlobalAccent').value=accent;if(rbEl('rbGlobalThemeName')&&document.activeElement!==rbEl('rbGlobalThemeName'))rbEl('rbGlobalThemeName').value=cfg.theme_name||'';if(rbEl('rbGlobalNoticeText')&&document.activeElement!==rbEl('rbGlobalNoticeText'))rbEl('rbGlobalNoticeText').value=cfg.notice_text||'';if(rbEl('rbGlobalNoticeType')&&document.activeElement!==rbEl('rbGlobalNoticeType'))rbEl('rbGlobalNoticeType').value=cfg.notice_type||'info';}
+let rbGlobalSettingsCurrent={notice_text:'',notice_active:false,notice_type:'info',accent_color:'#d0f477',theme_name:'BioGlow Verde',feature_flags:{public_ranking:true,youtube_tv:true,music_player:true,global_notices:true,strategy:true,routes:true,rules:true}};
+function rbApplyFeatureFlags(flags){
+ const defaults={public_ranking:true,youtube_tv:true,music_player:true,global_notices:true,strategy:true,routes:true,rules:true};
+ const f={...defaults,...(flags||{})};
+ const controls={rbFeatureYoutube:f.youtube_tv,rbFeatureRanking:f.public_ranking,rbFeatureMusic:f.music_player,rbFeatureNotices:f.global_notices,rbFeatureStrategy:f.strategy,rbFeatureRoutes:f.routes,rbFeatureRules:f.rules};
+ Object.entries(controls).forEach(([id,value])=>{const el=rbEl(id);if(el&&document.activeElement!==el)el.checked=!!value;});
+ const pageMap={leaderboard:f.public_ranking,youtube:f.youtube_tv,music:f.music_player,strategy:f.strategy,routes:f.routes,rules:f.rules};
+ Object.entries(pageMap).forEach(([name,enabled])=>{const nav=document.querySelector('nav button[data-page="'+name+'"]');const page=rbEl('page-'+name);if(nav)nav.hidden=!enabled;if(page)page.hidden=!enabled;if(!enabled&&page&&page.classList.contains('active')){const fallback=document.querySelector('nav button[data-page="score"]');if(fallback)fallback.click();}});
+ const callout=rbEl('rb-public-ranking-callout')||document.querySelector('.rb-public-ranking-callout');if(callout)callout.hidden=!f.public_ranking;
+ const notice=rbEl('rbGlobalNotice');if(notice){const active=!!rbGlobalSettingsCurrent.notice_active&&String(rbGlobalSettingsCurrent.notice_text||'').trim();notice.classList.toggle('hidden',!f.global_notices||!active);}
+ const status=rbEl('rbFeatureFlagsStatus');if(status)status.textContent='Preferências dos módulos aplicadas.';
+}
+function rbApplyGlobalSettings(cfg){cfg=cfg||{};rbGlobalSettingsCurrent={...rbGlobalSettingsCurrent,...cfg};const n=rbEl('rbGlobalNotice');const active=!!cfg.notice_active&&String(cfg.notice_text||'').trim();if(n){n.classList.toggle('hidden',!active||cfg.feature_flags?.global_notices===false);n.textContent=active?String(cfg.notice_text):'';n.style.borderColor=cfg.notice_type==='warning'?'var(--amber)':cfg.notice_type==='success'?'var(--mint)':'var(--blue)';}const accent=/^#[0-9a-fA-F]{6}$/.test(cfg.accent_color||'')?cfg.accent_color:'#d0f477';document.documentElement.style.setProperty('--lime',accent);if(rbEl('rbGlobalAccent')&&document.activeElement!==rbEl('rbGlobalAccent'))rbEl('rbGlobalAccent').value=accent;if(rbEl('rbGlobalThemeName')&&document.activeElement!==rbEl('rbGlobalThemeName'))rbEl('rbGlobalThemeName').value=cfg.theme_name||'';if(rbEl('rbGlobalNoticeText')&&document.activeElement!==rbEl('rbGlobalNoticeText'))rbEl('rbGlobalNoticeText').value=cfg.notice_text||'';if(rbEl('rbGlobalNoticeType')&&document.activeElement!==rbEl('rbGlobalNoticeType'))rbEl('rbGlobalNoticeType').value=cfg.notice_type||'info';rbApplyFeatureFlags(cfg.feature_flags||rbGlobalSettingsCurrent.feature_flags);}
 async function rbLoadGlobalSettings(){if(!rbClient)return;try{const {data,error}=await rbClient.rpc('get_rabbitech_public_settings');if(error)throw error;const cfg=data||{},sig=JSON.stringify(cfg);if(sig!==rbGlobalSettingsSignature){rbGlobalSettingsSignature=sig;rbApplyGlobalSettings(cfg);}}catch(e){console.warn('Configuração global indisponível:',e.message||e);if(rbIsAdmin)rbAdminStatus('Não foi possível carregar as configurações globais: '+(e?.message||String(e))+' Confira se as funções SQL globais foram criadas no projeto Supabase correto.');}}
 async function rbAdminLoadAdmins(){const host=rbEl('rbAdminList');if(!host)return;if(!rbIsOwner()||!rbIsAdmin||!rbClient){host.innerHTML='<p class="footnote">A gestão de administradores é exclusiva da conta proprietária.</p>';return;}host.innerHTML='<p class="footnote">Consultando administradores…</p>';try{const result=await Promise.race([rbClient.rpc('admin_list_rabbitech_admins'),new Promise((_,reject)=>setTimeout(()=>reject(new Error('A consulta demorou mais de 12 segundos. Verifique a conexão e a sessão do Supabase.')),12000))]);const {data,error}=result;if(error)throw error;const rows=Array.isArray(data)?data:[];host.innerHTML=rows.length?rows.map(a=>`<div class="rb-admin-team" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0"><div><strong>${rbEsc(a.email||'Conta sem e-mail')}</strong><div class="footnote">${rbEsc(a.user_id||'')}</div></div><button type="button" data-rb-admin-remove="${rbEsc(a.user_id||'')}" ${a.user_id===rbCloudUser?.id?'disabled':''}>Remover</button></div>`).join(''):'<p class="footnote">Nenhum administrador listado.</p>';host.querySelectorAll('[data-rb-admin-remove]').forEach(b=>b.addEventListener('click',()=>rbRun(async()=>{if(!rbIsOwner())throw new Error('Somente o proprietário pode remover administradores.');const targetEmail=b.closest('.rb-admin-team')?.querySelector('strong')?.textContent||'esta conta';if(!confirm('Confirma remover '+targetEmail+' dos administradores? A pessoa perderá o acesso administrativo.'))return;const phrase=prompt('Para evitar remoção acidental, digite REMOVER para confirmar:');if(phrase!=='REMOVER')return;const {error}=await rbClient.rpc('admin_remove_rabbitech_admin',{p_user_id:b.dataset.rbAdminRemove});if(error)throw error;await rbAdminLoadAdmins();rbAdminStatus('Lista de administradores atualizada.');})));}catch(e){host.innerHTML=`<p class="footnote" role="alert">Falha ao carregar administradores: ${rbEsc(e?.message||String(e))}</p>`;rbAdminStatus('Erro ao carregar administradores: '+(e?.message||String(e)));}}
 async function rbAdminLoadAuditLog(force=false){const host=rbEl('rbAdminAuditLog');if(!host)return;if(!force&&host.dataset.loaded==='true')return;if(!rbIsOwner()||!rbIsAdmin||!rbClient){host.innerHTML='<p class="footnote">Histórico restrito ao proprietário.</p>';return;}host.innerHTML='<p class="footnote">Carregando histórico…</p>';try{const result=await Promise.race([rbClient.rpc('get_rabbitech_admin_audit_log',{p_limit:50}),new Promise((_,reject)=>setTimeout(()=>reject(new Error('A consulta demorou mais de 12 segundos.')),12000))]);if(result.error)throw result.error;const rows=Array.isArray(result.data)?result.data:[];host.dataset.loaded='true';host.innerHTML=rows.length?rows.map(a=>{const details=a.details&&typeof a.details==='object'?a.details:{};const action=a.action==='admin_added'?'Administrador adicionado':a.action==='admin_removed'?'Administrador removido':String(a.action||'Ação administrativa');const target=a.target_email||details.email||a.target_user_id||'Conta não identificada';const actor=a.actor_email||'Proprietário';const date=a.created_at?new Date(a.created_at).toLocaleString('pt-BR'):'Data indisponível';return '<div class="rb-admin-team" style="margin:8px 0"><div class="rb-admin-team-head"><strong>'+rbEsc(action)+'</strong><span class="badge">'+rbEsc(date)+'</span></div><p class="footnote" style="margin:6px 0 0">Alvo: '+rbEsc(target)+' · Responsável: '+rbEsc(actor)+'</p></div>';}).join(''):'<p class="footnote">Nenhuma alteração administrativa registrada ainda.</p>';}catch(e){host.innerHTML='<p class="footnote" role="alert">Não foi possível carregar o histórico: '+rbEsc(e?.message||String(e))+'</p>';}}
 async function rbSaveGlobalSettings(p){if(!rbIsAdmin)throw new Error('Apenas administradores podem alterar configurações globais.');const {data,error}=await rbClient.rpc('admin_update_rabbitech_settings',{p_notice_text:p.notice_text,p_notice_active:p.notice_active,p_notice_type:p.notice_type,p_accent_color:p.accent_color,p_theme_name:p.theme_name});if(error)throw new Error('Supabase recusou salvar as configurações: '+(error.message||String(error)));if(data&&data.ok===false)throw new Error(data.message||'O Supabase não confirmou a gravação.');rbGlobalSettingsSignature='';await rbLoadGlobalSettings();rbAdminStatus('Configuração global publicada e recarregada.');}
+let rbMusicObjectUrl='';
+rbEl('rbMusicLoad')?.addEventListener('click',()=>{
+ const audio=rbEl('rbMusicAudio'),file=rbEl('rbMusicFile')?.files?.[0],url=String(rbEl('rbMusicUrl')?.value||'').trim(),status=rbEl('rbMusicStatus');
+ if(!audio)return;
+ if(file){if(!file.type.startsWith('audio/')){if(status)status.textContent='Selecione um arquivo de áudio válido.';return;}if(rbMusicObjectUrl)URL.revokeObjectURL(rbMusicObjectUrl);rbMusicObjectUrl=URL.createObjectURL(file);audio.src=rbMusicObjectUrl;if(status)status.textContent='Arquivo local carregado: '+file.name+'.';}
+ else if(url){try{const parsed=new URL(url);if(!['https:','http:'].includes(parsed.protocol))throw new Error('URL inválida');audio.src=parsed.href;if(status)status.textContent='Áudio carregado. A reprodução depende de o servidor permitir acesso direto.';}catch(_){if(status)status.textContent='Informe uma URL HTTP ou HTTPS válida para um arquivo de áudio.';return;}}
+ else{if(status)status.textContent='Escolha um arquivo ou informe uma URL de áudio.';return;}
+ audio.play().catch(()=>{if(status)status.textContent+=' Toque em Reproduzir no controle de áudio.';});
+});
+rbEl('rbMusicStop')?.addEventListener('click',()=>{const audio=rbEl('rbMusicAudio');if(audio){audio.pause();audio.currentTime=0;}});
 rbEl('rbGlobalNoticeSave')?.addEventListener('click',rbRun(async()=>{const t=rbEl('rbGlobalNoticeText').value.trim();if(!t)throw new Error('Escreva uma mensagem antes de publicar.');await rbSaveGlobalSettings({notice_text:t,notice_active:true,notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
 rbEl('rbGlobalNoticeClear')?.addEventListener('click',rbRun(async()=>{if(!confirm('Remover o aviso global para todos?'))return;await rbSaveGlobalSettings({notice_text:'',notice_active:false,notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
 rbEl('rbGlobalThemeSave')?.addEventListener('click',rbRun(async()=>{await rbSaveGlobalSettings({notice_text:rbGlobalSettingsCurrent.notice_text||rbEl('rbGlobalNoticeText').value.trim(),notice_active:rbGlobalSettingsCurrent.notice_active===true,notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
+rbEl('rbFeatureFlagsSave')?.addEventListener('click',rbRun(async()=>{
+ const flags={youtube_tv:!!rbEl('rbFeatureYoutube')?.checked,public_ranking:!!rbEl('rbFeatureRanking')?.checked,music_player:!!rbEl('rbFeatureMusic')?.checked,global_notices:!!rbEl('rbFeatureNotices')?.checked,strategy:!!rbEl('rbFeatureStrategy')?.checked,routes:!!rbEl('rbFeatureRoutes')?.checked,rules:!!rbEl('rbFeatureRules')?.checked};
+ const status=rbEl('rbFeatureFlagsStatus');if(status)status.textContent='Salvando módulos…';
+ const {data,error}=await rbClient.rpc('admin_update_rabbitech_feature_flags',{p_feature_flags:flags});
+ if(error)throw new Error('Não foi possível salvar os módulos: '+(error.message||String(error)));
+ if(data&&data.ok===false)throw new Error(data.message||'O Supabase não confirmou a gravação.');
+ rbGlobalSettingsSignature='';await rbLoadGlobalSettings();if(status)status.textContent='Funcionalidades salvas e aplicadas para todos os visitantes.';
+ rbAdminStatus('Controle de funcionalidades atualizado.');
+}));
 rbEl('rbAdminAdd')?.addEventListener('click',async()=>{
  const button=rbEl('rbAdminAdd'),input=rbEl('rbAdminEmail');
  if(button.disabled)return;
