@@ -1715,4 +1715,46 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+<!-- Rabbitech UI, language and whitelist UX hardening -->
+<style id="rb-final-dock-language-fixes">
+@media(max-width:650px){
+ body{padding-bottom:82px!important}
+ nav[aria-label="Main navigation"],body>nav,nav:last-of-type{position:fixed!important;left:10px!important;right:10px!important;bottom:calc(7px + env(safe-area-inset-bottom))!important;z-index:9000!important;display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:5px!important;overflow-x:auto!important;overflow-y:hidden!important;max-height:64px!important;padding:6px!important;border:1px solid rgba(208,244,119,.22)!important;border-radius:18px!important;background:rgba(7,19,12,.94)!important;backdrop-filter:blur(18px)!important;box-shadow:0 8px 30px #0008!important}
+ nav button{display:flex!important;flex:0 0 54px!important;min-width:54px!important;max-width:54px!important;height:48px!important;min-height:48px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;padding:4px 2px!important;border-radius:12px!important;font-size:9px!important;line-height:1!important;white-space:normal!important}
+ nav button .dock-label{font-size:8px!important;line-height:1!important;display:block!important;overflow-wrap:anywhere!important}
+ nav button[hidden]{display:none!important}
+ #rbDockMore{flex:0 0 40px!important;min-width:40px!important;max-width:40px!important;font-size:18px!important;border:1px solid rgba(208,244,119,.4)!important;color:#d0f477!important}
+ nav.rb-dock-expanded{flex-wrap:wrap!important;max-height:42vh!important;overflow-y:auto!important;justify-content:center!important}
+}
+#rbLanguageReopen{position:fixed;right:12px;top:12px;z-index:8999;border:1px solid rgba(208,244,119,.45);border-radius:12px;padding:8px 10px;background:#102419;color:#d0f477;font-weight:800}
+#rbLanguageConsent[hidden]{display:none!important}
+#rbLanguageConsent{overflow:auto!important}
+#rbConsentText{max-height:42vh;overflow:auto!important;padding:12px;border:1px solid rgba(208,244,119,.22);border-radius:12px}
+</style>
+<script id="rb-final-dock-language-script">
+(function(){
+'use strict';
+function initRabbitechFinalFixes(){
+ const nav=document.querySelector('nav button[data-page]')?.parentElement;
+ if(nav&&!document.getElementById('rbDockMore')){
+  const more=document.createElement('button');more.id='rbDockMore';more.type='button';more.title='Mostrar mais abas';more.setAttribute('aria-expanded','false');more.textContent='＋';
+  more.addEventListener('click',()=>{const expanded=nav.classList.toggle('rb-dock-expanded');more.textContent=expanded?'−':'＋';more.setAttribute('aria-expanded',String(expanded));more.title=expanded?'Recolher abas':'Mostrar mais abas';});
+  nav.appendChild(more);
+ }
+ const overlay=document.getElementById('rbLanguageConsent');
+ if(overlay&&!document.getElementById('rbLanguageReopen')){
+  const reopen=document.createElement('button');reopen.id='rbLanguageReopen';reopen.type='button';reopen.textContent='🌐 Idioma';
+  reopen.addEventListener('click',()=>{overlay.hidden=false;document.body.style.overflow='hidden';const select=document.getElementById('rbConsentLanguage');if(select){select.value=localStorage.getItem('rbPreferredLanguage')||'pt-BR';select.focus();}});
+  document.body.appendChild(reopen);
+  const accept=document.getElementById('rbConsentAccept');
+  if(accept)accept.addEventListener('click',()=>{overlay.hidden=true;document.body.style.overflow='';});
+ }
+ document.documentElement.lang=localStorage.getItem('rbPreferredLanguage')||'pt-BR';
+ try{const user=window.rbCloudUser;const admin=window.rbIsAdmin===true;const navAdmin=document.getElementById('rbAdminNav');const adminPage=document.getElementById('page-admin');if(navAdmin)navAdmin.hidden=!(user&&admin);if(adminPage)adminPage.hidden=!(user&&admin);}catch(_){}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initRabbitechFinalFixes,{once:true});else initRabbitechFinalFixes();
+})();
+</script>
+
 </body></html>
