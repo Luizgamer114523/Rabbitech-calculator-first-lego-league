@@ -212,7 +212,7 @@ button{transition:none!important}
 @media(max-width:650px){.rb-rank-row{grid-template-columns:35px minmax(0,1fr) auto;gap:7px;padding:9px}.rb-rank-score{font-size:18px}.rb-admin-stats{grid-template-columns:1fr 1fr}.rb-admin-stats .rb-admin-stat:last-child{grid-column:1/-1}}
 nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
 
-</style>
+.rb-admin-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px}.rb-admin-tools button{min-height:48px;text-align:left;font-size:12px}.rb-admin-tools button:hover{border-color:var(--lime)}@media(min-width:760px){.rb-admin-tools{grid-template-columns:repeat(3,minmax(0,1fr))}}</style>
 
 </head>
 <body>
@@ -311,7 +311,7 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
 <section id="page-leaderboard" class="page">
   <div class="section-title"><div><h2>🏆 Ranking público das equipes</h2><p>Exibe a média dos rounds válidos, não a pontuação de cada partida. Atualização automática discreta a cada 5 segundos.</p></div><div class="toolbar"><button id="rbLeaderboardRefresh" type="button">Atualizar agora</button></div></div>
   <div class="card">
-    <div class="two" style="align-items:center;margin-bottom:12px"><div><b>Média dos rounds</b><p class="footnote">São necessárias pelo menos 3 partidas sincronizadas para entrar no ranking.</p></div><div class="rb-refresh-meta" id="rbLeaderboardUpdated" aria-live="polite">Aguardando primeira atualização…</div></div>
+    <div class="two" style="align-items:center;margin-bottom:12px"><div><b>Média dos rounds</b><p class="footnote">As equipes são ordenadas pela média dos rounds registrados. O número de rounds aparece junto da média para dar contexto.</p></div><div class="rb-refresh-meta" id="rbLeaderboardUpdated" aria-live="polite">Aguardando primeira atualização…</div></div>
     <div id="rbLeaderboardRows" aria-live="polite"><p class="footnote">Carregando ranking…</p></div>
     <p class="footnote" id="rbLeaderboardStatus" role="status" aria-live="polite">As pontuações individuais, e-mails e dados de autenticação não são exibidos publicamente.</p>
   </div>
@@ -347,15 +347,33 @@ nav{grid-template-columns:repeat(auto-fit,minmax(42px,1fr))}
     <div id="rbAdminContent" class="hidden">
       <div class="rb-admin-stats"><div class="rb-admin-stat"><small>Equipes cadastradas</small><strong id="rbAdminTeamCount">0</strong></div><div class="rb-admin-stat"><small>Rounds registrados</small><strong id="rbAdminRoundCount">0</strong></div><div class="rb-admin-stat"><small>Equipes no ranking</small><strong id="rbAdminRankedCount">0</strong></div><div class="rb-admin-stat"><small>Sem rounds</small><strong id="rbAdminEmptyTeamCount">0</strong></div></div>
        <div class="card" style="margin:12px 0;background:var(--panel2)"><div class="two"><div><h3 style="margin-top:0">🩺 Saúde operacional</h3><p id="rbAdminHealthStatus" class="footnote" role="status">Aguardando verificação do banco de dados…</p></div><div><h3 style="margin-top:0">📊 Qualidade dos dados</h3><p id="rbAdminDataQuality" class="footnote">Os indicadores serão calculados ao carregar o painel.</p></div></div><p id="rbAdminLastUpdate" class="footnote">Última atualização: aguardando dados.</p></div>
-       <h3>Gerenciar equipes</h3><p class="footnote">Pesquise por nome, acompanhe os rounds e confirme ações destrutivas. Excluir uma equipe também remove seus rounds vinculados.</p><label class="field">Filtrar equipes<input id="rbAdminTeamFilter" type="search" maxlength="100" placeholder="Digite o nome da equipe..." autocomplete="off"></label>
+       <div class="card" style="margin:14px 0;background:var(--panel2)">
+        <h3>🧰 Central de controle · 10 ferramentas</h3>
+        <p class="footnote">Atalhos reais para as áreas do painel. Ações sensíveis continuam protegidas por confirmação e pelas regras do Supabase.</p>
+        <div class="rb-admin-tools">
+          <button type="button" data-admin-jump="rbAdminHealthStatus">🩺 Saúde do sistema</button>
+          <button type="button" data-admin-jump="rbAdminTeamFilter">👥 Equipes e pesquisa</button>
+          <button type="button" data-admin-jump="rbGlobalNoticeText">📣 Avisos globais</button>
+          <button type="button" data-admin-jump="rbGlobalAccent">🎨 Aparência do site</button>
+          <button type="button" data-admin-jump="rbOwnerAdminSection">🛡️ Administradores</button>
+          <button type="button" data-admin-jump="rbAdminAuditLog">🧾 Auditoria de segurança</button>
+          <button type="button" data-admin-jump="rbAdminPublicRank">🏆 Ranking público</button>
+          <button type="button" id="rbAdminExportTeams">📥 Exportar equipes CSV</button>
+          <button type="button" id="rbAdminCheckData">🔎 Verificar dados</button>
+          <button type="button" id="rbAdminRefreshAll">🔄 Recarregar tudo</button>
+        </div>
+        <p id="rbAdminToolsStatus" class="footnote" role="status" aria-live="polite">Ferramentas administrativas prontas.</p>
+       </div>
+       <div id="rbAdminPublicRank" class="card" style="margin:14px 0;background:var(--panel2)"><div class="toolbar" style="justify-content:space-between;align-items:center"><h3 style="margin:0">🏆 Prévia do ranking público</h3><button type="button" id="rbAdminRankRefresh">Atualizar ranking</button></div><p class="footnote">Ordenado pela média de pontuação de cada equipe, não pela melhor partida. O ranking público completo também fica na aba Ranking.</p><div id="rbAdminRankPreview"><p class="footnote">Carregando ranking…</p></div><button type="button" data-admin-jump="rbAdminTeamFilter">Gerenciar equipes</button></div>
+       <h3 id="rbAdminTeamSection">Gerenciar equipes</h3><p class="footnote">Pesquise por nome, acompanhe os rounds e confirme ações destrutivas. Excluir uma equipe também remove seus rounds vinculados.</p><label class="field">Filtrar equipes<input id="rbAdminTeamFilter" type="search" maxlength="100" placeholder="Digite o nome da equipe..." autocomplete="off"></label>
        <div id="rbAdminTeams"><p class="footnote">Nenhuma equipe carregada.</p></div>
       <hr style="margin:24px 0;border-color:var(--line)">
-      <h3>🌍 Aviso global do site</h3><p class="footnote">A mensagem aparece para todos os visitantes, em qualquer aparelho.</p>
+      <h3 id="rbAdminNoticeSection">🌍 Aviso global do site</h3><p class="footnote">A mensagem aparece para todos os visitantes, em qualquer aparelho.</p>
       <label class="field">Mensagem global<textarea id="rbGlobalNoticeText" rows="3" maxlength="500" placeholder="Ex.: O ranking será atualizado às 18h."></textarea></label>
       <label class="field" style="margin-top:8px">Tipo de aviso<select id="rbGlobalNoticeType"><option value="info">Informação</option><option value="success">Sucesso</option><option value="warning">Atenção</option></select></label>
       <div class="toolbar" style="margin-top:10px"><button type="button" id="rbGlobalNoticeSave" class="primary">Publicar aviso</button><button type="button" id="rbGlobalNoticeClear">Remover aviso</button></div>
       <hr style="margin:24px 0;border-color:var(--line)">
-      <h3>🎨 Aparência global</h3><p class="footnote">Altera a cor de destaque para todos os visitantes.</p>
+      <h3 id="rbAdminAppearanceSection">🎨 Aparência global</h3><p class="footnote">Altera a cor de destaque para todos os visitantes.</p>
       <div class="two"><label class="field">Cor de destaque<input id="rbGlobalAccent" type="color" value="#d0f477"></label><label class="field">Nome do tema<input id="rbGlobalThemeName" maxlength="40" placeholder="Ex.: BioGlow Verde"></label></div>
       <button type="button" id="rbGlobalThemeSave" class="primary" style="margin-top:10px">Salvar aparência global</button>
       <hr style="margin:24px 0;border-color:var(--line)">
@@ -1055,7 +1073,7 @@ async function rbLoadLeaderboard(showStatus=true){
   const host=rbEl('rbLeaderboardRows');
   if(signature!==rbLeaderboardSignature){
    rbLeaderboardSignature=signature;
-   if(!rows.length)host.innerHTML='<p class="footnote">Ainda não há equipes com pelo menos 3 rounds sincronizados. Jogue, sincronize os rounds e volte para conferir o ranking.</p>';
+   if(!rows.length)host.innerHTML='<p class="footnote">Ainda não há rounds sincronizados para calcular as médias. Registre e sincronize ao menos um round para uma equipe aparecer.</p>';
    else host.innerHTML=rows.map((r,i)=>`<div class="rb-rank-row"><div class="rb-rank-pos">${Number(r.rank_position)||i+1}</div><div class="rb-rank-name">${rbEsc(r.team_name)}<small class="rb-rank-meta">${Number(r.rounds_count)||0} rounds considerados</small></div><div class="rb-rank-score">${Math.round(Number(r.average_score)||0)}<small class="rb-rank-meta">média</small></div></div>`).join('');
   }
   rbEl('rbLeaderboardUpdated').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR');
@@ -1063,6 +1081,13 @@ async function rbLoadLeaderboard(showStatus=true){
  }catch(e){if(showStatus)rbEl('rbLeaderboardStatus').textContent='Ranking indisponível: '+(e.message||String(e))+' Confira se o SQL de ranking foi executado no Supabase.';}
  finally{rbLeaderboardBusy=false;}
 }
+function rbAdminJump(id){const target=rbEl(id);if(!target)return;target.scrollIntoView({behavior:'smooth',block:'center'});if(target.matches('input,textarea,select'))target.focus({preventScroll:true});}
+document.querySelectorAll('[data-admin-jump]').forEach(b=>b.addEventListener('click',()=>rbAdminJump(b.dataset.adminJump)));
+async function rbAdminRenderRankPreview(){const host=rbEl('rbAdminRankPreview');if(!host||!rbClient)return;host.innerHTML='<p class="footnote">Atualizando médias…</p>';try{const {data,error}=await rbClient.rpc('get_public_leaderboard');if(error)throw error;const rows=Array.isArray(data)?data:[];host.innerHTML=rows.length?'<div class="history-list">'+rows.slice(0,5).map(r=>'<div class="history-item"><div><b>#'+Number(r.rank_position)+'</b> '+rbEsc(r.team_name)+'<small>'+Number(r.rounds_count)+' round(s) computado(s)</small></div><strong>'+Number(r.average_score).toFixed(2).replace('.',',')+'</strong><span class="footnote">média</span></div>').join('')+'</div>':'<p class="footnote">Ainda não há rounds válidos para o ranking.</p>';}catch(e){host.innerHTML='<p class="footnote" role="alert">Não foi possível carregar o ranking: '+rbEsc(e.message||String(e))+'</p>';}}
+rbEl('rbAdminRankRefresh')?.addEventListener('click',()=>rbRun(rbAdminRenderRankPreview));
+rbEl('rbAdminExportTeams')?.addEventListener('click',()=>rbRun(async()=>{const {data,error}=await rbClient.rpc('get_rabbitech_admin_overview');if(error)throw error;const rows=Array.isArray(data?.teams)?data.teams:[];if(!rows.length)throw new Error('Nenhuma equipe disponível para exportar.');const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const csv='Equipe;Rounds;Média;Melhor round;Última atividade\r\n'+rows.map(t=>[t.name,t.rounds_count,t.average_score,t.best_score,t.last_round_at].map(esc).join(';')).join('\r\n');const blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='rabbitech-equipes-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);rbEl('rbAdminToolsStatus').textContent='Exportação CSV gerada com '+rows.length+' equipes.';}));
+rbEl('rbAdminCheckData')?.addEventListener('click',()=>rbRun(async()=>{const {data,error}=await rbClient.rpc('get_rabbitech_admin_overview');if(error)throw error;const teams=Array.isArray(data?.teams)?data.teams:[];const empty=teams.filter(t=>Number(t.rounds_count||0)===0).length;const low=teams.filter(t=>Number(t.rounds_count||0)>0&&Number(t.rounds_count)<3).length;rbEl('rbAdminToolsStatus').textContent='Verificação concluída: '+teams.length+' equipes; '+empty+' sem rounds; '+low+' com menos de 3 rounds. Nenhum dado foi alterado.';}));
+rbEl('rbAdminRefreshAll')?.addEventListener('click',()=>rbRun(async()=>{await rbLoadAdmin();await rbAdminRenderRankPreview();await rbAdminLoadAdmins();rbEl('rbAdminToolsStatus').textContent='Painel e ranking recarregados.';}));
 async function rbLoadAdmin(){
  if(!rbCloudUser||!rbIsAdmin){rbAdminStatus('Acesso restrito. Entre com a conta Google autorizada como administradora.');rbEl('rbAdminContent').classList.add('hidden');return;}
  if(rbAdminBusy)return;rbAdminBusy=true;rbAdminStatus('Carregando estatísticas privadas…');
@@ -1072,7 +1097,7 @@ async function rbLoadAdmin(){
   const host=rbEl('rbAdminTeams');host.innerHTML=teams.length?teams.map(t=>`<div class="rb-admin-team" data-team-id="${rbEsc(t.id||'')}"><div class="rb-admin-team-head"><strong>${rbEsc(t.name)}</strong><span class="badge">${Number(t.rounds_count)||0} rounds</span></div><div class="three" style="margin-top:10px"><div><small class="muted">Média</small><div><b>${t.average_score==null?'—':Math.round(Number(t.average_score))}</b></div></div><div><small class="muted">Melhor round</small><div><b>${t.best_score==null?'—':Number(t.best_score)}</b></div></div><div><small class="muted">Última atividade</small><div><b>${t.last_round_at?rbEsc(new Date(t.last_round_at).toLocaleDateString('pt-BR')):'—'}</b></div></div></div><div class="toolbar" style="margin-top:10px"><button type="button" data-rb-rename="${rbEsc(t.id||'')}" ${t.id?'':'disabled'}>Renomear</button><button type="button" data-rb-delete="${rbEsc(t.id||'')}" ${t.id?'':'disabled'}>Excluir equipe</button></div></div>`).join(''):'<p class="footnote">Ainda não há equipes registradas.</p>';
   const filter=rbEl('rbAdminTeamFilter');if(filter){const applyFilter=()=>{const q=filter.value.trim().toLocaleLowerCase('pt-BR');host.querySelectorAll('[data-team-id]').forEach(card=>{card.hidden=!card.querySelector('strong')?.textContent.toLocaleLowerCase('pt-BR').includes(q);});};filter.oninput=applyFilter;applyFilter();}host.querySelectorAll('[data-rb-rename]').forEach(b=>b.addEventListener('click',()=>rbRun(async()=>{const current=b.closest('[data-team-id]')?.querySelector('strong')?.textContent||'';const next=prompt('Novo nome para a equipe:',current);if(next===null)return;if(next.trim().length<2)throw new Error('O nome precisa ter pelo menos 2 caracteres.');const {error}=await rbClient.rpc('admin_rename_team',{p_team_id:b.dataset.rbRename,p_new_name:next.trim()});if(error)throw error;rbAdminStatus('Equipe renomeada. Atualizando painel…');await rbLoadAdmin();await rbLoadLeaderboard(false);})()));
   host.querySelectorAll('[data-rb-delete]').forEach(b=>b.addEventListener('click',()=>rbRun(async()=>{const name=b.closest('[data-team-id]')?.querySelector('strong')?.textContent||'esta equipe';if(!confirm('Excluir '+name+' e TODOS os rounds vinculados? Essa ação não pode ser desfeita.'))return;const {error}=await rbClient.rpc('admin_delete_team',{p_team_id:b.dataset.rbDelete});if(error)throw error;rbAdminStatus('Equipe excluída. Atualizando painel…');await rbLoadAdmin();await rbLoadLeaderboard(false);})()));
-  rbEl('rbAdminContent').classList.remove('hidden');rbAdminStatus('Painel atualizado às '+new Date().toLocaleTimeString('pt-BR')+'. Total de '+teams.length+' equipes recebidas do Supabase.');
+  rbEl('rbAdminContent').classList.remove('hidden');rbAdminRenderRankPreview();rbAdminStatus('Painel atualizado às '+new Date().toLocaleTimeString('pt-BR')+'. Total de '+teams.length+' equipes recebidas do Supabase.');
  }catch(e){rbEl('rbAdminContent').classList.add('hidden');rbAdminStatus('Não foi possível carregar o painel: '+(e.message||String(e))+' Verifique se sua conta foi cadastrada em public.app_admins no Supabase.');}
  finally{rbAdminBusy=false;}
 }
