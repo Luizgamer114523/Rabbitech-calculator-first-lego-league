@@ -1757,38 +1757,4 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
-<!-- Rabbitech corrective patch: single language picker, stable mobile dock, admin visibility -->
-<style id="rb-corrective-layout-20261025">
-@media(max-width:650px){
- body{padding-bottom:calc(94px + env(safe-area-inset-bottom))!important}
- nav.rb-samsung-dock{position:fixed!important;left:10px!important;right:10px!important;bottom:calc(8px + env(safe-area-inset-bottom))!important;z-index:9000!important;display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;gap:5px!important;overflow:hidden!important;max-height:68px!important;padding:7px!important;border:1px solid rgba(208,244,119,.28)!important;border-radius:20px!important;background:rgba(5,18,11,.94)!important;backdrop-filter:blur(22px) saturate(1.4)!important;box-shadow:0 12px 34px rgba(0,0,0,.45),0 0 18px rgba(208,244,119,.08)!important;transition:max-height .34s cubic-bezier(.2,.8,.2,1),border-radius .25s ease!important}
- nav.rb-samsung-dock button[data-page]{display:flex!important;flex:0 0 52px!important;width:52px!important;min-width:52px!important;max-width:52px!important;height:50px!important;min-height:50px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;padding:4px 2px!important;border-radius:13px!important;font-size:9px!important;line-height:1!important;opacity:1;transform:translateY(0) scale(1);transition:opacity .22s ease,transform .28s cubic-bezier(.2,.8,.2,1),background .2s ease!important}
- nav.rb-samsung-dock button[data-page] .dock-label{font-size:8px!important;line-height:1.05!important;display:block!important}
- nav.rb-samsung-dock:not(.rb-dock-expanded) button[data-page]:nth-of-type(n+6){display:none!important}
- nav.rb-samsung-dock.rb-dock-expanded{flex-wrap:wrap!important;justify-content:center!important;max-height:min(42dvh,330px)!important;overflow-y:auto!important;overflow-x:hidden!important;border-radius:24px!important;padding:9px!important}
- nav.rb-samsung-dock.rb-dock-expanded button[data-page]{animation:rbDockItemIn .28s both}
- nav.rb-samsung-dock #rbDockMore{display:flex!important;flex:0 0 42px!important;width:42px!important;min-width:42px!important;max-width:42px!important;height:44px!important;min-height:44px!important;align-items:center!important;justify-content:center!important;border:1px solid rgba(208,244,119,.5)!important;border-radius:14px!important;background:linear-gradient(145deg,#203b28,#0b1b11)!important;color:#d0f477!important;font-size:22px!important;font-weight:800!important;box-shadow:0 0 14px rgba(208,244,119,.12)!important;transition:transform .28s cubic-bezier(.2,.8,.2,1)!important}
- nav.rb-samsung-dock.rb-dock-expanded #rbDockMore{transform:rotate(45deg)}
-}
-@keyframes rbDockItemIn{from{opacity:0;transform:translateY(10px) scale(.88)}to{opacity:1;transform:translateY(0) scale(1)}}
-#rbLanguageReopen{position:fixed!important;top:142px!important;right:12px!important;z-index:8998!important}
-#rbLanguagePersistent{display:none!important}
-#rbGlobalNotice.rb-notice-warning{background:linear-gradient(110deg,#481010,#9b2020,#481010)!important;background-size:220% 100%!important;border:2px solid #ff5151!important;box-shadow:0 0 10px #ff3333,0 0 24px #ff333366!important;animation:rbNoticePulse 2.8s ease-in-out infinite!important}
-#rbGlobalNotice.rb-notice-info{border:1px solid #49baff!important;box-shadow:0 0 14px #168dff44!important}
-#rbGlobalNotice.rb-notice-success{border:1px solid #56e69a!important;box-shadow:0 0 14px #25d87844!important}
-@keyframes rbNoticePulse{0%,100%{background-position:0% 50%;box-shadow:0 0 8px #ff333355}50%{background-position:100% 50%;box-shadow:0 0 18px #ff333399,0 0 30px #ff333344}}
-@media(prefers-reduced-motion:reduce){nav.rb-samsung-dock,nav.rb-samsung-dock *,#rbGlobalNotice{animation:none!important;transition:none!important}}
-</style>
-<script id="rb-corrective-controller-20261025">
-(function(){
-'use strict';const $=id=>document.getElementById(id);
-function adminAllowed(){try{const u=typeof rbCloudUser!=='undefined'?rbCloudUser:null;const a=typeof rbIsAdmin!=='undefined'&&rbIsAdmin===true;const o=typeof rbIsOwner==='function'&&rbIsOwner();return !!(u&&(a||o))}catch(_){return false}}
-function refreshAdmin(){const ok=adminAllowed(),n=$('rbAdminNav'),p=$('page-admin');if(n)n.hidden=!ok;if(p){p.hidden=!ok;if(!ok)p.classList.remove('active')}}
-function setupDock(){const nav=document.querySelector('nav button[data-page]')?.parentElement||document.querySelector('nav');if(!nav)return;nav.classList.add('rb-samsung-dock');document.querySelectorAll('#rbDockMore,#rbDockExpand').forEach(e=>e.remove());const b=document.createElement('button');b.id='rbDockMore';b.type='button';b.textContent='+';b.setAttribute('aria-label','Expandir navegação');b.setAttribute('aria-expanded','false');b.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const on=nav.classList.toggle('rb-dock-expanded');b.textContent=on?'−':'+';b.setAttribute('aria-expanded',String(on));b.setAttribute('aria-label',on?'Recolher navegação':'Expandir navegação')});nav.appendChild(b);nav.querySelectorAll('button[data-page]').forEach(x=>x.addEventListener('click',()=>{if(nav.classList.contains('rb-dock-expanded')){nav.classList.remove('rb-dock-expanded');b.textContent='+';b.setAttribute('aria-expanded','false')}setTimeout(refreshAdmin,30)},true))}
-function setupLanguage(){const duplicate=$('rbLanguagePersistent');if(duplicate)duplicate.remove();const old=$('rbLanguageReopen');if(old)old.remove();const overlay=$('rbLanguageConsent');if(!overlay)return;const opener=document.createElement('button');opener.id='rbLanguageReopen';opener.type='button';opener.textContent='🌐 Idioma';opener.setAttribute('aria-label','Abrir seleção de idioma');document.body.appendChild(opener);opener.onclick=()=>{overlay.hidden=false;overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';const s=$('rbConsentLanguage');if(s){try{s.value=localStorage.getItem('rbPreferredLanguage')||'pt-BR'}catch(_){}s.disabled=false;s.focus({preventScroll:true)}};const s=$('rbConsentLanguage');if(s&&!s.dataset.rbSinglePicker){s.dataset.rbSinglePicker='1';s.addEventListener('change',()=>{const c=s.value||'pt-BR';try{localStorage.setItem('rbPreferredLanguage',c)}catch(_){}document.documentElement.lang=c;document.dispatchEvent(new Event('rb:language-change'))})}const accept=$('rbConsentAccept');if(accept&&!accept.dataset.rbFinalHide){accept.dataset.rbFinalHide='1';accept.addEventListener('click',()=>{overlay.hidden=true;overlay.style.setProperty('display','none','important');overlay.setAttribute('aria-hidden','true');document.body.style.overflow=''})}}
-function init(){setupDock();setupLanguage();refreshAdmin();const logout=$('rbCloudLogout');if(logout&&!logout.dataset.rbImmediateAdminHide){logout.dataset.rbImmediateAdminHide='1';logout.addEventListener('click',()=>{const n=$('rbAdminNav'),p=$('page-admin');if(n)n.hidden=true;if(p){p.hidden=true;p.classList.remove('active')}},true)}let last='';setInterval(()=>{let key='signed-out';try{const u=typeof rbCloudUser!=='undefined'?rbCloudUser:null;key=u?String(u.id||'')+':'+String(typeof rbIsAdmin!=='undefined'&&rbIsAdmin)+':'+String(adminAllowed()):'signed-out'}catch(_){}if(key!==last){last=key;refreshAdmin()}},500)}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-</script>
-
 </body></html>
