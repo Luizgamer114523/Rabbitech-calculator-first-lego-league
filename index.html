@@ -1530,4 +1530,31 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+<style id="rb-hotfix-critical-final">
+#rbLanguageConsent[hidden]{display:none!important}
+#rbLanguageConsent{z-index:2147483000!important;display:grid;place-items:center;padding:16px!important;overflow:auto!important}
+#rbLanguageConsent .rb-consent-card{width:min(100%,640px)!important;max-height:calc(100dvh - 32px)!important;overflow-y:auto!important;margin:auto!important}
+#rbConsentAccept{color:#10200f!important;background:#d0f477!important;opacity:1!important;filter:none!important;cursor:pointer!important;min-height:52px!important}
+#rbConsentLanguage{min-height:48px!important;opacity:1!important;pointer-events:auto!important}
+@media(max-width:650px){
+ nav:has(button[data-page="admin"]){display:flex!important;flex-wrap:wrap!important;justify-content:center!important;gap:3px!important;overflow-x:hidden!important;max-height:none!important;padding:5px 5px calc(5px + env(safe-area-inset-bottom))!important}
+ nav:has(button[data-page="admin"]) button{flex:1 1 15%!important;min-width:48px!important;max-width:none!important;min-height:43px!important;padding:4px 2px!important;font-size:9px!important}
+ nav:has(button[data-page="admin"]) button .dock-label{font-size:8px!important}
+}
+#rbGlobalNotice.rb-notice-warning{color:#fff!important;background:linear-gradient(110deg,#501010,#921c1c,#501010)!important;border:2px solid #ff4242!important;box-shadow:0 0 10px #ff3333,0 0 24px #ff333399!important}
+</style>
+<script id="rb-admin-and-consent-init-fix">
+(function(){
+ function fix(){
+  const overlay=document.getElementById('rbLanguageConsent'),accept=document.getElementById('rbConsentAccept');
+  if(overlay&&accept&&!accept.dataset.rbFixed){accept.dataset.rbFixed='1';accept.addEventListener('click',()=>{overlay.hidden=true;overlay.style.display='none'},true);}
+  const nav=document.getElementById('rbAdminNav'),page=document.getElementById('page-admin');
+  try{const u=window.rbCloudUser;const owner=!!(u&&String(u.id)==='7e799691-ba7e-42ea-ab6f-71ad11ca32ff');const allowed=!!(u&&(owner||window.rbIsAdmin===true));if(nav)nav.hidden=!allowed;if(page)page.hidden=!allowed;}catch(e){}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',fix,{once:true});else fix();
+ const start=Date.now(),timer=setInterval(()=>{fix();if(Date.now()-start>30000)clearInterval(timer)},500);
+})();
+</script>
+
 </body></html>
