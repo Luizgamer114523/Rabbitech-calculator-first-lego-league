@@ -1460,6 +1460,24 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 
+
+<!-- Rabbitech mobile dock, consent and owner UI repair -->
+<style id="rb-mobile-dock-repair">
+#rbLanguageConsent[hidden]{display:none!important}
+#rbLanguageConsent{z-index:2147483000!important}
+#rbLanguageConsent .rb-consent-card{max-height:88dvh;overflow-y:auto}
+@media(max-width:650px){
+ body nav{display:flex!important;flex-wrap:nowrap!important;gap:4px!important;overflow-x:auto!important;overflow-y:hidden!important;justify-content:flex-start!important;padding:6px 8px calc(6px + env(safe-area-inset-bottom))!important;max-height:76px!important;scrollbar-width:none!important}
+ body nav::-webkit-scrollbar{display:none!important}
+ body nav button{flex:0 0 56px!important;min-width:56px!important;max-width:56px!important;min-height:52px!important;padding:5px 2px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;font-size:9px!important;line-height:1.05!important;white-space:normal!important}
+ body nav button .dock-label{font-size:8px!important;line-height:1.05!important;overflow-wrap:anywhere!important}
+ body nav button[hidden]{display:none!important}
+ body nav.rb-dock-expanded{flex-wrap:wrap!important;overflow-y:auto!important;max-height:156px!important;justify-content:center!important}
+ #rbDockMore{flex:0 0 42px!important;min-width:42px!important;max-width:42px!important;border-radius:14px!important;font-size:18px!important;background:#173323!important;color:#d0f477!important;border:1px solid #54744f!important}
+}
+</style>
+<script id="rb-mobile-dock-repair-js">(function(){function init(){const nav=document.querySelector('body nav');if(nav&&!document.getElementById('rbDockMore')){const more=document.createElement('button');more.id='rbDockMore';more.type='button';more.setAttribute('aria-label','Mostrar mais abas');more.title='Mostrar mais abas';more.textContent='＋';more.addEventListener('click',()=>{const open=nav.classList.toggle('rb-dock-expanded');more.textContent=open?'−':'＋';more.setAttribute('aria-label',open?'Recolher abas':'Mostrar mais abas')});nav.appendChild(more)}const overlay=document.getElementById('rbLanguageConsent');if(overlay){const accept=document.getElementById('rbConsentAccept');if(accept&&!accept.dataset.rbFixed){accept.dataset.rbFixed='1';accept.addEventListener('click',()=>{overlay.hidden=true;overlay.style.display='none'},true)}const language=document.getElementById('rbConsentLanguage');if(language&&!language.dataset.rbFixed){language.dataset.rbFixed='1';language.addEventListener('change',()=>{try{localStorage.setItem('rbPreferredLanguage',language.value);document.documentElement.lang=language.value}catch(e){}},true)}}}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init()})();</script>
+
 <!-- Rabbitech main index update 2026-10-25 -->
 <style id="rb-rabbitech-final-ui">@media(max-width:650px){body{padding-bottom:calc(84px + env(safe-area-inset-bottom))!important}nav{display:grid!important;grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:1px!important;overflow:visible!important;justify-content:stretch!important;max-height:84px!important;padding:4px 5px calc(4px + env(safe-area-inset-bottom))!important}nav button{display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;flex:initial!important;min-width:0!important;max-width:none!important;width:100%!important;min-height:34px!important;padding:3px 1px!important;font-size:9px!important;line-height:1.05!important}nav button .dock-icon{font-size:14px!important;line-height:1.05!important}nav button .dock-label{font-size:8px!important;line-height:1.05!important}nav button[hidden]{display:none!important}}#rb-public-ranking-callout[hidden]{display:none!important}#rbGlobalNotice.rb-notice-warning:before{content:"⚠️ ATENÇÃO  "!important}#rbGlobalNotice.rb-notice-success:before{content:"✅ SUCESSO  "!important}#rbGlobalNotice.rb-notice-info:before{content:"ℹ️ INFORMAÇÃO  "!important}#rbLanguageConsent[hidden]{display:none!important}#rbLanguageConsent .rb-consent-card{overscroll-behavior:contain}</style>
 
