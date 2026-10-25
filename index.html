@@ -1758,3 +1758,98 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 </script>
 
 </body></html>
+
+<!-- Final corrective layer: normalize legacy dock/language controls without replacing app logic -->
+<style id="rb-final-normalize-20261025">
+@media(max-width:650px){
+ body{padding-bottom:calc(78px + env(safe-area-inset-bottom))!important}
+ nav.rb-final-dock{
+  position:fixed!important;left:10px!important;right:10px!important;bottom:calc(7px + env(safe-area-inset-bottom))!important;
+  z-index:9000!important;display:flex!important;flex-flow:row nowrap!important;align-items:center!important;justify-content:flex-start!important;
+  gap:4px!important;overflow:hidden!important;max-height:64px!important;padding:6px!important;
+  border:1px solid rgba(208,244,119,.28)!important;border-radius:19px!important;background:rgba(5,18,11,.94)!important;
+  backdrop-filter:blur(20px) saturate(1.3)!important;box-shadow:0 10px 30px #0008!important;
+  transition:max-height .32s cubic-bezier(.2,.8,.2,1),border-radius .25s ease!important
+ }
+ nav.rb-final-dock button[data-page]{display:flex!important;flex:0 0 52px!important;width:52px!important;min-width:52px!important;max-width:52px!important;height:48px!important;min-height:48px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:3px!important;padding:3px 1px!important;border-radius:12px!important;font-size:9px!important;line-height:1!important;transition:transform .25s ease,opacity .2s ease,background .2s ease!important}
+ nav.rb-final-dock button[data-page] .dock-label{display:block!important;font-size:8px!important;line-height:1.05!important;overflow-wrap:anywhere!important}
+ nav.rb-final-dock button[data-page][hidden]{display:none!important}
+ nav.rb-final-dock:not(.rb-final-expanded) button[data-page]:nth-of-type(n+6){display:none!important}
+ nav.rb-final-dock #rbFinalDockMore{display:flex!important;flex:0 0 42px!important;width:42px!important;min-width:42px!important;max-width:42px!important;height:44px!important;min-height:44px!important;align-items:center!important;justify-content:center!important;border:1px solid rgba(208,244,119,.5)!important;border-radius:14px!important;background:linear-gradient(145deg,#203b28,#0b1b11)!important;color:#d0f477!important;font-size:22px!important;font-weight:800!important;transition:transform .28s cubic-bezier(.2,.8,.2,1)!important}
+ nav.rb-final-dock.rb-final-expanded{flex-wrap:wrap!important;justify-content:center!important;max-height:42dvh!important;overflow-y:auto!important;border-radius:24px!important}
+ nav.rb-final-dock.rb-final-expanded button[data-page]{animation:rbFinalDockIn .25s both}
+ nav.rb-final-dock.rb-final-expanded #rbFinalDockMore{transform:rotate(45deg)}
+}
+@keyframes rbFinalDockIn{from{opacity:0;transform:translateY(8px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+#rbLanguagePersistent{display:none!important}
+#rbLanguageQuickSelect{max-width:100%;background:#07140d!important;color:#fff!important;border:1px solid #63805f!important;border-radius:9px!important;padding:8px!important}
+#rbLanguageReopen{position:fixed!important;right:12px!important;top:142px!important;z-index:8998!important}
+#rbGlobalNotice.rb-notice-warning{color:#fff!important;background:linear-gradient(110deg,#501010,#921c1c,#501010)!important;border:2px solid #ff4242!important;box-shadow:0 0 10px #ff3333,0 0 24px #ff333399!important;animation:rbFinalNoticePulse 2.5s ease-in-out infinite!important}
+#rbGlobalNotice.rb-notice-success{border:2px solid #48e79a!important;box-shadow:0 0 16px #25d87866!important}
+#rbGlobalNotice.rb-notice-info{border:2px solid #49baff!important;box-shadow:0 0 16px #168dff66!important}
+@keyframes rbFinalNoticePulse{0%,100%{filter:saturate(1)}50%{filter:saturate(1.5) brightness(1.12)}}
+@media(prefers-reduced-motion:reduce){nav.rb-final-dock,nav.rb-final-dock *,#rbGlobalNotice{animation:none!important;transition:none!important}}
+</style>
+<script id="rb-final-normalize-script-20261025">
+(function(){
+ 'use strict';
+ const $=id=>document.getElementById(id);
+ function normalizeDock(){
+  const nav=document.querySelector('nav button[data-page]')?.parentElement;
+  if(!nav)return;
+  nav.classList.add('rb-final-dock');
+  // Remove duplicate expand controls inserted by older hotfixes, then create exactly one.
+  document.querySelectorAll('#rbDockMore,#rbDockExpand,#rbFinalDockMore').forEach(el=>el.remove());
+  const more=document.createElement('button');more.id='rbFinalDockMore';more.type='button';more.textContent='+';
+  more.setAttribute('aria-label','Mostrar mais abas');more.setAttribute('aria-expanded','false');
+  more.addEventListener('click',function(e){
+   e.preventDefault();e.stopPropagation();
+   const expanded=nav.classList.toggle('rb-final-expanded');
+   more.textContent=expanded?'−':'+';more.setAttribute('aria-expanded',String(expanded));
+   more.setAttribute('aria-label',expanded?'Recolher abas':'Mostrar mais abas');
+  });
+  nav.appendChild(more);
+  nav.querySelectorAll('button[data-page]').forEach(b=>{
+   b.addEventListener('click',()=>{nav.classList.remove('rb-final-expanded');more.textContent='+';more.setAttribute('aria-expanded','false');},true);
+  });
+ }
+ function normalizeLanguage(){
+  // Older scripts created two persistent selectors; keep the privacy modal selector and the single header opener.
+  const duplicate=$('rbLanguagePersistent');if(duplicate)duplicate.remove();
+  const overlay=$('rbLanguageConsent'),select=$('rbConsentLanguage');
+  if(!overlay)return;
+  let opener=$('rbLanguageReopen');
+  if(!opener){opener=document.createElement('button');opener.id='rbLanguageReopen';opener.type='button';opener.textContent='🌐 Idioma';document.body.appendChild(opener);}
+  opener.onclick=function(){
+   overlay.hidden=false;overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';
+   if(select){select.disabled=false;try{select.value=localStorage.getItem('rbPreferredLanguage')||'pt-BR'}catch(_){}select.focus({preventScroll:true});}
+  };
+  if(select&&!select.dataset.rbFinalNormalize){
+   select.dataset.rbFinalNormalize='1';
+   select.addEventListener('change',()=>{
+    const code=select.value||'pt-BR';
+    try{localStorage.setItem('rbPreferredLanguage',code)}catch(_){}
+    document.documentElement.lang=code;
+    const quick=$('rbLanguageQuickSelect');if(quick)quick.value=code;
+    document.dispatchEvent(new Event('rb:language-change'));
+   });
+  }
+ }
+ function normalizeAdmin(){
+  try{
+   const user=(typeof rbCloudUser!=='undefined')?rbCloudUser:null;
+   const isAdmin=(typeof rbIsAdmin!=='undefined'&&rbIsAdmin===true);
+   const isOwner=(typeof rbIsOwner==='function'&&rbIsOwner());
+   const allowed=!!(user&&(isAdmin||isOwner));
+   const nav=$('rbAdminNav'),page=$('page-admin');
+   if(nav)nav.hidden=!allowed;
+   if(page){page.hidden=!allowed;if(!allowed)page.classList.remove('active');}
+  }catch(_){const nav=$('rbAdminNav');if(nav)nav.hidden=true;}
+ }
+ function init(){normalizeDock();normalizeLanguage();normalizeAdmin();let last='';setInterval(()=>{
+  normalizeAdmin();
+  try{const user=(typeof rbCloudUser!=='undefined')?rbCloudUser:null;const key=user?String(user.id)+':'+String(typeof rbIsAdmin!=='undefined'&&rbIsAdmin):'signed-out';if(key!==last){last=key;normalizeAdmin()}}catch(_){}
+ },700);}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
