@@ -67,8 +67,61 @@
    select.style.setProperty('font-size','12px','important');
   }
  }
+ const FEATURE_TARGETS={
+  public_ranking:{page:'leaderboard',nav:'leaderboard'},
+  youtube_tv:{page:'youtube',nav:'youtube'},
+  music_player:{page:'music',nav:'music'},
+  strategy:{page:'strategy',nav:'strategy'},
+  routes:{page:'routes',nav:'routes'},
+  rules:{page:'rules',nav:'rules'}
+ };
+ let lastFeatureFlags=null,lastNoticeActive=null;
+ function getSupabaseClient(){
+  try{if(typeof rbClient!=='undefined'&&rbClient)return rbClient}catch(_){}
+  return window.rbClient||window.supabaseClient||null;
+ }
+ async function loadPublicSettings(){
+  const client=getSupabaseClient();if(!client||typeof client.rpc!=='function')return;
+  try{
+   const result=await client.rpc('get_rabbitech_public_settings');
+   if(result?.error||!result?.data)return;
+   const settings=Array.isArray(result.data)?result.data[0]:result.data;
+   const flags=settings?.feature_flags;
+   if(!flags||typeof flags!=='object')return;
+   lastFeatureFlags=flags;lastNoticeActive=settings.notice_active===true;
+   applyFeatureFlags(flags,lastNoticeActive);
+  }catch(error){console.warn('Rabbitech feature flags could not be refreshed',error)}
+ }
+ function applyFeatureFlags(flags,noticeActive){
+  Object.entries(FEATURE_TARGETS).forEach(([key,target])=>{
+   const enabled=flags[key]!==false;
+   document.querySelectorAll('nav button[data-page="'+target.nav+'"]').forEach(button=>{button.hidden=!enabled});
+   const page=$('page-'+target.page);
+   if(page){
+    if(!enabled&&page.classList.contains('active')){
+     page.classList.remove('active');
+     const score=$('page-score');
+     if(score){score.classList.add('active');score.hidden=false}
+     document.querySelectorAll('nav button[data-page]').forEach(button=>button.classList.toggle('active',button.dataset.page==='score'));
+    }
+    page.hidden=!enabled;
+   }
+  });
+  const noticesEnabled=flags.global_notices!==false&&noticeActive===true;
+  document.querySelectorAll('[id*="globalNotice" i],[class*="global-notice" i],[data-global-notice]').forEach(element=>{
+   if(element.closest('#page-admin'))return;
+   element.hidden=!noticesEnabled;
+   if(!noticesEnabled)element.setAttribute('aria-hidden','true');
+   else element.removeAttribute('aria-hidden');
+  });
+  document.querySelectorAll('[data-feature-flag]').forEach(element=>{
+   const enabled=flags[element.getAttribute('data-feature-flag')]!==false;
+   if(element.closest('#page-admin'))return;
+   element.hidden=!enabled;
+  });
+ }
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();
+  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();
   document.addEventListener('click',event=>{
    const button=event.target?.closest?.('nav button[data-page="admin"]');
    if(!button)return;
@@ -101,7 +154,7 @@
    const user=currentUser(),key=user?String(user.id||'')+':'+String(adminAllowed()):'out';
    if(key!==previous){previous=key;syncAdmin()}
   },700);
-  window.addEventListener('rb-auth-state-changed',syncAdmin);
+  window.addEventListener('rb-auth-state-changed',syncAdmin);\n  window.addEventListener('rb-site-settings-updated',loadPublicSettings);\n  setInterval(loadPublicSettings,15000);
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
  else init();
