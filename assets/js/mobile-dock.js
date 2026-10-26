@@ -43,10 +43,29 @@
   return nav;
  }
  function placeLanguageButton(){
-  const button=$('rbLanguageReopen'),header=document.querySelector('body>header');
-  if(!button||!header)return;
-  const row=header.firstElementChild;
-  if(row&&button.parentElement!==row)row.appendChild(button);
+  const button=$('rbLanguageQuick'),header=document.querySelector('body>header');
+  const season=header?.querySelector('.season');
+  if(!button||!season)return;
+  // Keep the persistent language selector in the header, above "Founders Edition",
+  // never inside the Privacy page content.
+  if(button.parentElement!==season)season.insertBefore(button,season.firstChild);
+  button.style.setProperty('display','inline-flex','important');
+  button.style.setProperty('align-items','center','important');
+  button.style.setProperty('justify-content','flex-end','important');
+  button.style.setProperty('gap','6px','important');
+  button.style.setProperty('margin','0 0 6px auto','important');
+  button.style.setProperty('padding','4px 6px','important');
+  button.style.setProperty('border','1px solid #49684b','important');
+  button.style.setProperty('border-radius','9px','important');
+  button.style.setProperty('font-size','11px','important');
+  button.style.setProperty('white-space','nowrap','important');
+  const select=button.querySelector('select');
+  if(select){
+   select.style.setProperty('margin-left','4px','important');
+   select.style.setProperty('padding','4px 6px','important');
+   select.style.setProperty('max-width','116px','important');
+   select.style.setProperty('font-size','12px','important');
+  }
  }
  function init(){
   setupDock();placeLanguageButton();syncAdmin();
