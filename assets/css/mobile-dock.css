@@ -2,6 +2,10 @@
    Expanded state is the preferred compact two-row menu: 7 items on row 1,
    remaining items centered on row 2. Non-admins have no Admin slot. */
 nav.rb-samsung-dock{box-sizing:border-box}
+#rbPrivacyGate{z-index:2147483001!important}
+body.rb-privacy-gate-open nav{display:none!important}
+#rbLanguageGateQuick{display:block!important;margin:12px 0!important;padding:10px!important;border:1px solid var(--line)!important;border-radius:12px!important}
+#rbLanguageGateQuick select{width:100%;margin:8px 0 0!important;background:var(--panel)!important;color:var(--text)!important;border:1px solid var(--line)!important;padding:10px!important;border-radius:10px!important}
 nav.rb-samsung-dock button[hidden],
 nav.rb-samsung-dock button[data-page][hidden]{display:none!important}
 #rbLanguageReopen{
