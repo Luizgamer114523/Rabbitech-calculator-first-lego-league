@@ -89,3 +89,14 @@ div.page[hidden]{
 nav button[data-page][hidden] { display: none !important; }
 main .page[hidden] { display: none !important; }
 #rbGlobalNotice.hidden, #rbGlobalNotice[hidden] { display: none !important; }
+
+
+/* Disabled modules must also hide floating launchers with their own display styles. */
+#musicFab[hidden],
+#musicOverlay[hidden]{display:none!important}
+
+/* Keep the navigation out of the initial privacy/consent gate; reveal it after consent. */
+body:has(#rbPrivacyGate.rb-gate-open) nav.rb-samsung-dock,
+body:has(#rbLanguageConsent:not([hidden])) nav.rb-samsung-dock{
+ display:none!important;visibility:hidden!important;pointer-events:none!important;
+}
