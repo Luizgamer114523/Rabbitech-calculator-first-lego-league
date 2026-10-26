@@ -24,7 +24,7 @@
   nav.querySelectorAll('#rbDockMore,#rbDockExpand,#rbDockExpandOne,#rbFinalDockMore').forEach(el=>el.remove());
   const more=document.createElement('button');more.id='rbDockExpandOne';more.type='button';more.textContent='+';
   more.title='Mostrar mais abas';more.setAttribute('aria-label','Mostrar mais abas');more.setAttribute('aria-expanded','false');
-  more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const open=nav.classList.toggle('rb-dock-expanded');more.textContent=open?'−':'+';more.title=open?'Recolher abas':'Mostrar mais abas';more.setAttribute('aria-label',more.title);more.setAttribute('aria-expanded',String(open))});
+  more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const collapsed=nav.classList.toggle('rb-dock-collapsed');more.textContent=collapsed?'+':'−';more.title=collapsed?'Mostrar todas as abas':'Recolher abas';more.setAttribute('aria-label',more.title);more.setAttribute('aria-expanded',String(!collapsed))});
   nav.appendChild(more);
  }
  function placeLanguageButton(){
@@ -35,9 +35,9 @@
  function init(){
   setupDock();
   const nav=document.querySelector('nav.rb-samsung-dock');
-  if(nav)nav.classList.remove('rb-dock-expanded');
+  if(nav)nav.classList.remove('rb-dock-collapsed');
   const expand=$('rbDockExpandOne');
-  if(expand){expand.textContent='+';expand.title='Mostrar mais abas';expand.setAttribute('aria-label','Mostrar mais abas');expand.setAttribute('aria-expanded','false')}
+  if(expand){expand.textContent='−';expand.title='Recolher abas';expand.setAttribute('aria-label','Recolher abas');expand.setAttribute('aria-expanded','true')}
   placeLanguageButton();syncAdmin();
   document.addEventListener('click',e=>{
    const btn=e.target?.closest?.('nav button[data-page="admin"]');if(!btn)return;
