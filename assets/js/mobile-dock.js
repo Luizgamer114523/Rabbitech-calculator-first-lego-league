@@ -31,7 +31,7 @@
   more.id='rbDockExpandOne';more.type='button';more.textContent='−';
   more.title='Recolher abas';more.setAttribute('aria-label','Recolher abas');more.setAttribute('aria-expanded','true');
   more.addEventListener('click',event=>{
-   event.preventDefault();event.stopPropagation();
+   event.preventDefault();event.stopImmediatePropagation();
    const collapsed=nav.classList.toggle('rb-dock-collapsed');
    more.textContent=collapsed?'+':'−';
    more.title=collapsed?'Mostrar todas as abas':'Recolher abas';
