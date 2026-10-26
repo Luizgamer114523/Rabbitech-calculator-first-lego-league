@@ -50,7 +50,7 @@ nav.rb-samsung-dock #rbDockExpandOne{display:none}
   background:rgba(208,244,119,.12)!important;color:#d0f477!important;
   border:1px solid rgba(208,244,119,.35)!important;cursor:pointer!important
  }
- /* The compact state keeps six shortcuts plus the + control on a single row. */
+ /* Compact state: retain the current page; hide extra shortcuts only when explicitly collapsed. */
  nav.rb-samsung-dock.rb-dock-collapsed{
   flex-wrap:nowrap!important;justify-content:center!important;align-content:center!important;
   max-height:66px!important;overflow:hidden!important
