@@ -921,7 +921,6 @@ document.querySelectorAll("nav button[data-page]").forEach(b=>b.addEventListener
  document.querySelectorAll("main .page").forEach(p=>{const active=p===page;p.classList.toggle("active",active);p.hidden=!active;});
  document.querySelectorAll("nav button[data-page]").forEach(button=>button.classList.toggle("active",button===b));
  page.hidden=false;
- if(key==="admin"&&typeof rbLoadAdmin==="function"&&rbCloudUser&&(rbIsAdmin||rbIsOwner())){rbRun(rbLoadAdmin)();}
  window.scrollTo({top:0,behavior:"smooth"});
 }));
 document.getElementById('rbPublicRankingOpen')?.addEventListener('click',()=>document.querySelector('nav button[data-page="leaderboard"]')?.click());
@@ -1303,7 +1302,7 @@ rbEl('rbAdminRefresh').addEventListener('click',async(event)=>{
 });
 rbEl('rbAdminAuditRefresh')?.addEventListener('click',rbRun(()=>rbAdminLoadAuditLog(true)));
 document.querySelector('nav button[data-page="leaderboard"]')?.addEventListener('click',()=>{rbInitIfNeeded().then(()=>rbLoadLeaderboard(true));});
-document.querySelector('nav button[data-page="admin"]')?.addEventListener('click',()=>{if(rbIsAdmin)rbRun(rbLoadAdmin)();else rbAdminStatus('Acesso restrito à conta administrativa.');});
+document.querySelector('nav button[data-page="admin"]')?.addEventListener('click',()=>{if(rbIsAdmin||rbIsOwner())rbRun(rbLoadAdmin)();else rbAdminStatus('Acesso restrito à conta administrativa.');});
 window.rbCloudSaveRound=rbCloudSaveRound;window.rbGetCloudContext=rbContext;window.rbPersistAccountHistory=rbPersistAccountHistory;window.rbCloudStatus=rbCloudStatus;window.rbCloudUser=null;
 rbInit().then(async()=>{window.rbCloudUser=rbCloudUser;await rbLoadGlobalSettings();}).catch(e=>rbCloudStatus('Não foi possível conectar ao Supabase: '+(e.message||e)));
 setInterval(()=>{if(document.visibilityState==='visible'&&rbClient&&rbCloudUser)rbAdminCheck().catch(()=>{});if(document.visibilityState==='visible'&&rbEl('page-leaderboard')?.classList.contains('active')&&rbClient)rbLoadLeaderboard(false);},8000);
