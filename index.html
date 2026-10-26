@@ -1273,7 +1273,7 @@ async function rbSqlConsoleLoadLogs(){
  if(!rows.length){host.innerHTML='<p class="footnote">Nenhuma execução registrada.</p>';return;}
  host.innerHTML=rows.map(row=>'<details class="card" style="margin:8px 0;background:var(--panel2)"><summary><strong>'+rbEsc(row.command_kind||'SQL')+'</strong> · '+(row.success?'Sucesso':'Falhou')+' · '+rbEsc(new Date(row.created_at).toLocaleString('pt-BR'))+'</summary><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+rbEsc(row.sql_text||'')+'</pre><p class="footnote">Linhas: '+rbEsc(row.row_count??0)+(row.error_message?' · Erro: '+rbEsc(row.error_message):'')+'</p></details>').join('');
 }
-rbEl('rbSqlConsoleRun')?.addEventListener('click',()=>rbRun(async()=>{
+rbEl('rbSqlConsoleRun')?.addEventListener('click',rbRun(async()=>{
  if(!rbIsOwner())throw new Error('Console SQL exclusivo do proprietário.');
  const input=rbEl('rbSqlConsoleQuery');
  let sql=String(input?.value||'').trim();
@@ -1307,10 +1307,27 @@ rbEl('rbSqlConsoleRun')?.addEventListener('click',()=>rbRun(async()=>{
   rbSqlConsolePrint(data);
   if(data?.ok===false){if(status)status.textContent='SQL falhou. A tentativa foi registrada na auditoria.';throw new Error(data.error||'A consulta falhou.');}
   if(status)status.textContent='Concluído em '+(data.duration_ms??0)+' ms · '+(data.row_count??0)+' linha(s). Execução registrada.';
-  await rbSqlConsoleLoadLogs();
+  try{await rbSqlConsoleLoadLogs();}catch(logError){if(status)status.textContent='SQL executado; não foi possível atualizar a lista de auditoria: '+(logError?.message||String(logError));}
+ }catch(error){
+  const message=error?.message||String(error);
+  rbSqlConsolePrint({ok:false,error:message});
+  if(status)status.textContent='Falha ao executar SQL: '+message;
+  throw error;
  }finally{button.disabled=false;button.textContent='▶ Executar SQL';}
 }));
-rbEl('rbSqlConsoleLogs')?.addEventListener('click',()=>rbRun(rbSqlConsoleLoadLogs));
+rbEl('rbSqlConsoleLogs')?.addEventListener('click',rbRun(async()=>{
+ const status=rbEl('rbSqlConsoleStatus');
+ try{
+  if(!rbIsOwner())throw new Error('Auditoria SQL exclusiva do proprietário.');
+  await rbInitIfNeeded();
+  await rbSqlConsoleLoadLogs();
+  if(status)status.textContent='Auditoria carregada com sucesso.';
+ }catch(error){
+  const message=error?.message||String(error);
+  if(status)status.textContent='Falha ao atualizar auditoria: '+message;
+  throw error;
+ }
+}));
 rbEl('rbSqlConsoleClear')?.addEventListener('click',()=>{if(rbEl('rbSqlConsoleQuery'))rbEl('rbSqlConsoleQuery').value='';if(rbEl('rbSqlConsoleResult'))rbEl('rbSqlConsoleResult').textContent='Nenhuma consulta executada.';});
 
 async function rbLoadAdmin(){
