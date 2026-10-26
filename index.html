@@ -1638,4 +1638,15 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 
   <script src="assets/js/mobile-dock.js?v=20261026-compact-center-2328" defer></script>
+
+<script id="rb-admin-navigation-final-fix-20261026">
+(()=>{'use strict';
+ const ownerId='7e799691-ba7e-42ea-ab6f-71ad11ca32ff';
+ const authorized=()=>{try{const u=(typeof rbCloudUser!=='undefined'&&rbCloudUser)||window.rbCloudUser;const owner=!!u&&String(u.id||'')===ownerId;const admin=(typeof rbIsAdmin!=='undefined'&&rbIsAdmin===true)||window.rbIsAdmin===true;return !!u&&(owner||admin)}catch(_){return false}};
+ const showAdmin=()=>{const page=document.getElementById('page-admin'),nav=document.querySelector('nav button[data-page="admin"]');if(!authorized()){if(nav)nav.hidden=true;if(page){page.hidden=true;page.classList.remove('active')}return false;}document.querySelectorAll('.page').forEach(p=>{p.classList.toggle('active',p===page);p.hidden=p!==page});document.querySelectorAll('nav button[data-page]').forEach(b=>b.classList.toggle('active',b===nav));if(nav)nav.hidden=false;window.scrollTo({top:0,behavior:'smooth'});if(typeof rbLoadAdmin==='function'){try{if(typeof rbRun==='function')rbRun(rbLoadAdmin)();else rbLoadAdmin()}catch(_){}}return true};
+ document.addEventListener('click',e=>{const b=e.target&&e.target.closest&&e.target.closest('nav button[data-page="admin"]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();showAdmin()},true);
+ window.addEventListener('rb-auth-state-changed',()=>{const b=document.querySelector('nav button[data-page="admin"]');if(b)b.hidden=!authorized();const p=document.getElementById('page-admin');if(!authorized()&&p){p.hidden=true;p.classList.remove('active')}});
+ document.addEventListener('DOMContentLoaded',()=>{const b=document.querySelector('nav button[data-page="admin"]');if(b)b.hidden=!authorized()}, {once:true});
+})();
+</script>
 </body></html>
