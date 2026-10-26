@@ -1127,7 +1127,7 @@ async function rbClaimTeam(name){
  rbApplyTeam({id:team.id,name:team.name,auth_user_id:team.auth_user_id||rbCloudUser.id});
  return rbCloudTeam;
 }
-async function rbAdminCheck(){window.rbAdminCheckComplete=false;rbIsAdmin=rbIsOwner();if(rbCloudUser&&!rbIsAdmin){try{const {data,error}=await rbClient.rpc('is_rabbitech_admin');rbIsAdmin=!error&&data===true;}catch(_){rbIsAdmin=false;}}window.rbIsAdmin=!!(rbCloudUser&&(rbIsAdmin||rbIsOwner()));window.rbAdminCheckComplete=true;rbSetButtons();window.dispatchEvent(new CustomEvent('rb-auth-state-changed',{detail:{user:rbCloudUser,isAdmin:window.rbIsAdmin}}));if(rbIsAdmin&&document.querySelector('#page-admin')?.classList.contains('active'))await rbLoadAdmin();}
+let rbAdminCheckInFlight=null;async function rbAdminCheck(){if(rbAdminCheckInFlight)return rbAdminCheckInFlight;rbAdminCheckInFlight=(async()=>{window.rbAdminCheckComplete=false;rbIsAdmin=rbIsOwner();if(rbCloudUser&&!rbIsAdmin){try{const {data,error}=await rbClient.rpc('is_rabbitech_admin');rbIsAdmin=!error&&data===true;}catch(_){rbIsAdmin=false;}}window.rbIsAdmin=!!(rbCloudUser&&(rbIsAdmin||rbIsOwner()));window.rbAdminCheckComplete=true;rbSetButtons();window.dispatchEvent(new CustomEvent('rb-auth-state-changed',{detail:{user:rbCloudUser,isAdmin:window.rbIsAdmin}}));return window.rbIsAdmin;})();try{return await rbAdminCheckInFlight;}finally{rbAdminCheckInFlight=null;}}
 async function rbHandleSignedIn(){
  if(!rbCloudUser)return;
  const pending=rbNormalizeTeamName(localStorage.getItem(PENDING_TEAM_KEY)||'');
@@ -1219,7 +1219,7 @@ async function rbLoadAdmin(){
   const host=rbEl('rbAdminTeams');host.innerHTML=teams.length?teams.map(t=>`<div class="rb-admin-team" data-team-id="${rbEsc(t.id||'')}"><div class="rb-admin-team-head"><strong>${rbEsc(t.name)}</strong><span class="badge">${Number(t.rounds_count)||0} rounds</span></div><div class="three" style="margin-top:10px"><div><small class="muted">Média</small><div><b>${t.average_score==null?'—':Math.round(Number(t.average_score))}</b></div></div><div><small class="muted">Melhor round</small><div><b>${t.best_score==null?'—':Number(t.best_score)}</b></div></div><div><small class="muted">Última atividade</small><div><b>${t.last_round_at?rbEsc(new Date(t.last_round_at).toLocaleDateString('pt-BR')):'—'}</b></div></div></div><div class="toolbar" style="margin-top:10px"><button type="button" data-rb-rename="${rbEsc(t.id||'')}" ${t.id?'':'disabled'}>Renomear</button><button type="button" data-rb-delete="${rbEsc(t.id||'')}" ${t.id?'':'disabled'}>Excluir equipe</button></div></div>`).join(''):'<p class="footnote">Ainda não há equipes registradas.</p>';
   const filter=rbEl('rbAdminTeamFilter');if(filter){const applyFilter=()=>{const q=filter.value.trim().toLocaleLowerCase('pt-BR');host.querySelectorAll('[data-team-id]').forEach(card=>{card.hidden=!card.querySelector('strong')?.textContent.toLocaleLowerCase('pt-BR').includes(q);});};filter.oninput=applyFilter;applyFilter();}host.querySelectorAll('[data-rb-rename]').forEach(b=>b.addEventListener('click',()=>rbRun(async()=>{const current=b.closest('[data-team-id]')?.querySelector('strong')?.textContent||'';const next=prompt('Novo nome para a equipe:',current);if(next===null)return;if(next.trim().length<2)throw new Error('O nome precisa ter pelo menos 2 caracteres.');const {error}=await rbClient.rpc('admin_rename_team',{p_team_id:b.dataset.rbRename,p_new_name:next.trim()});if(error)throw error;rbAdminStatus('Equipe renomeada. Atualizando painel…');await rbLoadAdmin();await rbLoadLeaderboard(false);})()));
   host.querySelectorAll('[data-rb-delete]').forEach(b=>b.addEventListener('click',()=>rbRun(async()=>{const name=b.closest('[data-team-id]')?.querySelector('strong')?.textContent||'esta equipe';if(!confirm('Excluir '+name+' e TODOS os rounds vinculados? Essa ação não pode ser desfeita.'))return;const {error}=await rbClient.rpc('admin_delete_team',{p_team_id:b.dataset.rbDelete});if(error)throw error;rbAdminStatus('Equipe excluída. Atualizando painel…');await rbLoadAdmin();await rbLoadLeaderboard(false);})()));
-  rbEl('rbAdminContent').classList.remove('hidden');rbAdminRenderRankPreview();rbAdminStatus('Painel atualizado às '+new Date().toLocaleTimeString('pt-BR')+'. Total de '+teams.length+' equipes recebidas do Supabase.');
+  rbEl('rbAdminContent').classList.remove('hidden');await rbAdminRenderRankPreview();rbAdminStatus('Painel atualizado às '+new Date().toLocaleTimeString('pt-BR')+'. Total de '+teams.length+' equipes recebidas do Supabase.');
  }catch(e){rbEl('rbAdminContent').classList.add('hidden');rbAdminStatus('Não foi possível carregar o painel: '+(e.message||String(e))+' Verifique se sua conta foi cadastrada em public.app_admins no Supabase.');}
  finally{rbAdminBusy=false;}
 }
@@ -1243,14 +1243,11 @@ rbEl('rbAdminRefresh').addEventListener('click',async(event)=>{
  };
  try{
   await rbInitIfNeeded();
-  if(!rbCloudUser||!(rbIsAdmin||rbIsOwner()))await rbAdminCheck();
+  await rbAdminCheck();
   if(!rbCloudUser||!(rbIsAdmin||rbIsOwner()))throw new Error('Acesso restrito. Entre com uma conta administradora autorizada.');
   preserveAdminView();
   await rbLoadAdmin();
-  await rbAdminRenderRankPreview();
-  await rbAdminLoadAdmins();
-  rbGlobalSettingsSignature='';
-  await rbLoadGlobalSettings();
+  // rbLoadAdmin already refreshes the rank preview, admin list, audit log and global settings.
   rbAdminStatus('Painel atualizado. A aba Admin foi mantida aberta.');
  }catch(error){
   rbAdminStatus('Falha ao atualizar o painel: '+(error?.message||String(error)));
