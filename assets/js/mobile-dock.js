@@ -111,6 +111,7 @@
   document.querySelectorAll('[id*="globalNotice" i],[class*="global-notice" i],[data-global-notice]').forEach(element=>{
    if(element.closest('#page-admin'))return;
    element.hidden=!noticesEnabled;
+   element.classList.toggle('hidden',!noticesEnabled);
    if(!noticesEnabled)element.setAttribute('aria-hidden','true');
    else element.removeAttribute('aria-hidden');
   });
