@@ -102,11 +102,19 @@
      page.classList.remove('active');
      const score=$('page-score');
      if(score){score.classList.add('active');score.hidden=false}
+     document.querySelectorAll('main .page').forEach(other=>{if(other!==score){other.classList.remove('active');other.hidden=true}});
      document.querySelectorAll('nav button[data-page]').forEach(button=>button.classList.toggle('active',button.dataset.page==='score'));
     }
     page.hidden=!enabled;
    }
   });
+  // Music is a module, so disabling it hides both the dock tab and floating library player.
+  const musicEnabled=flags.music_player!==false;
+  const musicFab=$('musicFab'),musicOverlay=$('musicOverlay'),musicAudio=$('musicAudio');
+  if(musicFab)musicFab.hidden=!musicEnabled;
+  if(musicOverlay){musicOverlay.hidden=!musicEnabled;if(!musicEnabled){musicOverlay.classList.remove('open','active','visible');musicOverlay.setAttribute('aria-hidden','true')}else musicOverlay.removeAttribute('aria-hidden')}
+  if(!musicEnabled&&musicAudio){try{musicAudio.pause();musicAudio.currentTime=0}catch(_){}}
+  document.querySelectorAll('[data-feature-flag]').forEach(element=>{if(element.closest('#page-admin'))return;const key=element.getAttribute('data-feature-flag');if(Object.prototype.hasOwnProperty.call(flags,key))element.hidden=flags[key]===false});
   const noticesEnabled=flags.global_notices!==false&&noticeActive===true;
   document.querySelectorAll('[id*="globalNotice" i],[class*="global-notice" i],[data-global-notice]').forEach(element=>{
    if(element.closest('#page-admin'))return;
