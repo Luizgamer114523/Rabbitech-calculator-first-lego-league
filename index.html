@@ -1280,10 +1280,11 @@ rbEl('rbSqlConsoleRun')?.addEventListener('click',()=>rbRun(async()=>{
  // Mobile Chrome can restore the textarea value from an older page after deployment.
  // If that restored value is the known obsolete demo (which calls blocked auth.uid()),
  // replace it and run the current, supported safe demo instead of leaving the user stuck.
- const legacyDemo=sql.startsWith("SELECT 'Rabbitech BIOGLOW'") &&
-   sql.includes("'Console SQL funcionando!'") &&
-   /\bauth\s*\.\s*uid\s*\(\s*\)/i.test(sql) &&
-   /usuario_autenticado/i.test(sql);
+ const normalizedSql=sql.replace(/\s+/g,' ').trim();
+ const legacyDemo=/^SELECT\s+'Rabbitech BIOGLOW'\s+AS\s+projeto\b/i.test(normalizedSql) &&
+   normalizedSql.includes("'Console SQL funcionando!'") &&
+   /\bauth\s*\.\s*uid\s*\(\s*\)/i.test(normalizedSql) &&
+   /usuario_autenticado/i.test(normalizedSql);
  if(legacyDemo){
   sql="SELECT 'Rabbitech BIOGLOW' AS projeto, 'Console SQL funcionando!' AS resultado, current_timestamp AS horario_teste";
   if(input)input.value=sql+';';
