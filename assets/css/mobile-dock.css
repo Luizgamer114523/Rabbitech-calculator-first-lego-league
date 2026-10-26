@@ -1,0 +1,40 @@
+/* Rabbitech mobile dock: single source of truth. Keep desktop navigation unchanged. */
+nav.rb-samsung-dock{box-sizing:border-box}
+nav.rb-samsung-dock button[hidden]{display:none!important}
+#rbLanguageReopen{position:static!important;inset:auto!important;z-index:auto!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;flex:0 0 auto!important;white-space:nowrap!important;margin:0 0 0 auto!important;max-width:100%;padding:8px 10px!important}
+header{position:relative}
+header #rbLanguageReopen{align-self:center}
+#rbDockExpandOne{display:none}
+@media(max-width:650px){
+ body{padding-bottom:calc(94px + env(safe-area-inset-bottom))!important}
+ header{padding:10px!important}
+ header>div:first-child{display:flex!important;flex-wrap:wrap!important;gap:8px!important;align-items:center!important}
+ header .season{flex:1 1 150px!important;min-width:0!important}
+ header #rbLanguageReopen{order:3!important;margin-left:auto!important}
+ nav.rb-samsung-dock{
+  position:fixed!important;left:50%!important;right:auto!important;top:auto!important;
+  bottom:calc(8px + env(safe-area-inset-bottom))!important;transform:translateX(-50%)!important;
+  width:max-content!important;max-width:calc(100vw - 20px)!important;min-width:0!important;
+  z-index:9000!important;box-sizing:border-box!important;display:flex!important;flex-flow:row nowrap!important;
+  align-items:center!important;justify-content:center!important;gap:4px!important;overflow:hidden!important;
+  max-height:66px!important;padding:6px!important;border-radius:18px!important;
+  background:rgba(7,19,12,.97)!important;border:1px solid rgba(208,244,119,.32)!important;
+  box-shadow:0 8px 30px #0008!important;backdrop-filter:blur(20px) saturate(1.3)!important;
+ }
+ nav.rb-samsung-dock button[data-page]{
+  display:flex!important;flex:0 0 48px!important;width:48px!important;min-width:48px!important;max-width:48px!important;
+  min-height:50px!important;padding:4px 2px!important;flex-direction:column!important;align-items:center!important;
+  justify-content:center!important;gap:3px!important;font-size:9px!important;line-height:1.05!important
+ }
+ nav.rb-samsung-dock button[data-page] .dock-icon{font-size:15px!important;line-height:1!important}
+ nav.rb-samsung-dock button[data-page] .dock-label{font-size:8px!important;line-height:1.05!important}
+ nav.rb-samsung-dock:not(.rb-dock-expanded) button[data-page]:nth-of-type(n+6){display:none!important}
+ nav.rb-samsung-dock #rbDockExpandOne{display:flex!important;flex:0 0 36px!important;width:36px!important;min-width:36px!important;
+  min-height:48px!important;align-items:center!important;justify-content:center!important;padding:4px!important;
+  border-radius:12px!important;font-size:20px!important;line-height:1!important;background:rgba(208,244,119,.12)!important;
+  color:#d0f477!important;border:1px solid rgba(208,244,119,.35)!important}
+ nav.rb-samsung-dock.rb-dock-expanded{max-width:calc(100vw - 12px)!important;flex-wrap:wrap!important;max-height:45dvh!important;overflow-y:auto!important}
+ nav.rb-samsung-dock.rb-dock-expanded button[data-page]{flex-basis:calc((100% - 20px)/5)!important;width:calc((100% - 20px)/5)!important;max-width:calc((100% - 20px)/5)!important}
+ nav.rb-samsung-dock.rb-dock-expanded #rbDockExpandOne{position:sticky;bottom:0}
+}
+@media(prefers-reduced-motion:reduce){nav.rb-samsung-dock,nav.rb-samsung-dock *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
