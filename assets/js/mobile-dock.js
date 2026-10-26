@@ -182,7 +182,9 @@
    const user=currentUser(),key=user?String(user.id||'')+':'+String(adminAllowed()):'out';
    if(key!==previous){previous=key;syncAdmin()}
   },700);
-  window.addEventListener('rb-auth-state-changed',syncAdmin);\n  window.addEventListener('rb-site-settings-updated',loadPublicSettings);\n  setInterval(loadPublicSettings,15000);
+  window.addEventListener('rb-auth-state-changed',syncAdmin);
+  window.addEventListener('rb-site-settings-updated',loadPublicSettings);
+  setInterval(loadPublicSettings,15000);
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
  else init();
