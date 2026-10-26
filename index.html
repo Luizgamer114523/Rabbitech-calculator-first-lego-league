@@ -1652,3 +1652,46 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 })();
 </script>
 </body></html>
+
+<!-- Rabbitech admin refresh navigation guard: keep the admin page active while refreshing its data. -->
+<script id="rb-admin-refresh-navigation-guard">
+(function(){
+  if(window.__rbAdminRefreshNavigationGuard)return;
+  window.__rbAdminRefreshNavigationGuard=true;
+  function activateAdmin(){
+    const page=document.getElementById('page-admin');
+    const nav=document.querySelector('nav button[data-page="admin"]');
+    if(!page||!nav)return;
+    const allowed=window.rbIsAdmin===true || (typeof window.rbIsOwner==='function'&&window.rbIsOwner());
+    if(!allowed)return;
+    page.hidden=false;
+    document.querySelectorAll('.page').forEach(p=>{
+      const active=p===page;
+      p.classList.toggle('active',active);
+      if(p!==page)p.hidden=true;
+    });
+    document.querySelectorAll('nav button[data-page]').forEach(b=>b.classList.toggle('active',b===nav));
+    nav.hidden=false;
+  }
+  document.addEventListener('click',async function(event){
+    const button=event.target&&event.target.closest&&event.target.closest('#rbAdminRefresh');
+    if(!button)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    activateAdmin();
+    const status=document.getElementById('rbAdminStatus');
+    try{
+      if(typeof window.rbAdminCheck==='function')await window.rbAdminCheck();
+      activateAdmin();
+      if(typeof window.rbLoadAdmin==='function')await window.rbLoadAdmin();
+      if(typeof window.rbAdminRenderRankPreview==='function')await window.rbAdminRenderRankPreview();
+      if(typeof window.rbAdminLoadAdmins==='function')await window.rbAdminLoadAdmins();
+      activateAdmin();
+    }catch(error){
+      if(status)status.textContent='Falha ao atualizar o painel: '+(error&&error.message?error.message:String(error));
+      activateAdmin();
+    }
+  },true);
+  window.addEventListener('rb-auth-state-changed',function(){setTimeout(activateAdmin,0)});
+})();
+</script>
