@@ -5,6 +5,10 @@ nav.rb-samsung-dock{box-sizing:border-box}
 #rbPrivacyGate{z-index:2147483001!important}
 body.rb-privacy-gate-open nav{display:none!important}
 #rbLanguageGateQuick{display:block!important;margin:12px 0!important;padding:10px!important;border:1px solid var(--line)!important;border-radius:12px!important}
+#rbLanguageHeader{display:flex!important;align-items:center!important;gap:8px!important;flex-wrap:wrap!important;margin:0 0 8px!important;padding:6px 8px!important;border:1px solid var(--line)!important;border-radius:10px!important;background:rgba(8,24,14,.72)!important;font-size:12px!important;line-height:1.2!important}
+#rbLanguageHeader select{max-width:100%!important;background:var(--panel)!important;color:var(--text)!important;border:1px solid var(--line)!important;padding:6px 8px!important;border-radius:8px!important}
+header .season #rbLanguageHeader{width:100%!important;box-sizing:border-box!important;justify-content:flex-start!important}
+
 #rbLanguageGateQuick select{width:100%;margin:8px 0 0!important;background:var(--panel)!important;color:var(--text)!important;border:1px solid var(--line)!important;padding:10px!important;border-radius:10px!important}
 nav.rb-samsung-dock button[hidden],
 nav.rb-samsung-dock button[data-page][hidden]{display:none!important}
