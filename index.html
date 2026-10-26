@@ -913,7 +913,17 @@ document.querySelectorAll(".dock").forEach(sel=>sel.addEventListener("change",()
  // Keep chosen docks visible; warning prevents the score from being saved until unique.
  render();
 }));
-document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("active",x===b));document.querySelectorAll(".page").forEach(x=>x.classList.toggle("active",x.id==="page-"+b.dataset.page));window.scrollTo({top:0,behavior:"smooth"})}));
+document.querySelectorAll("nav button[data-page]").forEach(b=>b.addEventListener("click",()=>{
+ if(b.hidden)return;
+ const key=b.dataset.page,page=document.getElementById("page-"+key);
+ if(!page)return;
+ if(key==="admin"&&!(rbCloudUser&&(rbIsAdmin||rbIsOwner()||window.rbIsAdmin===true))){rbAdminStatus("Acesso restrito. Entre com uma conta administradora autorizada.");return;}
+ document.querySelectorAll("main .page").forEach(p=>{const active=p===page;p.classList.toggle("active",active);p.hidden=!active;});
+ document.querySelectorAll("nav button[data-page]").forEach(button=>button.classList.toggle("active",button===b));
+ page.hidden=false;
+ if(key==="admin"&&typeof rbLoadAdmin==="function"&&rbCloudUser&&(rbIsAdmin||rbIsOwner())){rbRun(rbLoadAdmin)();}
+ window.scrollTo({top:0,behavior:"smooth"});
+}));
 document.getElementById('rbPublicRankingOpen')?.addEventListener('click',()=>document.querySelector('nav button[data-page="leaderboard"]')?.click());
 try{const saved=JSON.parse(localStorage.getItem(KEY+".current")||"null");if(saved&&saved.values)round=saved}catch(e){}
 try{const p=JSON.parse(localStorage.getItem(KEY+".plan")||"null");if(p){$("#teamName").value=p.team||"";$("#goal").value=p.goal||"Consistência";$("#priority").value=p.priority||"Missões próximas da base";$("#notes").value=p.notes||"";if(p.docks){$("#dock13").value=p.docks.m13||"mine";$("#dock14").value=p.docks.m14||"city";$("#dock15").value=p.docks.m15||"farm"}}}catch(e){}
@@ -1106,7 +1116,7 @@ function rbSetButtons(){
  rbEl('rbCloudSync').hidden=!(signed&&linked);rbEl('rbCloudSync').disabled=!(signed&&linked);
  rbEl('rbCloudLogout').hidden=!signed;
  rbEl('rbCloudTeam').readOnly=signed&&linked;
- const adminAllowed=!!(signed&&rbCloudUser&&(rbIsAdmin||rbIsOwner()));window.rbIsAdmin=adminAllowed;rbEl('rbAdminNav').hidden=!adminAllowed;const adminPage=rbEl('page-admin');if(adminPage){if(adminAllowed){adminPage.hidden=false;}else{adminPage.hidden=true;if(adminPage.classList.contains('active')&&(!signed||window.rbAdminCheckComplete===true)){adminPage.classList.remove('active');const scorePage=rbEl('page-score');if(scorePage){scorePage.hidden=false;scorePage.classList.add('active');}document.querySelectorAll('nav button[data-page]').forEach(button=>button.classList.toggle('active',button.dataset.page==='score'));}}} const ownerControls=rbEl('rbOwnerControls');if(ownerControls)ownerControls.classList.toggle('hidden',!rbIsOwner()); const ownerAdminSection=rbEl('rbOwnerAdminSection');if(ownerAdminSection)ownerAdminSection.classList.toggle('hidden',!rbIsOwner());
+ const adminAllowed=!!(signed&&rbCloudUser&&(rbIsAdmin||rbIsOwner()));window.rbIsAdmin=adminAllowed;rbEl('rbAdminNav').hidden=!adminAllowed;const adminPage=rbEl('page-admin');if(adminPage){if(adminAllowed){adminPage.hidden=!adminPage.classList.contains('active');}else{adminPage.hidden=true;if(adminPage.classList.contains('active')&&(!signed||window.rbAdminCheckComplete===true)){adminPage.classList.remove('active');const scorePage=rbEl('page-score');if(scorePage){scorePage.hidden=false;scorePage.classList.add('active');}document.querySelectorAll('main .page').forEach(page=>{if(page!==scorePage){page.classList.remove('active');page.hidden=true;}});document.querySelectorAll('nav button[data-page]').forEach(button=>button.classList.toggle('active',button.dataset.page==='score'));}}} const ownerControls=rbEl('rbOwnerControls');if(ownerControls)ownerControls.classList.toggle('hidden',!rbIsOwner()); const ownerAdminSection=rbEl('rbOwnerAdminSection');if(ownerAdminSection)ownerAdminSection.classList.toggle('hidden',!rbIsOwner());
 }
 function rbLoadSdk(){return new Promise((resolve,reject)=>{if(window.supabase?.createClient){resolve();return;}const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';sc.onload=resolve;sc.onerror=()=>reject(new Error('Não foi possível carregar a biblioteca do Supabase.'));document.head.appendChild(sc);});}
 function rbReadArray(key){try{const v=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(v)?v:[]}catch(_){return []}}
@@ -1127,7 +1137,33 @@ async function rbClaimTeam(name){
  rbApplyTeam({id:team.id,name:team.name,auth_user_id:team.auth_user_id||rbCloudUser.id});
  return rbCloudTeam;
 }
-let rbAdminCheckInFlight=null;async function rbAdminCheck(){if(rbAdminCheckInFlight)return rbAdminCheckInFlight;rbAdminCheckInFlight=(async()=>{window.rbAdminCheckComplete=false;rbIsAdmin=rbIsOwner();if(rbCloudUser&&!rbIsAdmin){try{const {data,error}=await rbClient.rpc('is_rabbitech_admin');rbIsAdmin=!error&&data===true;}catch(_){rbIsAdmin=false;}}window.rbIsAdmin=!!(rbCloudUser&&(rbIsAdmin||rbIsOwner()));window.rbAdminCheckComplete=true;rbSetButtons();window.dispatchEvent(new CustomEvent('rb-auth-state-changed',{detail:{user:rbCloudUser,isAdmin:window.rbIsAdmin}}));return window.rbIsAdmin;})();try{return await rbAdminCheckInFlight;}finally{rbAdminCheckInFlight=null;}}
+let rbAdminCheckInFlight=null,rbAdminCheckedUserId=null;
+async function rbAdminCheck(){
+ if(rbAdminCheckInFlight)return rbAdminCheckInFlight;
+ const requestedUserId=rbCloudUser?.id||null;
+ // Do not clear an already verified admin role while a routine refresh is in flight.
+ // Reset only when the authenticated account changes, then validate against Supabase.
+ if(rbAdminCheckedUserId!==requestedUserId){
+  rbAdminCheckedUserId=requestedUserId;
+  rbIsAdmin=!!(rbCloudUser&&rbIsOwner());
+  window.rbIsAdmin=rbIsAdmin;
+ }
+ rbAdminCheckInFlight=(async()=>{
+  window.rbAdminCheckComplete=false;
+  let allowed=!!(rbCloudUser&&rbIsOwner());
+  if(rbCloudUser&&!allowed){
+   try{const {data,error}=await rbClient.rpc('is_rabbitech_admin');allowed=!error&&data===true;}
+   catch(_){allowed=false;}
+  }
+  // Ignore a stale result if another Google account signed in during this request.
+  if((rbCloudUser?.id||null)!==requestedUserId)return !!(rbCloudUser&&rbIsOwner());
+  rbIsAdmin=allowed;window.rbIsAdmin=allowed;window.rbAdminCheckComplete=true;
+  rbSetButtons();
+  window.dispatchEvent(new CustomEvent('rb-auth-state-changed',{detail:{user:rbCloudUser,isAdmin:window.rbIsAdmin}}));
+  return allowed;
+ })();
+ try{return await rbAdminCheckInFlight;}finally{rbAdminCheckInFlight=null;}
+}
 async function rbHandleSignedIn(){
  if(!rbCloudUser)return;
  const pending=rbNormalizeTeamName(localStorage.getItem(PENDING_TEAM_KEY)||'');
@@ -1211,16 +1247,16 @@ rbEl('rbAdminExportTeams')?.addEventListener('click',()=>rbRun(async()=>{const {
 rbEl('rbAdminCheckData')?.addEventListener('click',()=>rbRun(async()=>{const {data,error}=await rbClient.rpc('get_rabbitech_admin_overview');if(error)throw error;const teams=Array.isArray(data?.teams)?data.teams:[];const empty=teams.filter(t=>Number(t.rounds_count||0)===0).length;const low=teams.filter(t=>Number(t.rounds_count||0)>0&&Number(t.rounds_count)<3).length;rbEl('rbAdminToolsStatus').textContent='Verificação concluída: '+teams.length+' equipes; '+empty+' sem rounds; '+low+' com menos de 3 rounds. Nenhum dado foi alterado.';}));
 rbEl('rbAdminRefreshAll')?.addEventListener('click',()=>rbRun(async()=>{await rbLoadAdmin();await rbAdminRenderRankPreview();await rbAdminLoadAdmins();rbEl('rbAdminToolsStatus').textContent='Painel e ranking recarregados.';}));
 async function rbLoadAdmin(){
- if(!rbCloudUser||!rbIsAdmin){rbAdminStatus('Acesso restrito. Entre com a conta Google autorizada como administradora.');rbEl('rbAdminContent').classList.add('hidden');return;}
- if(rbAdminBusy)return;rbAdminBusy=true;rbAdminStatus('Carregando estatísticas privadas…');
+ if(!rbCloudUser||!(rbIsAdmin||rbIsOwner())){rbAdminStatus('Acesso restrito. Entre com a conta Google autorizada como administradora.');rbEl('rbAdminContent').classList.add('hidden');return false;}
+ if(rbAdminBusy)return false;rbAdminBusy=true;rbAdminStatus('Carregando estatísticas privadas…');
  try{
   const {data,error}=await rbClient.rpc('get_rabbitech_admin_overview');if(error)throw error;
   const info=data||{},teams=Array.isArray(info.teams)?info.teams:[],roundCount=Number(info.round_count??info.total_rounds??0),teamCount=Number(info.team_count??info.total_teams??teams.length),emptyTeams=teams.filter(t=>Number(t.rounds_count||0)===0).length;rbEl('rbAdminTeamCount').textContent=String(teamCount);rbEl('rbAdminRoundCount').textContent=String(roundCount);rbEl('rbAdminRankedCount').textContent=String(teams.filter(t=>Number(t.rounds_count)>=3).length);if(rbEl('rbAdminEmptyTeamCount'))rbEl('rbAdminEmptyTeamCount').textContent=String(emptyTeams);if(rbEl('rbAdminHealthStatus'))rbEl('rbAdminHealthStatus').textContent='Conexão com Supabase ativa; resumo administrativo recebido com sucesso.';if(rbEl('rbAdminDataQuality'))rbEl('rbAdminDataQuality').textContent=emptyTeams?emptyTeams+' equipe(s) sem rounds. Confira se são cadastros de teste ou equipes ainda não iniciadas.':'Todas as equipes retornadas possuem ao menos um round.';if(rbEl('rbAdminLastUpdate'))rbEl('rbAdminLastUpdate').textContent='Última atualização: '+new Date().toLocaleString('pt-BR')+'.';
   const host=rbEl('rbAdminTeams');host.innerHTML=teams.length?teams.map(t=>`<div class="rb-admin-team" data-team-id="${rbEsc(t.id||'')}"><div class="rb-admin-team-head"><strong>${rbEsc(t.name)}</strong><span class="badge">${Number(t.rounds_count)||0} rounds</span></div><div class="three" style="margin-top:10px"><div><small class="muted">Média</small><div><b>${t.average_score==null?'—':Math.round(Number(t.average_score))}</b></div></div><div><small class="muted">Melhor round</small><div><b>${t.best_score==null?'—':Number(t.best_score)}</b></div></div><div><small class="muted">Última atividade</small><div><b>${t.last_round_at?rbEsc(new Date(t.last_round_at).toLocaleDateString('pt-BR')):'—'}</b></div></div></div><div class="toolbar" style="margin-top:10px"><button type="button" data-rb-rename="${rbEsc(t.id||'')}" ${t.id?'':'disabled'}>Renomear</button><button type="button" data-rb-delete="${rbEsc(t.id||'')}" ${t.id?'':'disabled'}>Excluir equipe</button></div></div>`).join(''):'<p class="footnote">Ainda não há equipes registradas.</p>';
   const filter=rbEl('rbAdminTeamFilter');if(filter){const applyFilter=()=>{const q=filter.value.trim().toLocaleLowerCase('pt-BR');host.querySelectorAll('[data-team-id]').forEach(card=>{card.hidden=!card.querySelector('strong')?.textContent.toLocaleLowerCase('pt-BR').includes(q);});};filter.oninput=applyFilter;applyFilter();}host.querySelectorAll('[data-rb-rename]').forEach(b=>b.addEventListener('click',()=>rbRun(async()=>{const current=b.closest('[data-team-id]')?.querySelector('strong')?.textContent||'';const next=prompt('Novo nome para a equipe:',current);if(next===null)return;if(next.trim().length<2)throw new Error('O nome precisa ter pelo menos 2 caracteres.');const {error}=await rbClient.rpc('admin_rename_team',{p_team_id:b.dataset.rbRename,p_new_name:next.trim()});if(error)throw error;rbAdminStatus('Equipe renomeada. Atualizando painel…');await rbLoadAdmin();await rbLoadLeaderboard(false);})()));
   host.querySelectorAll('[data-rb-delete]').forEach(b=>b.addEventListener('click',()=>rbRun(async()=>{const name=b.closest('[data-team-id]')?.querySelector('strong')?.textContent||'esta equipe';if(!confirm('Excluir '+name+' e TODOS os rounds vinculados? Essa ação não pode ser desfeita.'))return;const {error}=await rbClient.rpc('admin_delete_team',{p_team_id:b.dataset.rbDelete});if(error)throw error;rbAdminStatus('Equipe excluída. Atualizando painel…');await rbLoadAdmin();await rbLoadLeaderboard(false);})()));
-  rbEl('rbAdminContent').classList.remove('hidden');await rbAdminRenderRankPreview();rbAdminStatus('Painel atualizado às '+new Date().toLocaleTimeString('pt-BR')+'. Total de '+teams.length+' equipes recebidas do Supabase.');
- }catch(e){rbEl('rbAdminContent').classList.add('hidden');rbAdminStatus('Não foi possível carregar o painel: '+(e.message||String(e))+' Verifique se sua conta foi cadastrada em public.app_admins no Supabase.');}
+  rbEl('rbAdminContent').classList.remove('hidden');await rbAdminRenderRankPreview();rbAdminStatus('Painel atualizado às '+new Date().toLocaleTimeString('pt-BR')+'. Total de '+teams.length+' equipes recebidas do Supabase.');return true;
+ }catch(e){rbEl('rbAdminContent').classList.add('hidden');rbAdminStatus('Não foi possível carregar o painel: '+(e.message||String(e))+' Verifique se sua conta foi cadastrada em public.app_admins no Supabase.');return false;}
  finally{rbAdminBusy=false;}
 }
 rbEl('rbCloudGoogle').addEventListener('click',rbRun(rbGoogleLogin));
@@ -1230,12 +1266,12 @@ rbEl('rbCloudLogout').addEventListener('click',rbRun(rbLogout));
 rbEl('rbLeaderboardRefresh').addEventListener('click',async()=>{await rbInitIfNeeded();await rbLoadLeaderboard(true);});
 rbEl('rbAdminRefresh').addEventListener('click',async(event)=>{
  event.preventDefault();event.stopImmediatePropagation();
- const button=rbEl('rbAdminRefresh');
- if(button.dataset.rbRefreshing==='1')return;
+ const button=rbEl('rbAdminRefresh');if(button.dataset.rbRefreshing==='1')return;
  button.dataset.rbRefreshing='1';button.disabled=true;
  const page=rbEl('page-admin'),nav=rbEl('rbAdminNav'),scrollY=window.scrollY;
+ const isLocallyAuthorized=()=>!!(rbCloudUser&&(rbIsAdmin||rbIsOwner()||window.rbIsAdmin===true));
  const preserveAdminView=()=>{
-  if(!page||!(rbIsAdmin||rbIsOwner()))return;
+  if(!page||!isLocallyAuthorized())return;
   document.querySelectorAll('main .page').forEach(p=>{const active=p===page;p.classList.toggle('active',active);p.hidden=!active;});
   document.querySelectorAll('nav button[data-page]').forEach(b=>b.classList.toggle('active',b===nav));
   if(nav){nav.hidden=false;nav.removeAttribute('hidden');}
@@ -1243,18 +1279,25 @@ rbEl('rbAdminRefresh').addEventListener('click',async(event)=>{
  };
  try{
   await rbInitIfNeeded();
-  await rbAdminCheck();
-  if(!rbCloudUser||!(rbIsAdmin||rbIsOwner()))throw new Error('Acesso restrito. Entre com uma conta administradora autorizada.');
+  // Avoid rechecking an already verified role here; the old check briefly cleared
+  // rbIsAdmin and a parallel UI refresh could redirect the administrator to Placar.
+  if(!isLocallyAuthorized()&&!(await rbAdminCheck()))throw new Error('Acesso restrito. Entre com uma conta administradora autorizada.');
+  if(!isLocallyAuthorized())throw new Error('Acesso restrito. Entre com uma conta administradora autorizada.');
   preserveAdminView();
-  await rbLoadAdmin();
-  // rbLoadAdmin already refreshes the rank preview, admin list, audit log and global settings.
+  const loaded=await rbLoadAdmin();
+  preserveAdminView();
+  if(!loaded)throw new Error(rbEl('rbAdminStatus')?.textContent||'O painel não confirmou a atualização.');
+  await rbLoadGlobalSettings();preserveAdminView();
+  if(rbIsOwner()){await rbAdminLoadAdmins();await rbAdminLoadAuditLog(true);preserveAdminView();}
+  const toolsStatus=rbEl('rbAdminToolsStatus');if(toolsStatus)toolsStatus.textContent='Painel, configurações globais e dados administrativos atualizados.';
   rbAdminStatus('Painel atualizado. A aba Admin foi mantida aberta.');
  }catch(error){
   rbAdminStatus('Falha ao atualizar o painel: '+(error?.message||String(error)));
   console.error('Falha na atualização do painel administrativo:',error);
- }finally{
+  // Keep the admin workspace selected if the session still has a previously verified grant.
   preserveAdminView();
-  button.disabled=false;delete button.dataset.rbRefreshing;
+ }finally{
+  preserveAdminView();button.disabled=false;delete button.dataset.rbRefreshing;
   window.scrollTo({top:scrollY,behavior:'auto'});
  }
 });
