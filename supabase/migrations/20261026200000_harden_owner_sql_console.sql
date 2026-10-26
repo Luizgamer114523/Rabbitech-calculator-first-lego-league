@@ -181,3 +181,4 @@ $function$;
 REVOKE ALL ON FUNCTION public.rabbitech_owner_sql_console(text, boolean, text) FROM PUBLIC, anon;
 REVOKE ALL ON FUNCTION public.rabbitech_owner_sql_console_logs(integer) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.rabbitech_owner_sql_console(text, boolean, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.rabbitech_owner_sql_console_logs(integer) TO authenticated;
