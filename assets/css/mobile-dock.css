@@ -73,3 +73,14 @@ header .season{display:flex;flex-direction:column;align-items:flex-end;min-width
 header #rbLanguageQuick{box-sizing:border-box;max-width:100%;background:rgba(13,33,22,.96);color:var(--text,#edf7ed);line-height:1.2}
 header #rbLanguageQuick select{max-width:116px;background:#0a1a10;color:inherit;border:1px solid #49684b;border-radius:8px}
 @media(max-width:650px){header{gap:7px!important}header .season{font-size:9px!important}header .season b{font-size:10px!important}header #rbLanguageQuick{font-size:10px!important}header #rbLanguageQuick select{max-width:100px!important;font-size:11px!important}}
+
+/* Feature flags must win over the dock's display:flex rules. */
+nav.rb-samsung-dock>button[data-page][hidden],
+nav.rb-samsung-dock>button[hidden]{
+ display:none!important;
+}
+.page[hidden],
+section.page[hidden],
+div.page[hidden]{
+ display:none!important;
+}
