@@ -123,6 +123,33 @@
  function init(){
   setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();
   document.addEventListener('click',event=>{
+   const removeButton=event.target?.closest?.('[data-rb-admin-remove]');
+   if(removeButton){
+    event.preventDefault();event.stopImmediatePropagation();
+    (async()=>{
+     try{
+      if(typeof rbIsOwner!=='function'||!rbIsOwner())throw new Error('Somente a conta proprietária pode remover administradores.');
+      const userId=String(removeButton.getAttribute('data-rb-admin-remove')||'').trim();
+      if(!userId)throw new Error('Não foi possível identificar a conta administrativa selecionada.');
+      const email=removeButton.closest('.rb-admin-team')?.querySelector('strong')?.textContent?.trim()||'esta conta';
+      if(!confirm('Remover '+email+' da lista de administradores?'))return;
+      if(typeof rbClient==='undefined'||!rbClient)throw new Error('A conexão com o Supabase não está pronta. Atualize o painel e tente novamente.');
+      removeButton.disabled=true;
+      const result=await rbClient.rpc('admin_remove_rabbitech_admin',{p_user_id:userId});
+      if(result?.error)throw new Error(result.error.message||'O Supabase recusou a remoção.');
+      if(result?.data?.ok===false)throw new Error(result.data.message||'O Supabase não confirmou a remoção.');
+      if(typeof rbAdminCheck==='function')await rbAdminCheck();
+      if(typeof rbAdminLoadAdmins==='function')await rbAdminLoadAdmins();
+      if(typeof rbAdminStatus==='function')rbAdminStatus('Administrador removido e lista atualizada.');
+     }catch(error){
+      console.error('Rabbitech admin removal failed',error);
+      alert(error?.message||'Não foi possível remover o administrador.');
+      removeButton.disabled=false;
+     }
+    })();
+    return;
+   }
+
    const button=event.target?.closest?.('nav button[data-page="admin"]');
    if(!button)return;
    if(!adminAllowed()){event.preventDefault();event.stopImmediatePropagation();syncAdmin();return}
