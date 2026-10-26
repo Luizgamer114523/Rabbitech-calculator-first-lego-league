@@ -84,3 +84,8 @@ section.page[hidden],
 div.page[hidden]{
  display:none!important;
 }
+
+/* Honor feature flags even when older dock rules declare display:flex!important. */
+nav button[data-page][hidden] { display: none !important; }
+main .page[hidden] { display: none !important; }
+#rbGlobalNotice.hidden, #rbGlobalNotice[hidden] { display: none !important; }
