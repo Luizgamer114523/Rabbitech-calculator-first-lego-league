@@ -1617,179 +1617,25 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
 
 <!-- Rabbitech production hotfix: unified mobile dock and language controls -->
 
-<script id="rb-production-dock-language-controller">
-(function(){
- 'use strict';
- function fixDock(){
-  var nav=document.querySelector('nav.rb-samsung-dock')||document.querySelector('nav button[data-page]')?.closest('nav');
-  if(!nav||nav.dataset.rbProductionDock==='1')return;
-  nav.dataset.rbProductionDock='1';nav.classList.add('rb-samsung-dock');
-  document.querySelectorAll('#rbDockMore,#rbDockExpand,#rbDockExpandOne,#rbFinalDockMore').forEach(function(el){el.remove()});
-  var more=document.createElement('button');more.id='rbDockExpandOne';more.type='button';more.textContent='+';
-  more.setAttribute('aria-label','Mostrar mais abas');more.setAttribute('aria-expanded','false');more.title='Mostrar mais abas';
-  more.addEventListener('click',function(e){
-   e.preventDefault();e.stopPropagation();
-   var open=nav.classList.toggle('rb-dock-expanded');
-   more.textContent=open?'−':'+';more.title=open?'Recolher abas':'Mostrar mais abas';
-   more.setAttribute('aria-label',more.title);more.setAttribute('aria-expanded',String(open));
-  });
-  nav.appendChild(more);
-  nav.querySelectorAll('button[data-page]').forEach(function(btn){
-   btn.addEventListener('click',function(){
-    nav.classList.remove('rb-dock-expanded');more.textContent='+';
-    more.setAttribute('aria-expanded','false');more.title='Mostrar mais abas';
-   },true);
-  });
- }
- function fixLanguage(){
-  var overlay=document.getElementById('rbLanguageConsent');
-  var select=document.getElementById('rbConsentLanguage');
-  var duplicate=document.getElementById('rbLanguagePersistent');if(duplicate)duplicate.remove();
-  var quick=document.getElementById('rbLanguageQuickSelect');if(quick){var wrap=quick.closest('#rbLanguagePersistent');if(wrap)wrap.remove();else quick.remove()}
-  if(!overlay||!select)return;
-  var opener=document.getElementById('rbLanguageReopen');
-  if(!opener){opener=document.createElement('button');opener.id='rbLanguageReopen';opener.type='button';opener.textContent='🌐 Idioma';opener.setAttribute('aria-label','Trocar idioma');document.body.appendChild(opener)}
-  opener.onclick=function(){
-   overlay.hidden=false;overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','false');
-   document.body.style.overflow='hidden';
-   try{var saved=localStorage.getItem('rbPreferredLanguage');if(saved&&Array.from(select.options).some(function(o){return o.value===saved}))select.value=saved}catch(_){}
-   select.disabled=false;select.focus({preventScroll:true});
-  };
-  if(!select.dataset.rbProductionLanguage){
-   select.dataset.rbProductionLanguage='1';
-   select.addEventListener('change',function(){
-    try{localStorage.setItem('rbPreferredLanguage',select.value)}catch(_){}
-    document.documentElement.lang=select.value||'pt-BR';
-    document.dispatchEvent(new Event('rb:language-change'));
-   });
-  }
- }
- function init(){fixDock();fixLanguage()}
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-</script>
+
 
 <!-- Rabbitech production hotfix: single mobile dock and usable language consent -->
 
 
 
-<script id="rb-production-dock-language-hotfix-script">
-(()=>{'use strict';
-const $=id=>document.getElementById(id);
-function fixDock(){
- const nav=document.querySelector('nav button[data-page]')?.parentElement;
- if(!nav||nav.dataset.rbProductionDock==='1')return;
- nav.dataset.rbProductionDock='1';nav.classList.add('rb-samsung-dock');
- document.querySelectorAll('#rbDockMore,#rbDockExpand,#rbFinalDockMore,#rbDockExpandOne').forEach(el=>el.remove());
- const more=document.createElement('button');more.id='rbDockExpandOne';more.type='button';more.textContent='+';
- more.title='Mostrar mais abas';more.setAttribute('aria-label',more.title);more.setAttribute('aria-expanded','false');
- more.addEventListener('click',e=>{e.preventDefault();e.stopPropagation();const open=nav.classList.toggle('rb-dock-expanded');more.textContent=open?'−':'+';more.title=open?'Recolher abas':'Mostrar mais abas';more.setAttribute('aria-label',more.title);more.setAttribute('aria-expanded',String(open))});
- nav.appendChild(more);
- nav.querySelectorAll('button[data-page]').forEach(btn=>btn.addEventListener('click',()=>{nav.classList.remove('rb-dock-expanded');more.textContent='+';more.setAttribute('aria-expanded','false')},true));
-}
-function fixLanguage(){
- const overlay=$('rbLanguageConsent'),select=$('rbConsentLanguage');
- $('rbLanguagePersistent')?.remove();
- const quick=$('rbLanguageQuickSelect');if(quick)quick.closest('label')?.remove();
- if(!overlay||!select)return;
- let opener=$('rbLanguageReopen');
- if(!opener){opener=document.createElement('button');opener.id='rbLanguageReopen';opener.type='button';opener.textContent='🌐 Idioma';document.body.appendChild(opener)}
- opener.onclick=()=>{overlay.hidden=false;overlay.style.removeProperty('display');overlay.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';select.disabled=false;try{select.value=localStorage.getItem('rbPreferredLanguage')||'pt-BR'}catch(_){}select.focus({preventScroll:true})};
- select.disabled=false;
- if(!select.dataset.rbProductionLanguage){
-  select.dataset.rbProductionLanguage='1';
-  select.addEventListener('change',()=>{const code=select.value||'pt-BR';try{localStorage.setItem('rbPreferredLanguage',code)}catch(_){}document.documentElement.lang=code;try{if(typeof window.rbRenderPrivacyLanguage==='function')window.rbRenderPrivacyLanguage(code)}catch(_){}document.dispatchEvent(new Event('rb:language-change'))});
- }
- const close=()=>{overlay.hidden=true;overlay.style.setProperty('display','none','important');document.body.style.overflow='';try{sessionStorage.setItem('rbPrivacyDismissed','yes')}catch(_){}};
- const x=$('rbConsentClose');if(x&&!x.dataset.rbProductionClose){x.dataset.rbProductionClose='1';x.addEventListener('click',close,true)}
- document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!overlay.hidden&&overlay.style.display!=='none')close()});
-}
-function init(){fixDock();fixLanguage()}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-</script>
+
 
 <!-- Rabbitech follow-up: center dock and move language control into header -->
 
-<script id="rb-final-position-fix-script">
-(()=>{'use strict';function place(){
- const nav=document.querySelector('nav button[data-page]')?.parentElement;
- if(nav){nav.classList.add('rb-samsung-dock');nav.style.removeProperty('left');nav.style.removeProperty('right');nav.style.removeProperty('width');nav.style.removeProperty('transform');}
- const lang=document.getElementById('rbLanguageReopen'),header=document.querySelector('header');
- if(lang&&header&&lang.parentElement!==header){header.appendChild(lang)}
- if(lang){lang.style.removeProperty('top');lang.style.removeProperty('right');lang.style.removeProperty('left');lang.style.removeProperty('position');}
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place();
-})();
-</script>
+
 
 <!-- Rabbitech final layout patch 2026-10-25: header language, centered dock, admin visibility -->
 
-<script id="rb-final-layout-patch-script">
-(()=>{'use strict';
-function moveLanguageButton(){
- const btn=document.getElementById('rbLanguageReopen'),header=document.querySelector('body>header');
- if(!btn||!header)return;
- const season=header.querySelector('.season');
- if(season&&btn.parentElement!==header){
-  btn.remove();
-  const row=header.firstElementChild;
-  if(row){row.appendChild(btn);row.style.flexWrap='wrap';row.style.alignItems='center'}
-  else header.appendChild(btn);
- }
-}
-function protectAdminVisibility(){
- const user=window.rbCloudUser||null;
- const isOwner=!!(user&&String(user.id)==='7e799691-ba7e-42ea-ab6f-71ad11ca32ff');
- const isAdmin=!!(user&&window.rbIsAdmin===true);
- const nav=document.getElementById('rbAdminNav'),page=document.getElementById('page-admin');
- const allowed=!!(user&&(isOwner||isAdmin));
- if(nav)nav.hidden=!allowed;
- if(page){page.hidden=!allowed;if(!allowed)page.classList.remove('active')}
-}
-function init(){
- moveLanguageButton();
- const nav=document.querySelector('nav button[data-page]')?.parentElement;
- if(nav){
-  nav.classList.add('rb-samsung-dock');
-  const more=document.getElementById('rbDockExpandOne');
-  if(more&&more.parentElement!==nav)more.remove();
-  if(more&&more.parentElement===nav)more.addEventListener('click',e=>e.stopPropagation());
- }
- protectAdminVisibility();
- document.addEventListener('click',e=>{if(e.target.closest('#rbCloudLogout'))setTimeout(protectAdminVisibility,250)},true);
- document.addEventListener('visibilitychange',protectAdminVisibility);
-}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
-})();
-</script>
+
 
 <!-- Rabbitech final mobile header/dock/admin navigation fix 2026-10-25 -->
 
 
-<script id="rb-final-admin-nav-guard">
-(function(){
- function adminIsAuthorized(){
-  try{
-   var u=(typeof rbCloudUser!=="undefined"&&rbCloudUser)||window.rbCloudUser;
-   var owner=!!(u&&String(u.id)==="7e799691-ba7e-42ea-ab6f-71ad11ca32ff");
-   var admin=(typeof rbIsAdmin!=="undefined"&&rbIsAdmin===true)||window.rbIsAdmin===true;
-   return !!(u&&(owner||admin));
-  }catch(e){return false}
- }
- document.addEventListener("click",function(e){
-  var btn=e.target&&e.target.closest?e.target.closest('nav button[data-page="admin"]'):null;
-  if(!btn)return;
-  if(!adminIsAuthorized()){
-   e.preventDefault();e.stopImmediatePropagation();
-   var page=document.getElementById("page-admin");if(page){page.classList.remove("active");page.hidden=true}
-   btn.hidden=true;
-   return;
-  }
-  var page=document.getElementById("page-admin");
-  if(page)page.hidden=false;
- },true);
-})();
-</script>
+
   <script src="assets/js/mobile-dock.js" defer></script>
 </body></html>
