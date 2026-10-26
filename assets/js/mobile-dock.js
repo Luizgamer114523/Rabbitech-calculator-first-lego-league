@@ -17,6 +17,7 @@
  function setupDock(){
   const nav=document.querySelector('nav button[data-page]')?.closest('nav'); if(!nav)return;
   nav.classList.add('rb-samsung-dock');
+  // Start collapsed on every page load; stale DOM state must not leave the dock expanded.
   nav.querySelectorAll('button[data-page="admin"]').forEach(btn=>{if(btn.id!=='rbAdminNav')btn.id='rbAdminNav'});
   if(nav.dataset.rbDockController==='1' && $('rbDockExpandOne'))return;
   nav.dataset.rbDockController='1';
@@ -32,7 +33,12 @@
   if(row&&btn.parentElement!==row){row.appendChild(btn)}
  }
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();
+  setupDock();
+  const nav=document.querySelector('nav.rb-samsung-dock');
+  if(nav)nav.classList.remove('rb-dock-expanded');
+  const expand=$('rbDockExpandOne');
+  if(expand){expand.textContent='+';expand.title='Mostrar mais abas';expand.setAttribute('aria-label','Mostrar mais abas');expand.setAttribute('aria-expanded','false')}
+  placeLanguageButton();syncAdmin();
   document.addEventListener('click',e=>{
    const btn=e.target?.closest?.('nav button[data-page="admin"]');if(!btn)return;
    if(!adminAllowed()){e.preventDefault();e.stopImmediatePropagation();syncAdmin()}
