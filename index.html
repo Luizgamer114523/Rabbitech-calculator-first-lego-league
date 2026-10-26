@@ -1319,6 +1319,13 @@ function rbApplyFeatureFlags(flags){
  const pageMap={leaderboard:f.public_ranking,youtube:f.youtube_tv,music:f.music_player,strategy:f.strategy,routes:f.routes,rules:f.rules};
  Object.entries(pageMap).forEach(([name,enabled])=>{const nav=document.querySelector('nav button[data-page="'+name+'"]');const page=rbEl('page-'+name);if(nav)nav.hidden=!enabled;if(page)page.hidden=!enabled;if(!enabled&&page&&page.classList.contains('active')){page.classList.remove('active');const score=document.getElementById('page-score');if(score){score.hidden=false;score.classList.add('active');}document.querySelectorAll('nav button[data-page]').forEach(button=>button.classList.toggle('active',button.dataset.page==='score'));}});
  const callout=rbEl('rb-public-ranking-callout')||document.querySelector('.rb-public-ranking-callout');if(callout)callout.hidden=!f.public_ranking;
+ // The music feature includes the floating launcher and its overlay, not just the Music tab.
+ const musicEnabled=!!f.music_player;
+ const musicFab=rbEl('musicFab'),musicOverlay=rbEl('musicOverlay'),musicAudio=rbEl('musicAudio');
+ if(musicFab)musicFab.hidden=!musicEnabled;
+ if(musicOverlay){musicOverlay.hidden=!musicEnabled;if(!musicEnabled){musicOverlay.classList.remove('open','active','visible');musicOverlay.setAttribute('aria-hidden','true');}else musicOverlay.removeAttribute('aria-hidden');}
+ if(!musicEnabled&&musicAudio){try{musicAudio.pause();musicAudio.currentTime=0;}catch(_){}}
+ document.querySelectorAll('[data-feature-flag]').forEach(element=>{if(element.closest('#page-admin'))return;const key=element.getAttribute('data-feature-flag');if(Object.prototype.hasOwnProperty.call(f,key))element.hidden=!f[key];});
  const notice=rbEl('rbGlobalNotice');if(notice){const active=!!rbGlobalSettingsCurrent.notice_active&&String(rbGlobalSettingsCurrent.notice_text||'').trim();notice.classList.toggle('hidden',!f.global_notices||!active);}
  const status=rbEl('rbFeatureFlagsStatus');if(status)status.textContent='Preferências dos módulos aplicadas.';
 }
@@ -1327,7 +1334,7 @@ async function rbLoadGlobalSettings(){if(!rbClient)return;try{const {data,error}
 async function rbAdminLoadAdmins(){
  const host=rbEl('rbAdminList');
  if(!host)return;
- if(!rbIsOwner()||!rbIsAdmin||!rbClient){
+ if(!rbIsOwner()||!(rbIsAdmin||rbIsOwner())||!rbClient){
   host.innerHTML='<p class="footnote">A gestão de administradores é exclusiva da conta proprietária.</p>';
   return;
  }
@@ -1349,12 +1356,21 @@ async function rbAdminLoadAdmins(){
     if(prompt('Para evitar remoção acidental, digite REMOVER para confirmar:')!=='REMOVER')return;
     button.disabled=true;const oldLabel=button.textContent;button.textContent='Removendo…';
     try{
-     const result=await rbClient.rpc('admin_remove_rabbitech_admin',{p_user_id:button.dataset.rbAdminRemove});
+     const removedId=String(button.dataset.rbAdminRemove||'');
+     if(!removedId)throw new Error('O identificador do administrador não foi encontrado.');
+     const result=await Promise.race([
+      rbClient.rpc('admin_remove_rabbitech_admin',{p_user_id:removedId}),
+      new Promise((_,reject)=>setTimeout(()=>reject(new Error('A remoção demorou mais de 12 segundos. Atualize a lista antes de tentar novamente.')),12000))
+     ]);
      if(result.error)throw result.error;
-     if(result.data&&result.data.ok===false)throw new Error(result.data.message||'O Supabase não confirmou a remoção.');
+     if(!result.data||result.data.ok!==true)throw new Error(result.data?.message||'O Supabase não confirmou a remoção.');
+     const verify=await rbClient.rpc('admin_list_rabbitech_admins');
+     if(verify.error)throw verify.error;
+     const remaining=Array.isArray(verify.data)?verify.data:[];
+     if(remaining.some(row=>String(row.user_id||'')===removedId))throw new Error('O administrador ainda aparece no Supabase. A remoção não foi confirmada; atualize a lista e confira as permissões da conta.');
      await rbAdminLoadAdmins();
      await rbAdminLoadAuditLog(true);
-     rbAdminStatus('Administrador removido com sucesso. A lista foi atualizada.');
+     rbAdminStatus('Administrador removido e confirmado no Supabase. A lista foi atualizada.');
     }catch(error){
      rbAdminStatus('Falha ao remover administrador: '+(error?.message||String(error)));
      console.error('Falha ao remover administrador:',error);
@@ -1368,7 +1384,7 @@ async function rbAdminLoadAdmins(){
  }
 }
 async function rbAdminLoadAuditLog(force=false){const host=rbEl('rbAdminAuditLog');if(!host)return;if(!force&&host.dataset.loaded==='true')return;if(!rbIsOwner()||!rbIsAdmin||!rbClient){host.innerHTML='<p class="footnote">Histórico restrito ao proprietário.</p>';return;}host.innerHTML='<p class="footnote">Carregando histórico…</p>';try{const result=await Promise.race([rbClient.rpc('get_rabbitech_admin_audit_log',{p_limit:50}),new Promise((_,reject)=>setTimeout(()=>reject(new Error('A consulta demorou mais de 12 segundos.')),12000))]);if(result.error)throw result.error;const rows=Array.isArray(result.data)?result.data:[];host.dataset.loaded='true';host.innerHTML=rows.length?rows.map(a=>{const details=a.details&&typeof a.details==='object'?a.details:{};const action=a.action==='admin_added'?'Administrador adicionado':a.action==='admin_removed'?'Administrador removido':String(a.action||'Ação administrativa');const target=a.target_email||details.email||a.target_user_id||'Conta não identificada';const actor=a.actor_email||'Proprietário';const date=a.created_at?new Date(a.created_at).toLocaleString('pt-BR'):'Data indisponível';return '<div class="rb-admin-team" style="margin:8px 0"><div class="rb-admin-team-head"><strong>'+rbEsc(action)+'</strong><span class="badge">'+rbEsc(date)+'</span></div><p class="footnote" style="margin:6px 0 0">Alvo: '+rbEsc(target)+' · Responsável: '+rbEsc(actor)+'</p></div>';}).join(''):'<p class="footnote">Nenhuma alteração administrativa registrada ainda.</p>';}catch(e){host.innerHTML='<p class="footnote" role="alert">Não foi possível carregar o histórico: '+rbEsc(e?.message||String(e))+'</p>';}}
-async function rbSaveGlobalSettings(p){if(!rbIsAdmin)throw new Error('Apenas administradores podem alterar configurações globais.');const {data,error}=await rbClient.rpc('admin_update_rabbitech_settings',{p_notice_text:p.notice_text,p_notice_active:p.notice_active,p_notice_type:p.notice_type,p_accent_color:p.accent_color,p_theme_name:p.theme_name});if(error)throw new Error('Supabase recusou salvar as configurações: '+(error.message||String(error)));if(data&&data.ok===false)throw new Error(data.message||'O Supabase não confirmou a gravação.');rbGlobalSettingsSignature='';await rbLoadGlobalSettings();rbAdminStatus('Configuração global salva e recarregada.');}
+async function rbSaveGlobalSettings(p){if(!(rbIsAdmin||rbIsOwner()))throw new Error('Apenas administradores podem alterar configurações globais.');const {data,error}=await rbClient.rpc('admin_update_rabbitech_settings',{p_notice_text:p.notice_text,p_notice_active:p.notice_active,p_notice_type:p.notice_type,p_accent_color:p.accent_color,p_theme_name:p.theme_name});if(error)throw new Error('Supabase recusou salvar as configurações: '+(error.message||String(error)));if(data&&data.ok===false)throw new Error(data.message||'O Supabase não confirmou a gravação.');rbGlobalSettingsSignature='';await rbLoadGlobalSettings();rbAdminStatus('Configuração global salva e recarregada.');}
 let rbMusicObjectUrl='';
 rbEl('rbMusicLoad')?.addEventListener('click',()=>{
  const audio=rbEl('rbMusicAudio'),file=rbEl('rbMusicFile')?.files?.[0],url=String(rbEl('rbMusicUrl')?.value||'').trim(),status=rbEl('rbMusicStatus');
@@ -1384,12 +1400,20 @@ rbEl('rbGlobalNoticeClear')?.addEventListener('click',rbRun(async()=>{if(!confir
 rbEl('rbGlobalThemeSave')?.addEventListener('click',rbRun(async()=>{await rbSaveGlobalSettings({notice_text:rbGlobalSettingsCurrent.notice_text||rbEl('rbGlobalNoticeText').value.trim(),notice_active:rbGlobalSettingsCurrent.notice_active===true,notice_type:rbEl('rbGlobalNoticeType').value,accent_color:rbEl('rbGlobalAccent').value,theme_name:rbEl('rbGlobalThemeName').value.trim()});}));
 rbEl('rbFeatureFlagsSave')?.addEventListener('click',rbRun(async()=>{
  const flags={youtube_tv:!!rbEl('rbFeatureYoutube')?.checked,public_ranking:!!rbEl('rbFeatureRanking')?.checked,music_player:!!rbEl('rbFeatureMusic')?.checked,global_notices:!!rbEl('rbFeatureNotices')?.checked,strategy:!!rbEl('rbFeatureStrategy')?.checked,routes:!!rbEl('rbFeatureRoutes')?.checked,rules:!!rbEl('rbFeatureRules')?.checked};
- const status=rbEl('rbFeatureFlagsStatus');if(status)status.textContent='Salvando módulos…';
+ const status=rbEl('rbFeatureFlagsStatus');if(status)status.textContent='Salvando e verificando no Supabase…';
  const {data,error}=await rbClient.rpc('admin_update_rabbitech_feature_flags',{p_feature_flags:flags});
  if(error)throw new Error('Não foi possível salvar os módulos: '+(error.message||String(error)));
- if(data&&data.ok===false)throw new Error(data.message||'O Supabase não confirmou a gravação.');
- rbGlobalSettingsSignature='';await rbLoadGlobalSettings();if(status)status.textContent='Funcionalidades salvas e aplicadas para todos os visitantes.';
- rbAdminStatus('Controle de funcionalidades atualizado.');
+ if(!data||typeof data!=='object'||!data.feature_flags)throw new Error('O Supabase não retornou os módulos salvos. Nenhuma confirmação será exibida até a leitura ser verificada.');
+ rbGlobalSettingsSignature='';await rbLoadGlobalSettings();
+ const actual=rbGlobalSettingsCurrent.feature_flags||{};
+ const mismatch=Object.keys(flags).filter(key=>actual[key]!==flags[key]);
+ if(mismatch.length)throw new Error('O Supabase não confirmou estas opções: '+mismatch.join(', ')+'. Recarregue a página e tente novamente.');
+ rbApplyFeatureFlags(actual);
+ window.dispatchEvent(new CustomEvent('rb-site-settings-updated',{detail:{feature_flags:actual}}));
+ const labels={youtube_tv:'Rabbitech TV',public_ranking:'Ranking público',music_player:'Música',global_notices:'Avisos globais',strategy:'Estratégia',routes:'Rotas',rules:'Regras'};
+ const disabled=Object.keys(flags).filter(key=>flags[key]===false).map(key=>labels[key]);
+ if(status)status.textContent=disabled.length?'Salvo e conferido no Supabase. Ocultos: '+disabled.join(', ')+'.':'Salvo e conferido no Supabase. Todos os módulos estão ativos.';
+ rbAdminStatus('Controle de funcionalidades salvo e confirmado no Supabase.');
 }));
 rbEl('rbAdminAdd')?.addEventListener('click',async()=>{
  const button=rbEl('rbAdminAdd'),input=rbEl('rbAdminEmail');
