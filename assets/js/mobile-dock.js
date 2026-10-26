@@ -72,7 +72,25 @@
   document.addEventListener('click',event=>{
    const button=event.target?.closest?.('nav button[data-page="admin"]');
    if(!button)return;
-   if(!adminAllowed()){event.preventDefault();event.stopImmediatePropagation();syncAdmin()}
+   if(!adminAllowed()){event.preventDefault();event.stopImmediatePropagation();syncAdmin();return}
+   /* Own the Admin navigation so older click handlers cannot bounce back to Score. */
+   event.preventDefault();event.stopImmediatePropagation();
+   const page=$('page-admin');
+   if(page){
+    document.querySelectorAll('.page').forEach(item=>{item.classList.toggle('active',item===page);item.hidden=item!==page});
+    document.querySelectorAll('nav button[data-page]').forEach(item=>item.classList.toggle('active',item===button));
+    page.hidden=false;
+    window.scrollTo({top:0,behavior:'auto'});
+   }
+   try{
+    if(typeof rbInitIfNeeded==='function'){
+     Promise.resolve(rbInitIfNeeded()).then(()=>{
+      if(typeof rbRun==='function'&&typeof rbLoadAdmin==='function')rbRun(rbLoadAdmin)();
+      else if(typeof rbLoadAdmin==='function')rbLoadAdmin();
+     });
+    }else if(typeof rbRun==='function'&&typeof rbLoadAdmin==='function')rbRun(rbLoadAdmin)();
+    else if(typeof rbLoadAdmin==='function')rbLoadAdmin();
+   }catch(error){console.error('Rabbitech Admin navigation failed',error)}
   },true);
   const observer=new MutationObserver(()=>{
    setupDock();placeLanguageButton();syncAdmin();
