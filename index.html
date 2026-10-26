@@ -1275,7 +1275,21 @@ async function rbSqlConsoleLoadLogs(){
 }
 rbEl('rbSqlConsoleRun')?.addEventListener('click',()=>rbRun(async()=>{
  if(!rbIsOwner())throw new Error('Console SQL exclusivo do proprietário.');
- const sql=rbEl('rbSqlConsoleQuery')?.value?.trim()||'';
+ const input=rbEl('rbSqlConsoleQuery');
+ let sql=String(input?.value||'').trim();
+ // Mobile Chrome can restore the textarea value from an older page after deployment.
+ // If that restored value is the known obsolete demo (which calls blocked auth.uid()),
+ // replace it and run the current, supported safe demo instead of leaving the user stuck.
+ const legacyDemo=sql.startsWith("SELECT 'Rabbitech BIOGLOW'") &&
+   sql.includes("'Console SQL funcionando!'") &&
+   /\bauth\s*\.\s*uid\s*\(\s*\)/i.test(sql) &&
+   /usuario_autenticado/i.test(sql);
+ if(legacyDemo){
+  sql="SELECT 'Rabbitech BIOGLOW' AS projeto, 'Console SQL funcionando!' AS resultado, current_timestamp AS horario_teste";
+  if(input)input.value=sql+';';
+  const status=rbEl('rbSqlConsoleStatus');
+  if(status)status.textContent='Exemplo antigo do navegador detectado e corrigido. Executando o teste seguro…';
+ }
  if(!sql)throw new Error('Digite uma instrução SQL.');
  const destructive=rbSqlConsoleIsDestructive(sql);
  let phrase=null;
