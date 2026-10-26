@@ -464,15 +464,17 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
       <div class="two"><label class="field">Cor de destaque<input id="rbGlobalAccent" type="color" value="#d0f477"></label><label class="field">Nome do tema<input id="rbGlobalThemeName" maxlength="40" placeholder="Ex.: BioGlow Verde"></label></div>
       <button type="button" id="rbGlobalThemeSave" class="primary" style="margin-top:10px">Salvar aparência global</button>
       <hr style="margin:24px 0;border-color:var(--line)">
-      <div id="rbOwnerAccessNotice" class="card hidden" style="margin-top:12px" role="status" aria-live="polite">A conta conectada tem acesso administrativo, mas não é a proprietária configurada. Para adicionar ou remover administradores, entre com a conta Google do proprietário.</div>
-      <div id="rbOwnerAdminSection">
-      <h3>🛡️ Administradores</h3><p class="footnote">Somente o proprietário pode adicionar ou remover administradores.</p>
-      <div class="two"><label class="field">E-mail Google<input id="rbAdminEmail" maxlength="320" type="email" placeholder="pessoa@gmail.com"></label><div style="display:flex;align-items:end"><button type="button" id="rbAdminAdd" class="primary">Adicionar administrador</button></div></div>
+      <div id="rbOwnerAccessNotice" class="card hidden" style="margin-top:12px" role="status" aria-live="polite">Esta conta não é a proprietária. Você pode remover outras contas administradoras; adicionar administradores e consultar o histórico continuam restritos ao proprietário. A conta proprietária não pode ser removida.</div>
+      <div id="rbAdminManagementSection" class="hidden">
+      <h3>🛡️ Administradores</h3><p class="footnote">Administradores podem remover outras contas administradoras. A conta proprietária é protegida; somente o proprietário pode adicionar administradores e consultar o histórico.</p>
+      <div id="rbOwnerAdminAddControls" class="two"><label class="field">E-mail Google<input id="rbAdminEmail" maxlength="320" type="email" placeholder="pessoa@gmail.com"></label><div style="display:flex;align-items:end"><button type="button" id="rbAdminAdd" class="primary">Adicionar administrador</button></div></div>
       <div id="rbAdminList" style="margin-top:12px"><p class="footnote">Carregando administradores…</p></div>
+      <div id="rbOwnerAdminAuditSection">
       <hr style="margin:18px 0;border-color:var(--line)">
       <div class="toolbar" style="justify-content:space-between;align-items:center"><h3 style="margin:0">🧾 Histórico de segurança</h3><button type="button" id="rbAdminAuditRefresh">Atualizar histórico</button></div>
       <p class="footnote">Registra inclusões e remoções de administradores. Visível somente ao proprietário.</p>
       <div id="rbAdminAuditLog" aria-live="polite"><p class="footnote">O histórico será carregado ao abrir o painel.</p></div>
+      </div>
       </div>
     </div>
   </div>
@@ -1116,7 +1118,7 @@ function rbSetButtons(){
  rbEl('rbCloudSync').hidden=!(signed&&linked);rbEl('rbCloudSync').disabled=!(signed&&linked);
  rbEl('rbCloudLogout').hidden=!signed;
  rbEl('rbCloudTeam').readOnly=signed&&linked;
- const adminAllowed=!!(signed&&rbCloudUser&&(rbIsAdmin||rbIsOwner()));window.rbIsAdmin=adminAllowed;rbEl('rbAdminNav').hidden=!adminAllowed;const adminPage=rbEl('page-admin');if(adminPage){if(adminAllowed){adminPage.hidden=!adminPage.classList.contains('active');}else{adminPage.hidden=true;if(adminPage.classList.contains('active')&&(!signed||window.rbAdminCheckComplete===true)){adminPage.classList.remove('active');const scorePage=rbEl('page-score');if(scorePage){scorePage.hidden=false;scorePage.classList.add('active');}document.querySelectorAll('main .page').forEach(page=>{if(page!==scorePage){page.classList.remove('active');page.hidden=true;}});document.querySelectorAll('nav button[data-page]').forEach(button=>button.classList.toggle('active',button.dataset.page==='score'));}}} const ownerControls=rbEl('rbOwnerControls');if(ownerControls)ownerControls.classList.toggle('hidden',!rbIsOwner()); const ownerAdminSection=rbEl('rbOwnerAdminSection');if(ownerAdminSection)ownerAdminSection.classList.toggle('hidden',!rbIsOwner()); const ownerAccessNotice=rbEl('rbOwnerAccessNotice');if(ownerAccessNotice)ownerAccessNotice.classList.toggle('hidden',!(adminAllowed&&!rbIsOwner()));
+ const adminAllowed=!!(signed&&rbCloudUser&&(rbIsAdmin||rbIsOwner()));window.rbIsAdmin=adminAllowed;rbEl('rbAdminNav').hidden=!adminAllowed;const adminPage=rbEl('page-admin');if(adminPage){if(adminAllowed){adminPage.hidden=!adminPage.classList.contains('active');}else{adminPage.hidden=true;if(adminPage.classList.contains('active')&&(!signed||window.rbAdminCheckComplete===true)){adminPage.classList.remove('active');const scorePage=rbEl('page-score');if(scorePage){scorePage.hidden=false;scorePage.classList.add('active');}document.querySelectorAll('main .page').forEach(page=>{if(page!==scorePage){page.classList.remove('active');page.hidden=true;}});document.querySelectorAll('nav button[data-page]').forEach(button=>button.classList.toggle('active',button.dataset.page==='score'));}}} const ownerControls=rbEl('rbOwnerControls');if(ownerControls)ownerControls.classList.toggle('hidden',!rbIsOwner()); const adminManagementSection=rbEl('rbAdminManagementSection');if(adminManagementSection)adminManagementSection.classList.toggle('hidden',!adminAllowed); const ownerAdminAddControls=rbEl('rbOwnerAdminAddControls');if(ownerAdminAddControls)ownerAdminAddControls.classList.toggle('hidden',!rbIsOwner()); const ownerAdminAuditSection=rbEl('rbOwnerAdminAuditSection');if(ownerAdminAuditSection)ownerAdminAuditSection.classList.toggle('hidden',!rbIsOwner()); const ownerAccessNotice=rbEl('rbOwnerAccessNotice');if(ownerAccessNotice)ownerAccessNotice.classList.toggle('hidden',!(adminAllowed&&!rbIsOwner()));
 }
 function rbLoadSdk(){return new Promise((resolve,reject)=>{if(window.supabase?.createClient){resolve();return;}const sc=document.createElement('script');sc.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';sc.onload=resolve;sc.onerror=()=>reject(new Error('Não foi possível carregar a biblioteca do Supabase.'));document.head.appendChild(sc);});}
 function rbReadArray(key){try{const v=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(v)?v:[]}catch(_){return []}}
@@ -1334,8 +1336,8 @@ async function rbLoadGlobalSettings(){if(!rbClient)return;try{const {data,error}
 async function rbAdminLoadAdmins(){
  const host=rbEl('rbAdminList');
  if(!host)return;
- if(!rbIsOwner()||!(rbIsAdmin||rbIsOwner())||!rbClient){
-  host.innerHTML='<p class="footnote">A gestão de administradores é exclusiva da conta proprietária.</p>';
+ if((!rbIsOwner()&&!rbIsAdmin)||!rbClient){
+  host.innerHTML='<p class="footnote">A gestão de administradores requer uma conta autenticada como administradora.</p>';
   return;
  }
  host.innerHTML='<p class="footnote">Consultando administradores…</p>';
@@ -1346,13 +1348,13 @@ async function rbAdminLoadAdmins(){
   ]);
   if(result.error)throw result.error;
   const rows=Array.isArray(result.data)?result.data:[];
-  host.innerHTML=rows.length?rows.map(a=>'<div class="rb-admin-team" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0"><div><strong>'+rbEsc(a.email||'Conta sem e-mail')+'</strong><div class="footnote">'+rbEsc(a.user_id||'')+'</div></div><button type="button" data-rb-admin-remove="'+rbEsc(a.user_id||'')+'" '+(a.user_id===rbCloudUser?.id?'disabled':'')+'>Remover</button></div>').join(''):'<p class="footnote">Nenhum administrador listado.</p>';
+  host.innerHTML=rows.length?rows.map(a=>'<div class="rb-admin-team" style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin:8px 0"><div><strong>'+rbEsc(a.email||'Conta sem e-mail')+'</strong><div class="footnote">'+rbEsc(a.user_id||'')+'</div></div><button type="button" data-rb-admin-remove="'+rbEsc(a.user_id||'')+'" '+(a.user_id===rbCloudUser?.id||a.user_id===RB_OWNER_USER_ID?'disabled':'')+'>Remover</button></div>').join(''):'<p class="footnote">Nenhum administrador listado.</p>';
   host.querySelectorAll('[data-rb-admin-remove]').forEach(button=>{
    button.addEventListener('click',async()=>{
     if(button.disabled)return;
-    if(!rbIsOwner()){rbAdminStatus('Somente o proprietário pode remover administradores.');return;}
+    if(!(rbIsOwner()||rbIsAdmin)){rbAdminStatus('Somente uma conta administradora autenticada pode remover outros administradores.');return;}
     const targetEmail=button.closest('.rb-admin-team')?.querySelector('strong')?.textContent||'esta conta';
-    if(!confirm('Confirma remover '+targetEmail+' dos administradores? A pessoa perderá o acesso administrativo.'))return;
+    if(!confirm('Confirma remover '+targetEmail+' dos administradores? A conta proprietária é protegida.'))return;
     if(prompt('Para evitar remoção acidental, digite REMOVER para confirmar:')!=='REMOVER')return;
     button.disabled=true;const oldLabel=button.textContent;button.textContent='Removendo…';
     try{
@@ -1369,7 +1371,12 @@ async function rbAdminLoadAdmins(){
      const remaining=Array.isArray(verify.data)?verify.data:[];
      if(remaining.some(row=>String(row.user_id||'')===removedId))throw new Error('O administrador ainda aparece no Supabase. A remoção não foi confirmada; atualize a lista e confira as permissões da conta.');
      await rbAdminLoadAdmins();
-     await rbAdminLoadAuditLog(true);
+     const refreshedList=rbEl('rbAdminList');
+     const listError=refreshedList?.querySelector('[role="alert"]');
+     if(listError)throw new Error('A remoção foi enviada, mas a lista não pôde ser atualizada: '+listError.textContent);
+     const stillListed=Array.from(refreshedList?.querySelectorAll('[data-rb-admin-remove]')||[]).some(item=>String(item.dataset.rbAdminRemove||'')===removedId);
+     if(stillListed)throw new Error('O administrador ainda aparece na lista após a remoção. Atualize o painel e tente novamente.');
+     if(rbIsOwner())await rbAdminLoadAuditLog(true);
      rbAdminStatus('Administrador removido e confirmado no Supabase. A lista foi atualizada.');
     }catch(error){
      rbAdminStatus('Falha ao remover administrador: '+(error?.message||String(error)));
