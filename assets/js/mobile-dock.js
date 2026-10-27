@@ -92,6 +92,14 @@
    applyFeatureFlags(flags,lastNoticeActive);
   }catch(error){console.warn('Rabbitech feature flags could not be refreshed',error)}
  }
+ let settingsRealtimeChannel=null;
+ function setupSiteSettingsRealtime(){
+  const client=getSupabaseClient();
+  if(!client?.channel||settingsRealtimeChannel)return;
+  settingsRealtimeChannel=client.channel('rabbitech-public-site-settings')
+   .on('postgres_changes',{event:'UPDATE',schema:'public',table:'rabbitech_site_settings',filter:'id=eq.true'},()=>loadPublicSettings())
+   .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Atualização em tempo real das configurações indisponível; usando fallback.')});
+ }
  function applyFeatureFlags(flags,noticeActive){
   Object.entries(FEATURE_TARGETS).forEach(([key,target])=>{
    const enabled=flags[key]!==false;
@@ -252,18 +260,22 @@
  function teamFeedback(message,error=false){
   const el=$('twFeedback')||$('twMessage');if(el)el.innerHTML='<p style="color:'+(error?'#ffb4a9':'#d0f477')+'">'+teamEsc(message)+'</p>';
  }
- async function teamWrite(operation){
+ async function teamWrite(operation,{rerender=false}={}){
   const c=teamClient();if(!c){teamFeedback('A conexão com o Supabase não está disponível.',true);return null}
-  try{const r=await operation(c);if(r?.error)throw r.error;teamFeedback('Salvo com sucesso.');await renderTeamWorkspace();return r?.data??r}
-  catch(e){teamFeedback(e?.message||'Não foi possível salvar. Confira a conexão e as permissões.',true);return null}
+  try{
+   const r=await operation(c);if(r?.error)throw r.error;
+   teamFeedback('Salvo com sucesso.');
+   if(rerender)await renderTeamWorkspace();else refreshTeamBackground();
+   return r?.data??r;
+  }catch(e){teamFeedback(e?.message||'Não foi possível salvar. Confira a conexão e as permissões.',true);return null}
  }
  async function createTeamWorkspace(){
   const name=$('twTeamName')?.value.trim(),display=$('twLeaderName')?.value.trim();if(!name||!display){teamFeedback('Preencha o nome da equipe e o seu nome.',true);return}
-  await teamWrite(c=>c.rpc('create_team_workspace',{p_name:name,p_display_name:display}));
+  await teamWrite(c=>c.rpc('create_team_workspace',{p_name:name,p_display_name:display}),{rerender:true});
  }
  async function joinTeamWorkspace(){
   const code=$('twInviteInput')?.value.trim(),display=$('twMemberName')?.value.trim();if(!code||!display){teamFeedback('Informe o código do convite e seu nome.',true);return}
-  await teamWrite(c=>c.rpc('join_team_with_code',{p_code:code,p_display_name:display}));
+  await teamWrite(c=>c.rpc('join_team_with_code',{p_code:code,p_display_name:display}),{rerender:true});
  }
  async function createTeamInvite(){
   const t=teamState.team;if(!t?.team_id)return;
@@ -338,6 +350,19 @@
      const duplicate=[...(box?.querySelectorAll('.tw-bubble')||[])].some(el=>el.dataset.messageId===message.id);
      if(duplicate)return;
     }
+    const messageBox=$('twMessages');
+    const alreadyShown=[...(messageBox?.querySelectorAll('.tw-bubble')||[])].some(el=>el.dataset.messageId===message.id);
+    if(alreadyShown)return;
+    const pending=messageBox?.querySelector('[data-pending-message="true"]');
+    if(pending&&message.author_user_id===teamState.profile?.user_id){
+     pending.removeAttribute('data-pending-message');pending.dataset.messageId=message.id;
+     const time=pending.querySelector('small');if(time)time.textContent=new Date(message.created_at).toLocaleString();
+    }else{
+     const wasNearBottom=messageBox?messageBox.scrollHeight-messageBox.scrollTop-messageBox.clientHeight<48:true;
+     appendTeamMessage(message,false);
+     const added=messageBox?.lastElementChild;if(added)added.dataset.messageId=message.id;
+     if(messageBox&&wasNearBottom)messageBox.scrollTop=messageBox.scrollHeight;
+    }
     teamState.messageSignature='';
     refreshTeamBackground();
    })
@@ -400,7 +425,7 @@
   window.addEventListener('rb-auth-state-changed',()=>{syncTeamWorkspace();if($('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()});
   // Atualiza somente os dados em segundo plano. Nunca reconstrói a aba a cada 15 s.
-  setInterval(()=>{syncTeamWorkspace();if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()},3000);
+  setInterval(()=>{if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()},5000);
  }
 
  function init(){
@@ -416,7 +441,9 @@
   },700);
   window.addEventListener('rb-auth-state-changed',syncAdmin);
   window.addEventListener('rb-site-settings-updated',loadPublicSettings);
-  setInterval(loadPublicSettings,15000);
+  setupSiteSettingsRealtime();
+  // Fallback only; realtime updates are the primary path.
+  setInterval(loadPublicSettings,60000);
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
  else init();
