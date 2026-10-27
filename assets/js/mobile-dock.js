@@ -127,7 +127,11 @@
    if(element.closest('#page-admin'))return;
    element.hidden=!noticesEnabled;
    element.classList.toggle('hidden',!noticesEnabled);
-   element.dataset.noticeType=['info','success','warning'].includes(notice.type)?notice.type:'info';
+   const noticeType=['info','success','warning'].includes(notice.type)?notice.type:'info';
+   element.dataset.noticeType=noticeType;
+   element.classList.remove('rb-notice-info','rb-notice-success','rb-notice-warning');
+   element.classList.add('rb-notice-'+noticeType);
+   if(element.id==='rbGlobalNotice')element.setAttribute('role',noticeType==='warning'?'alert':'status');
    if(!noticesEnabled)element.setAttribute('aria-hidden','true');
    else element.removeAttribute('aria-hidden');
   });
@@ -144,95 +148,10 @@
   });
  }
 
- function setupDiagnosticsPanel(){
-  const page=$('page-admin');if(!page)return;
-  let panel=$('rbSystemHealthPanel');
-  if(!panel){
-   panel=document.createElement('section');panel.id='rbSystemHealthPanel';
-   panel.setAttribute('aria-labelledby','rbSystemHealthTitle');
-   Object.assign(panel.style,{margin:'18px 0',padding:'16px',border:'1px solid rgba(208,244,119,.28)',borderRadius:'16px',background:'rgba(7,19,12,.78)',color:'var(--text,#edf7ed)'});
-   const title=document.createElement('h2');title.id='rbSystemHealthTitle';title.textContent='Diagnóstico do sistema';
-   Object.assign(title.style,{margin:'0 0 6px',fontSize:'18px'});
-   const description=document.createElement('p');description.textContent='Verificação somente de leitura: conexão, funções críticas e integridade básica. Nenhuma credencial é exibida.';
-   Object.assign(description.style,{margin:'0 0 12px',fontSize:'13px',opacity:'.85'});
-   const controls=document.createElement('div');Object.assign(controls.style,{display:'flex',gap:'10px',alignItems:'center',flexWrap:'wrap'});
-   const button=document.createElement('button');button.type='button';button.id='rbRunSystemHealth';
-   button.textContent='Executar diagnóstico';
-   Object.assign(button.style,{padding:'10px 14px',borderRadius:'10px',border:'1px solid rgba(208,244,119,.4)',background:'rgba(208,244,119,.12)',color:'inherit',fontWeight:'600',cursor:'pointer'});
-   const status=document.createElement('p');status.id='rbSystemHealthStatus';status.setAttribute('role','status');status.textContent='Diagnóstico ainda não executado.';
-   Object.assign(status.style,{margin:'0',fontSize:'13px'});
-   const results=document.createElement('div');results.id='rbSystemHealthResults';
-   Object.assign(results.style,{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:'8px',marginTop:'12px'});
-   controls.append(button,status);panel.append(title,description,controls,results);
-   page.appendChild(panel);
-   button.addEventListener('click',()=>runSystemHealthDiagnostics(panel));
-  }
-  panel.hidden=!adminAllowed();
- }
- function renderHealthResults(results,items){
-  results.replaceChildren();
-  items.forEach(([label,value,ok])=>{
-   const row=document.createElement('div');
-   Object.assign(row.style,{padding:'10px 12px',border:'1px solid rgba(208,244,119,.16)',borderRadius:'10px',background:'rgba(255,255,255,.025)',minWidth:'0'});
-   const name=document.createElement('div');name.textContent=label;
-   Object.assign(name.style,{fontSize:'11px',opacity:'.72',marginBottom:'5px'});
-   const val=document.createElement('div');val.textContent=String(value);
-   Object.assign(val.style,{fontSize:'14px',fontWeight:'600',overflowWrap:'anywhere',color:ok===false?'#ffb4ab':'inherit'});
-   row.append(name,val);results.appendChild(row);
-  });
- }
- async function runSystemHealthDiagnostics(panel){
-  const button=$('rbRunSystemHealth'),status=$('rbSystemHealthStatus'),results=$('rbSystemHealthResults');
-  if(!button||!status||!results)return;
-  if(!adminAllowed()){status.textContent='Acesso negado: entre com uma conta administradora.';return;}
-  const client=getSupabaseClient();
-  if(!client||typeof client.rpc!=='function'){status.textContent='Cliente Supabase indisponível nesta página.';return;}
-  button.disabled=true;button.textContent='Verificando…';status.textContent='Consultando funções de diagnóstico…';
-  const started=Date.now();
-  try{
-   const [settingsResult,healthResult]=await Promise.all([
-    client.rpc('get_rabbitech_public_settings'),
-    client.rpc('admin_rabbitech_system_health')
-   ]);
-   const elapsed=Date.now()-started;
-   const settings=settingsResult?.data?(Array.isArray(settingsResult.data)?settingsResult.data[0]:settingsResult.data):null;
-   const health=healthResult?.data?(Array.isArray(healthResult.data)?healthResult.data[0]:healthResult.data):null;
-   const items=[
-    ['Supabase / configurações públicas',settingsResult?.error?'Falhou':(settings?'Conectado':'Sem dados'),!settingsResult?.error&&!!settings],
-    ['RPC de saúde administrativa',healthResult?.error?'Falhou':(health?'Respondendo':'Sem dados'),!healthResult?.error&&!!health],
-    ['Integridade estrutural',health?.ok===true?'OK':'Verificar',health?.ok===true],
-    ['Objetos críticos ausentes',Array.isArray(health?.critical_objects_missing)&&health.critical_objects_missing.length?health.critical_objects_missing.join(', '):'Nenhum',!Array.isArray(health?.critical_objects_missing)||health.critical_objects_missing.length===0],
-    ['Tempo das verificações',elapsed+' ms',true]
-   ];
-   if(health){
-    items.push(
-     ['Equipes',health.teams_count??'Não informado',true],
-     ['Rodadas',health.rounds_count??'Não informado',true],
-     ['Rodadas órfãs',health.orphan_rounds??'Não informado',Number(health.orphan_rounds||0)===0],
-     ['Nomes de equipes duplicados',health.duplicate_team_names??'Não informado',Number(health.duplicate_team_names||0)===0],
-     ['Erros SQL nas últimas 24 h',health.recent_sql_errors_24h??'Não informado',Number(health.recent_sql_errors_24h||0)===0],
-     ['Proprietário registrado',health.owner_registered===true?'Sim':'Não',health.owner_registered===true],
-     ['Modo de manutenção',health.maintenance_mode===true?'Ativado':'Desativado',true],
-     ['Módulo de avisos',health.notice_module_enabled===true?'Ativado':'Desativado',true]
-    );
-   }
-   renderHealthResults(results,items);
-   const failures=items.filter(item=>item[2]===false).length;
-   status.textContent=failures?'Verificação concluída com '+failures+' item(ns) que precisam de atenção.':'Verificação concluída; confira os indicadores antes de tomar medidas.';
-   if(settingsResult?.error)console.warn('Rabbitech public settings health check failed',settingsResult.error);
-   if(healthResult?.error)console.warn('Rabbitech admin health check failed',healthResult.error);
-  }catch(error){
-   status.textContent='Falha ao executar diagnóstico. Confira a conexão e as permissões da conta.';
-   console.warn('Rabbitech system diagnostics failed',error);
-  }finally{
-   button.disabled=false;button.textContent='Executar novamente';
-  }
- }
-
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();setupDiagnosticsPanel();loadPublicSettings();
+  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();
   const observer=new MutationObserver(()=>{
-   setupDock();placeLanguageButton();syncAdmin();setupDiagnosticsPanel();
+   setupDock();placeLanguageButton();syncAdmin();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
