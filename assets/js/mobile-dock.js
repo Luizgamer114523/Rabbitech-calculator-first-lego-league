@@ -215,7 +215,7 @@
  function teamFormField(id,label,placeholder,type='text',attrs=''){
   return '<label style="display:block;margin:7px 0">'+teamEsc(label)+'<input class="tw-field" id="'+id+'" type="'+type+'" placeholder="'+teamEsc(placeholder)+'" '+attrs+'></label>';
  }
- async function renderTeamWorkspace(){
+ async async function renderTeamWorkspace(){
   const root=$('rbTeamWorkspaceRoot');if(!root)return;
   const c=teamClient(),user=await teamAuthUser();
   if(!c||!user){
