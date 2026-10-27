@@ -424,6 +424,7 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
           <button type="button" data-admin-jump="rbAdminAuditLog">🧾 Auditoria de segurança</button>
           <button type="button" data-admin-jump="rbAdminPublicRank">🏆 Ranking público</button>
           <button type="button" id="rbAdminExportTeams">📥 Exportar equipes CSV</button>
+          <button type="button" id="rbAdminExportSettings">🗂️ Backup das configurações</button>
           <button type="button" id="rbAdminCheckData">🔎 Verificar dados</button>
           <button type="button" id="rbAdminDiagnose">🩺 Diagnosticar Rabbitech</button>
           <button type="button" id="rbAdminRefreshAll">🔄 Recarregar tudo</button>
@@ -1260,6 +1261,37 @@ function rbAdminJump(id){const target=rbEl(id);if(!target)return;const disclosur
 document.querySelectorAll('[data-admin-jump]').forEach(b=>b.addEventListener('click',()=>rbAdminJump(b.dataset.adminJump)));
 async function rbAdminRenderRankPreview(){const host=rbEl('rbAdminRankPreview');if(!host||!rbClient)return;host.innerHTML='<p class="footnote">Atualizando médias…</p>';try{const {data,error}=await rbClient.rpc('get_public_leaderboard');if(error)throw error;const rows=Array.isArray(data)?data:[];host.innerHTML=rows.length?'<div class="history-list">'+rows.slice(0,5).map(r=>'<div class="history-item"><div><b>#'+Number(r.rank_position)+'</b> '+rbEsc(r.team_name)+'<small>'+Number(r.rounds_count)+' round(s) computado(s)</small></div><strong>'+Number(r.average_score).toFixed(2).replace('.',',')+'</strong><span class="footnote">média</span></div>').join('')+'</div>':'<p class="footnote">Ainda não há rounds válidos para o ranking.</p>';}catch(e){host.innerHTML='<p class="footnote" role="alert">Não foi possível carregar o ranking: '+rbEsc(e.message||String(e))+'</p>';}}
 rbEl('rbAdminRankRefresh')?.addEventListener('click',()=>rbRun(rbAdminRenderRankPreview));
+rbEl('rbAdminExportSettings')?.addEventListener('click',()=>rbRun(async()=>{
+ if(!rbCloudUser||!rbClient||!(rbIsAdmin||rbIsOwner()))throw new Error('Entre com uma conta administradora autorizada.');
+ const [settingsResult,overviewResult]=await Promise.all([
+  rbClient.rpc('get_rabbitech_public_settings'),
+  rbClient.rpc('get_rabbitech_admin_overview')
+ ]);
+ if(settingsResult.error)throw settingsResult.error;
+ if(overviewResult.error)throw overviewResult.error;
+ const settings=settingsResult.data||{},overview=overviewResult.data||{},teams=Array.isArray(overview.teams)?overview.teams:[];
+ const snapshot={
+  format:'rabbitech-config-backup',
+  version:1,
+  created_at:new Date().toISOString(),
+  project:'Rabbitech BIOGLOW FLLC Founders Edition 2026-2027',
+  settings:{
+   notice_text:settings.notice_text||'',
+   notice_active:!!settings.notice_active,
+   notice_type:settings.notice_type||'info',
+   accent_color:settings.accent_color||null,
+   theme_name:settings.theme_name||'',
+   feature_flags:settings.feature_flags||{}
+  },
+  summary:{teams_count:teams.length,teams_with_rounds:teams.filter(t=>Number(t.rounds_count||0)>0).length},
+  note:'Backup de configurações públicas e resumo. Não contém credenciais, tokens, dados pessoais de administradores nem rounds completos.'
+ };
+ const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json;charset=utf-8'});
+ const url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='rabbitech-config-backup-'+new Date().toISOString().slice(0,10)+'.json';
+ document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ const status=rbEl('rbAdminToolsStatus');if(status)status.textContent='Backup JSON exportado. Guarde o arquivo fora do dispositivo também.';
+}));
 rbEl('rbAdminExportTeams')?.addEventListener('click',()=>rbRun(async()=>{const {data,error}=await rbClient.rpc('get_rabbitech_admin_overview');if(error)throw error;const rows=Array.isArray(data?.teams)?data.teams:[];if(!rows.length)throw new Error('Nenhuma equipe disponível para exportar.');const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const csv='Equipe;Rounds;Média;Melhor round;Última atividade\r\n'+rows.map(t=>[t.name,t.rounds_count,t.average_score,t.best_score,t.last_round_at].map(esc).join(';')).join('\r\n');const blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='rabbitech-equipes-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);rbEl('rbAdminToolsStatus').textContent='Exportação CSV gerada com '+rows.length+' equipes.';}));
 rbEl('rbAdminCheckData')?.addEventListener('click',()=>rbRun(async()=>{const {data,error}=await rbClient.rpc('get_rabbitech_admin_overview');if(error)throw error;const teams=Array.isArray(data?.teams)?data.teams:[];const empty=teams.filter(t=>Number(t.rounds_count||0)===0).length;const low=teams.filter(t=>Number(t.rounds_count||0)>0&&Number(t.rounds_count)<3).length;rbEl('rbAdminToolsStatus').textContent='Verificação concluída: '+teams.length+' equipes; '+empty+' sem rounds; '+low+' com menos de 3 rounds. Nenhum dado foi alterado.';}));
 rbEl('rbAdminDiagnose')?.addEventListener('click',()=>rbRun(async()=>{
