@@ -1460,7 +1460,7 @@ async function rbAdminLoadSettingsHistory(){
    const canRestore=!!state.id;
    return '<div class="rb-settings-history-item"><div class="toolbar"><strong>'+rbEsc(row.action||'Alteração de configurações')+'</strong><span class="badge">'+rbEsc(date)+'</span></div><p class="footnote">'+rbEsc(summary)+'</p><button type="button" data-rb-restore-settings="'+Number(row.id)+'" '+(canRestore?'':'disabled')+'>Restaurar esta versão</button></div>';
   }).join('');
-  host.querySelectorAll('[data-rb-restore-settings]').forEach(button=>button.addEventListener('click',()=>rbRun(async()=>{
+  host.querySelectorAll('[data-rb-restore-settings]').forEach(button=>button.addEventListener('click',rbRun(async()=>{
    if(!rbIsOwner())throw new Error('Somente o proprietário pode restaurar configurações.');
    if(!confirm('Restaurar a versão selecionada? A versão atual será salva no histórico antes da substituição. Avisos e módulos serão alterados; equipes e rounds não serão modificados.'))return;
    const phrase=prompt('Digite exatamente RESTAURAR CONFIGURAÇÕES para confirmar:');
@@ -1479,7 +1479,7 @@ async function rbAdminLoadSettingsHistory(){
   })));
  }catch(error){host.innerHTML='<p class="footnote" role="alert">Falha ao carregar histórico: '+rbEsc(error.message||String(error))+'</p>';throw error;}
 }
-rbEl('rbRefreshSettingsHistory')?.addEventListener('click',()=>rbRun(rbAdminLoadSettingsHistory));
+rbEl('rbRefreshSettingsHistory')?.addEventListener('click',rbRun(rbAdminLoadSettingsHistory));
 async function rbPersistOperationsSettings(){
  if(!rbIsOwner())throw new Error('Somente o proprietário pode alterar as operações do site.');
  if(!rbClient)throw new Error('O Supabase ainda não está conectado. Atualize a página e tente novamente.');
@@ -1524,8 +1524,8 @@ async function rbPersistOperationsSettings(){
  rbAdminStatus('Configurações operacionais confirmadas no Supabase.');
  return true;
 }
-rbEl('rbSaveOperationsSettings')?.addEventListener('click',()=>rbRun(rbPersistOperationsSettings));
-rbEl('rbClearScheduledNotice')?.addEventListener('click',()=>rbRun(async()=>{
+rbEl('rbSaveOperationsSettings')?.addEventListener('click',rbRun(rbPersistOperationsSettings));
+rbEl('rbClearScheduledNotice')?.addEventListener('click',rbRun(async()=>{
  if(!rbIsOwner())throw new Error('Somente o proprietário pode cancelar um aviso agendado.');
  if(!confirm('Cancelar o aviso agendado? A mensagem manual e os rounds serão preservados.'))return;
  const previous={text:rbEl('rbScheduledNoticeText')?.value||'',start:rbEl('rbScheduledNoticeStart')?.value||'',end:rbEl('rbScheduledNoticeEnd')?.value||''};
