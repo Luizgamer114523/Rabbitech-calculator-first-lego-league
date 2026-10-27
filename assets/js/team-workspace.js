@@ -98,7 +98,7 @@
  function renderBoard(){
   const page=makePage();if(!page)return;page.replaceChildren();addStyles();
   const head=node('div','rb-team-panel rb-team-head');const intro=node('div');intro.append(node('h2','','📋 Espaço da equipe'));intro.append(node('p','rb-team-muted',(workspace?.team_name||'Equipe')+' · Quadro de tarefas e acompanhamento'));head.append(intro);
-  const actions=node('div','');actions.style.display='flex';actions.style.flexWrap='wrap';actions.style.gap='8px';actions.append(button('Atualizar','rb-team-btn',()=>openBoard()),button('Gerar convite','rb-team-btn',createInvite));head.append(actions);page.append(head);
+  const actions=node('div','');actions.style.display='flex';actions.style.flexWrap='wrap';actions.style.gap='8px';actions.append(button('Atualizar dados em segundo plano','rb-team-btn',()=>refreshBoardInBackground()),button('Gerar convite','rb-team-btn',createInvite));head.append(actions);page.append(head);
   const summary=node('section','rb-team-panel');summary.append(node('h3','','Resumo de progresso'));const stats=node('div','rb-team-grid');const done=tasks.filter(t=>t.status==='done').length,active=tasks.filter(t=>t.status==='in_progress').length,total=tasks.length,percent=total?Math.round(done/total*100):0;const memberDone=tasks.filter(t=>t.status==='done'&&t.assigned_to===user()?.id).length;const average=members.length?Math.round(members.reduce((sum,m)=>sum+tasks.filter(t=>t.status==='done'&&t.assigned_to===m.user_id).length,0)/members.length*10)/10:0;
   addStat(stats,percent+'%','Tarefas concluídas na equipe');addStat(stats,done+'/'+total,'Concluídas');addStat(stats,active,'Em andamento');addStat(stats,memberDone,'Concluídas por você');summary.append(stats,node('p','rb-team-muted','Média da equipe: '+average+' tarefas concluídas por membro atribuído. Tarefas sem responsável entram no total da equipe, mas não na média individual.'));page.append(summary);
   if(workspace?.is_manager)page.append(createTaskForm());
@@ -192,7 +192,50 @@
   const stats=document.querySelector('#page-team-workspace .rb-team-grid');
   if(stats){const done=tasks.filter(t=>t.status==='done').length,total=tasks.length,active=tasks.filter(t=>t.status==='in_progress').length;const values=stats.querySelectorAll('.rb-team-stat strong');if(values.length>=4){values[0].textContent=(total?Math.round(done/total*100):0)+'%';values[1].textContent=done+'/'+total;values[2].textContent=active;values[3].textContent=tasks.filter(t=>t.status==='done'&&t.assigned_to===user()?.id).length}}
  }
- function openBoard(){if(loading)return;loading=true;try{await loadWorkspace();if(!workspace?.member||!workspace?.team_id){removeNav();return}makeNav();makePage();const page=$('page-team-workspace');page.replaceChildren(node('p','rb-team-muted','Atualizando dados…'));await loadBoardData();renderBoard();page.dataset.rbBoardRendered='true';startTeamRealtime()}catch(e){const page=makePage();if(page){page.replaceChildren(node('section','rb-team-panel'),node('p','rb-team-muted',e?.message||'Falha ao carregar o quadro. Verifique sua conexão e tente novamente.'));page.hidden=false}}finally{loading=false}}
+ async function refreshBoardInBackground(){
+  if(loading||!workspace?.member||!workspace?.team_id)return;
+  loading=true;
+  const page=$('page-team-workspace');
+  const scrollY=window.scrollY;
+  const active=document.activeElement;
+  const activeId=active&&page?.contains(active)?active.id:'';
+  const values={};
+  if(page)page.querySelectorAll('input[id],textarea[id],select[id]').forEach(el=>{values[el.id]=el.value});
+  try{
+   await loadBoardData();
+   renderBoard();
+   const nextPage=$('page-team-workspace');
+   if(nextPage){
+    Object.entries(values).forEach(([id,value])=>{const el=$(id);if(el)el.value=value});
+    if(activeId&&$(activeId))$(activeId).focus({preventScroll:true});
+    requestAnimationFrame(()=>window.scrollTo({top:scrollY,behavior:'auto'}));
+   }
+  }catch(e){console.warn('Rabbitech background refresh failed',e)}
+  finally{loading=false}
+ }
+ async function openBoard(){
+  if(loading)return;
+  if($('page-team-workspace')?.dataset.rbBoardRendered==='true'&&workspace?.member){
+   goToPage();
+   await refreshBoardInBackground();
+   return;
+  }
+  loading=true;
+  try{
+   await loadWorkspace();
+   if(!workspace?.member||!workspace?.team_id){removeNav();return}
+   makeNav();makePage();
+   const page=$('page-team-workspace');
+   if(page&&!page.dataset.rbBoardRendered)page.replaceChildren(node('p','rb-team-muted','Carregando o espaço da equipe…'));
+   await loadBoardData();
+   renderBoard();
+   page.dataset.rbBoardRendered='true';
+   startTeamRealtime();
+  }catch(e){
+   const page=makePage();
+   if(page){page.replaceChildren(node('section','rb-team-panel'),node('p','rb-team-muted',e?.message||'Falha ao carregar o quadro. Verifique sua conexão e tente novamente.'));page.hidden=false}
+  }finally{loading=false}
+ }
  function init(){if(scriptReady)return;scriptReady=true;loadWorkspace();window.addEventListener('rb-auth-state-changed',()=>{loadWorkspace()});document.addEventListener('click',e=>{const b=e.target.closest('nav button[data-page]');if(!b)return;if(b.dataset.page==='team-workspace'){e.preventDefault();e.stopPropagation();openBoard()}else{const page=$('page-team-workspace');if(page){page.hidden=true;page.classList.remove('active')}}},true);window.addEventListener('rb-team-workspace-refresh',loadWorkspace)}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
