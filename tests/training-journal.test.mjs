@@ -56,7 +56,7 @@ test("resumo vazio é consistente", () => {
 });
 
 test("escapa HTML em texto livre", () => {
-  assert.equal(escapeHTML("'<>&\\""), "&#39;&lt;&gt;&amp;&quot;");
+  assert.equal(escapeHTML(String.fromCharCode(39, 60, 62, 38, 34)), "&#39;&lt;&gt;&amp;&quot;");
 });
 
 test("form controls, local storage and export have expected limits", () => {
