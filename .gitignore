@@ -1,0 +1,29 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+.local/
+
+# Local tooling and build output
+node_modules/
+.vercel/
+dist/
+build/
+coverage/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Keep the checked-in HTML backups until the archive migration is reviewed.
