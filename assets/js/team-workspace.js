@@ -133,10 +133,34 @@
  function renderNotes(){
   const panel=node('section','rb-team-panel');panel.append(node('h3','','📝 Anotações salvas'));const fields=node('div','rb-team-fields');const title=input('Título','text','','Decisão ou ideia'),body=input('Anotação','textarea','','Escreva aqui as observações da equipe');title.el.maxLength=120;title.el.id='rbNoteTitle';body.el.maxLength=8000;body.el.id='rbNoteBody';fields.append(title.wrap,body.wrap);panel.append(fields,button('Salvar anotação','rb-team-btn',async()=>{const t=$('rbNoteTitle').value.trim(),b=$('rbNoteBody').value.trim();if(!t||!b)return alert('Preencha título e anotação.');const {error}=await client().from('team_notes').insert({team_id:workspace.team_id,author_user_id:user().id,title:t,body:b});if(error)alert(error.message);else openBoard()}));notes.forEach(n=>{const card=node('article','rb-team-task');card.append(node('h4','',n.title),node('p','',n.body),node('small','rb-team-muted',new Date(n.updated_at).toLocaleString('pt-BR')));panel.append(card)});return panel
  }
+ function createMessageNode(m){
+  const card=node('article','rb-team-chat-msg');card.dataset.messageId=m.id||'';
+  card.style.cssText='padding:10px 12px;border:1px solid var(--line,rgba(208,244,119,.18));border-radius:12px;overflow-wrap:anywhere';
+  const member=members.find(x=>x.user_id===m.author_user_id);
+  card.append(node('strong','',(member?.display_name||'Membro')+' · '+new Date(m.created_at).toLocaleString('pt-BR')),node('p','',m.body));
+  return card;
+ }
+ function addMessageOnce(m){
+  if(!m)return;
+  if(m.id&&document.querySelector('#rbTeamChatMessages [data-message-id="'+CSS.escape(String(m.id))+'"]'))return;
+  messages.push(m);messages.sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+  const list=$('rbTeamChatMessages');if(!list)return;
+  const empty=list.querySelector(':scope > .rb-team-muted');if(empty)empty.remove();
+  list.append(createMessageNode(m));list.scrollTop=list.scrollHeight;
+ }
+ function startTeamRealtime(){
+  const sb=client();if(!sb||!workspace?.team_id||typeof sb.channel!=='function')return;
+  if(window.rbTeamRealtimeChannel){try{sb.removeChannel(window.rbTeamRealtimeChannel)}catch(_){}}
+  const teamId=workspace.team_id;
+  window.rbTeamRealtimeChannel=sb.channel('rabbitech-team-'+teamId)
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'team_messages',filter:'team_id=eq.'+teamId},payload=>addMessageOnce(payload.new))
+   .subscribe();
+ }
  function renderChat(){
   const panel=node('section','rb-team-panel');panel.append(node('h3','','💬 Chat da equipe'),node('p','rb-team-muted','Mensagens de texto para integrantes autenticados da equipe.'));
-  const list=node('div','rb-team-chat');messages.forEach(m=>{const card=node('article','rb-team-chat-msg'),member=members.find(x=>x.user_id===m.author_user_id);card.append(node('strong','',(member?.display_name||'Membro')+' · '+new Date(m.created_at).toLocaleString('pt-BR')),node('p','',m.body));list.append(card)});if(!messages.length)list.append(node('p','rb-team-muted','Nenhuma mensagem ainda.'));panel.append(list);
-  const field=input('Mensagem','textarea','','Escreva uma mensagem…');field.el.maxLength=2000;field.el.id='rbTeamMessage';panel.append(field.wrap,button('Enviar mensagem','rb-team-btn',async()=>{const body=$('rbTeamMessage').value.trim();if(!body)return;const {error}=await client().from('team_messages').insert({team_id:workspace.team_id,author_user_id:user().id,body});if(error)alert(error.message);else openBoard()}));return panel
+  const list=node('div','rb-team-chat');list.id='rbTeamChatMessages';list.setAttribute('aria-live','polite');list.style.cssText='display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;padding:8px 2px;overscroll-behavior:contain';
+  messages.forEach(m=>list.append(createMessageNode(m)));if(!messages.length)list.append(node('p','rb-team-muted','Nenhuma mensagem ainda.'));panel.append(list);
+  const field=input('Mensagem','textarea','','Escreva uma mensagem…');field.el.maxLength=2000;field.el.id='rbTeamMessage';panel.append(field.wrap,button('Enviar mensagem','rb-team-btn',async()=>{const body=$('rbTeamMessage').value.trim();if(!body)return;const {data,error}=await client().from('team_messages').insert({team_id:workspace.team_id,author_user_id:user().id,body}).select('*').single();if(error)alert(error.message);else{const field=$('rbTeamMessage');if(field)field.value='';if(data)addMessageOnce(data);}}));return panel
  }
  function createTaskForm(){
   const panel=node('section','rb-team-panel');panel.append(node('h3','','Nova tarefa'));panel.append(node('p','rb-team-muted','Crie uma tarefa, defina prioridade e, se quiser, atribua a um membro.'));const fields=node('div','rb-team-fields');
@@ -163,7 +187,12 @@
  }
  function createInvitePanel(){const panel=node('section','rb-team-panel');panel.append(node('h3','','Convidar membros'));panel.append(node('p','rb-team-muted','Gere um código de uso limitado. Envie-o apenas aos membros que devem entrar nesta equipe.'));const controls=node('div','rb-team-fields');const days=select('Validade',['1','3','7','14','30'].map(v=>[v,v+' dias']),'7');days.el.id='rbInviteDays';const uses=select('Quantidade de usos',[['1','1 pessoa'],['5','5 pessoas'],['10','10 pessoas'],['20','20 pessoas'],['50','50 pessoas'],['100','100 pessoas']],'20');uses.el.id='rbInviteUses';controls.append(days.wrap,uses.wrap);panel.append(controls);const out=node('div','rb-team-notice');out.id='rbInviteOutput';out.hidden=true;panel.append(out);return panel}
  async function createInvite(){const sb=client();if(!workspace?.is_manager)return;try{const {data,error}=await sb.rpc('create_team_invite',{p_team_id:workspace.team_id,p_expires_days:Number($('rbInviteDays')?.value||7),p_max_uses:Number($('rbInviteUses')?.value||20)});if(error)throw error;const out=$('rbInviteOutput');if(out){out.hidden=false;out.replaceChildren(node('strong','','Código de convite'),node('p','',data.code),node('p','rb-team-muted','Expira em '+new Date(data.expires_at).toLocaleString('pt-BR')+' · limite '+data.max_uses+' usos'));const status=node('p','rb-team-muted','');status.id='rbInviteStatus';out.append(status,button('Copiar código','rb-team-btn',()=>{if(navigator.clipboard?.writeText)navigator.clipboard.writeText(data.code).then(()=>setMessage('rbInviteStatus','Código copiado.')).catch(()=>setMessage('rbInviteStatus','Copie manualmente: '+data.code));else setMessage('rbInviteStatus','Copie manualmente: '+data.code)}))}}catch(e){alert(e?.message||'Não foi possível gerar o convite.')}}
- async function openBoard(){if(loading)return;loading=true;try{await loadWorkspace();if(!workspace?.member||!workspace?.team_id){removeNav();return}makeNav();makePage();goToPage();const page=$('page-team-workspace');page.replaceChildren(node('p','rb-team-muted','Carregando tarefas…'));await loadBoardData();renderBoard()}catch(e){const page=makePage();if(page){page.replaceChildren(node('section','rb-team-panel'),node('p','rb-team-muted',e?.message||'Falha ao carregar o quadro. Verifique sua conexão e tente novamente.'));page.hidden=false}}finally{loading=false}}
+ async function updateBoardSummaryInBackground(){
+  // Keep the visible board and scroll position stable. Chat arrives incrementally through Realtime.
+  const stats=document.querySelector('#page-team-workspace .rb-team-grid');
+  if(stats){const done=tasks.filter(t=>t.status==='done').length,total=tasks.length,active=tasks.filter(t=>t.status==='in_progress').length;const values=stats.querySelectorAll('.rb-team-stat strong');if(values.length>=4){values[0].textContent=(total?Math.round(done/total*100):0)+'%';values[1].textContent=done+'/'+total;values[2].textContent=active;values[3].textContent=tasks.filter(t=>t.status==='done'&&t.assigned_to===user()?.id).length}}
+ }
+ function openBoard(){if(loading)return;loading=true;try{await loadWorkspace();if(!workspace?.member||!workspace?.team_id){removeNav();return}makeNav();makePage();const page=$('page-team-workspace');if(!page.dataset.rbBoardRendered){page.replaceChildren(node('p','rb-team-muted','Carregando tarefas…'))}await loadBoardData();if(!page.dataset.rbBoardRendered){renderBoard();page.dataset.rbBoardRendered='true';startTeamRealtime()}else{updateBoardSummaryInBackground();startTeamRealtime()}}catch(e){const page=makePage();if(page){page.replaceChildren(node('section','rb-team-panel'),node('p','rb-team-muted',e?.message||'Falha ao carregar o quadro. Verifique sua conexão e tente novamente.'));page.hidden=false}}finally{loading=false}}
  function init(){if(scriptReady)return;scriptReady=true;loadWorkspace();window.addEventListener('rb-auth-state-changed',()=>{loadWorkspace()});document.addEventListener('click',e=>{const b=e.target.closest('nav button[data-page]');if(!b)return;if(b.dataset.page==='team-workspace'){e.preventDefault();e.stopPropagation();openBoard()}else{const page=$('page-team-workspace');if(page){page.hidden=true;page.classList.remove('active')}}},true);window.addEventListener('rb-team-workspace-refresh',loadWorkspace)}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
