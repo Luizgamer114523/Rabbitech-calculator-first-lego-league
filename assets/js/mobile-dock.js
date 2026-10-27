@@ -141,7 +141,7 @@
   if(musicFab)musicFab.hidden=!musicEnabled;
   if(musicOverlay){musicOverlay.hidden=!musicEnabled;if(!musicEnabled){musicOverlay.classList.remove('open','active','visible');musicOverlay.setAttribute('aria-hidden','true')}else musicOverlay.removeAttribute('aria-hidden')}
   if(!musicEnabled&&musicAudio){try{musicAudio.pause();musicAudio.currentTime=0}catch(_){}}
-  const noticesEnabled=flags.global_notices!==false&&noticeActive===true;
+  const noticesEnabled=flags.global_notices!==false&&noticeActive===true&&String(notice.text||'').trim().length>0;
   document.querySelectorAll('[id*="globalNotice" i],[class*="global-notice" i],[data-global-notice]').forEach(element=>{
    if(element.closest('#page-admin'))return;
    element.hidden=!noticesEnabled;
