@@ -1,15 +1,15 @@
 {
   "app": "Rabbitech BIOGLOW FLLC",
-  "version": "2026.10.27.1",
+  "version": "2026.10.27.2",
   "channel": "production",
   "release_date": "2026-10-27",
   "notes": [
-    "Monitor de saúde do Supabase com duração, integridade das tabelas e qualidade dos dados.",
-    "Diagnóstico com correção guiada de configurações inconsistentes, confirmação e auditoria.",
-    "Modo manutenção do site, com acesso de manutenção preservado para o proprietário.",
-    "Avisos agendados com início e término automáticos.",
-    "Histórico privado de configurações com restauração confirmada.",
-    "Central de atualizações que compara a versão instalada com a versão esperada do repositório.",
+    "Diagnóstico mede separadamente o tempo de resposta das funções críticas do Supabase.",
+    "Reparação guiada identifica avisos ocultos e agendamentos inconsistentes, com confirmação, verificação e histórico.",
+    "Relatórios de integridade detalham grupos de nomes de equipe duplicados sem renomear ou excluir dados automaticamente.",
+    "Monitor de saúde continua verificando tabelas críticas, rodadas órfãs, permissões, snapshots e falhas SQL recentes.",
+    "Modo manutenção, notificações agendadas e restauração confirmada preservam configurações e histórico.",
+    "Central de atualizações compara a versão instalada com a esperada no repositório; a confirmação final da implantação deve ser conferida na Vercel.",
     "Análise local de rounds: média, melhor pontuação, tendência e missões com menor aproveitamento."
   ]
 }

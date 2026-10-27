@@ -457,7 +457,7 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
         <div id="rbAdminDiagnostics" class="card hidden" style="margin-top:12px;background:var(--panel2)" aria-live="polite"><h4 style="margin-top:0">🩺 Diagnóstico do Rabbitech</h4><p class="footnote">Execute o diagnóstico para verificar conexão, configurações globais, módulos e dados de equipes sem modificar o banco.</p><div id="rbAdminDiagnosticsResults"></div></div>
        </div>
        <div id="rbReleaseCenter" class="card" style="margin:14px 0;background:var(--panel2)">
-        <div class="toolbar" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🚀 Central de atualizações</h3><p class="footnote">Versão instalada, alterações recentes e comparação com a versão esperada no repositório.</p></div><span class="badge" id="rbReleaseVersionBadge">v2026.10.27.1</span></div>
+        <div class="toolbar" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🚀 Central de atualizações</h3><p class="footnote">Versão instalada, alterações recentes e comparação com a versão esperada no repositório.</p></div><span class="badge" id="rbReleaseVersionBadge">v2026.10.27.2</span></div>
         <p id="rbReleaseStatus" class="rb-release-status footnote" role="status" aria-live="polite">Verifique a versão do repositório para comparar com este site.</p>
         <h4>Alterações desta versão</h4><ul id="rbReleaseNotes" class="footnote"><li>Monitor de saúde e diagnóstico com reparação guiada.</li><li>Modo manutenção, avisos agendados e restauração do histórico de configurações.</li><li>Análise de pontuação e evolução dos rounds.</li></ul>
         <button type="button" id="rbReleaseCheck" class="primary">Verificar publicação</button>
@@ -1389,13 +1389,21 @@ rbEl('rbAdminDiagnose')?.addEventListener('click',()=>rbRun(async()=>{
  const checks=[];const add=(name,ok,detail)=>checks.push({name,ok:!!ok,detail:String(detail||'')});
  add('Sessão autenticada',!!rbCloudUser?.id,'Conta: '+(rbCloudUser.email||rbCloudUser.id||'não identificada'));
  const started=performance.now();
- const [cfgResult,overviewResult,healthResult]=await Promise.all([
-  rbClient.rpc('get_rabbitech_public_settings'),
-  rbClient.rpc('get_rabbitech_admin_overview'),
-  rbClient.rpc('admin_rabbitech_system_health')
+ const timedRpc=async call=>{
+  const begin=performance.now();
+  try{return {result:await call(),ms:Math.round(performance.now()-begin)};}
+  catch(error){return {result:{data:null,error},ms:Math.round(performance.now()-begin)};}
+ };
+ const [cfgTimed,overviewTimed,healthTimed]=await Promise.all([
+  timedRpc(()=>rbClient.rpc('get_rabbitech_public_settings')),
+  timedRpc(()=>rbClient.rpc('get_rabbitech_admin_overview')),
+  timedRpc(()=>rbClient.rpc('admin_rabbitech_system_health'))
  ]);
- add('Conexão e monitor de saúde',!healthResult.error,'Resposta do monitor: '+Math.round(performance.now()-started)+' ms'+(healthResult.error?' · '+(healthResult.error.message||'falha de consulta'):' · Supabase respondeu.'));
- let cfg=null,overview=null,health=healthResult.data||{};
+ const cfgResult=cfgTimed.result,overviewResult=overviewTimed.result,healthResult=healthTimed.result;
+ add('Função crítica · configurações públicas',!cfgResult.error,cfgTimed.ms+' ms'+(cfgResult.error?' · '+(cfgResult.error.message||'falha de consulta'):' · respondeu.'));
+ add('Função crítica · resumo administrativo',!overviewResult.error,overviewTimed.ms+' ms'+(overviewResult.error?' · '+(overviewResult.error.message||'falha de consulta'):' · respondeu.'));
+ add('Função crítica · monitor de saúde',!healthResult.error,healthTimed.ms+' ms'+(healthResult.error?' · '+(healthResult.error.message||'falha de consulta'):' · respondeu.'));
+ let cfg=null,overview=null,health=healthResult.data||{},duplicateTeamGroups=[];
  if(cfgResult.error)add('Configurações globais',false,cfgResult.error.message||'Falha ao consultar configurações.');
  else{
   cfg=cfgResult.data||{};add('Configurações globais',true,'Leitura das configurações funcionando.');
@@ -1412,7 +1420,17 @@ rbEl('rbAdminDiagnose')?.addEventListener('click',()=>rbRun(async()=>{
   add('Modo manutenção',true,cfg.maintenance_mode?'Ativo. Os visitantes veem a tela de manutenção; a conta proprietária mantém acesso.':'Desativado.');
  }
  if(overviewResult.error)add('Dados administrativos',false,overviewResult.error.message||'Falha ao consultar os dados.');
- else{overview=overviewResult.data||{};const teams=Array.isArray(overview.teams)?overview.teams:[];const empty=teams.filter(t=>Number(t.rounds_count||0)===0).length;const low=teams.filter(t=>Number(t.rounds_count||0)>0&&Number(t.rounds_count)<3).length;add('Resumo de equipes',true,teams.length+' equipes · '+empty+' sem rounds · '+low+' com menos de 3 rounds.');}
+ else{
+  overview=overviewResult.data||{};
+  const teams=Array.isArray(overview.teams)?overview.teams:[];
+  const empty=teams.filter(t=>Number(t.rounds_count||0)===0).length;
+  const low=teams.filter(t=>Number(t.rounds_count||0)>0&&Number(t.rounds_count)<3).length;
+  const duplicateMap=new Map();
+  teams.forEach(team=>{const key=String(team.name||'').trim().toLocaleLowerCase('pt-BR');if(!key)return;if(!duplicateMap.has(key))duplicateMap.set(key,[]);duplicateMap.get(key).push(team);});
+  duplicateTeamGroups=[...duplicateMap.values()].filter(group=>group.length>1);
+  add('Resumo de equipes',true,teams.length+' equipes · '+empty+' sem rounds · '+low+' com menos de 3 rounds.');
+  if(duplicateTeamGroups.length)add('Detalhamento de nomes duplicados',false,duplicateTeamGroups.length+' grupo(s): '+duplicateTeamGroups.map(group=>group[0].name+' ('+group.length+' registros)').join('; '));
+ }
  if(healthResult.error)add('Integridade do banco',false,healthResult.error.message||'Não foi possível consultar a integridade.');
  else{
   const missing=Array.isArray(health.critical_objects_missing)?health.critical_objects_missing:[];
@@ -1423,16 +1441,29 @@ rbEl('rbAdminDiagnose')?.addEventListener('click',()=>rbRun(async()=>{
   add('Falhas recentes do console SQL (24 h)',recentSqlErrors===0,recentSqlErrors===0?'Nenhuma falha de execução registrada nas últimas 24 horas.':recentSqlErrors+' falha(s) registradas nas últimas 24 horas'+(lastSqlError?' · última: '+lastSqlError:'')+'. Revise a auditoria SQL antes de repetir alterações.');
   add('Histórico de restauração',health.settings_history_available===true,health.settings_history_available?'Snapshots de configurações estão disponíveis.':'Tabela de snapshots indisponível.');
   add('Conta proprietária',health.owner_registered===true,health.owner_registered?'Proprietário registrado nas permissões.':'A conta proprietária não foi encontrada em app_admins.');
-  if(rbEl('rbAdminHealthStatus'))rbEl('rbAdminHealthStatus').textContent='Supabase · '+Math.round(performance.now()-started)+' ms · '+(health.ok?'tabelas e vínculos íntegros':'atenção necessária');
+  if(rbEl('rbAdminHealthStatus'))rbEl('rbAdminHealthStatus').textContent='Supabase · configurações '+cfgTimed.ms+' ms · resumo '+overviewTimed.ms+' ms · saúde '+healthTimed.ms+' ms · '+(health.ok?'tabelas e vínculos íntegros':'atenção necessária');
  }
  if(rbIsOwner()){
-  const [logsResult,adminResult]=await Promise.all([rbClient.rpc('rabbitech_owner_sql_console_logs',{p_limit:1}),rbClient.rpc('admin_list_rabbitech_admins')]);
-  add('Auditoria do console SQL',!logsResult.error,logsResult.error?(logsResult.error.message||'Falha na auditoria.'):'Função de auditoria acessível.');
-  add('Lista de administradores',!adminResult.error,adminResult.error?(adminResult.error.message||'Falha na lista.'):(Array.isArray(adminResult.data)?adminResult.data.length:0)+' contas administrativas cadastradas.');
+  const [logsTimed,adminsTimed]=await Promise.all([
+   timedRpc(()=>rbClient.rpc('rabbitech_owner_sql_console_logs',{p_limit:1})),
+   timedRpc(()=>rbClient.rpc('admin_list_rabbitech_admins'))
+  ]);
+  const logsResult=logsTimed.result,adminResult=adminsTimed.result;
+  add('Auditoria do console SQL',!logsResult.error,logsTimed.ms+' ms'+(logsResult.error?' · '+(logsResult.error.message||'falha na auditoria'):' · função acessível.'));
+  add('Lista de administradores',!adminResult.error,adminsTimed.ms+' ms'+(adminResult.error?' · '+(adminResult.error.message||'falha na lista'):' · '+(Array.isArray(adminResult.data)?adminResult.data.length:0)+' contas cadastradas.'));
  }
  const passed=checks.filter(c=>c.ok).length,failed=checks.length-passed;
  const hiddenNotice=!!(cfg&&(cfg.display_notice_active===true||cfg.notice_active===true)&&cfg.feature_flags?.global_notices===false);
- if(out)out.innerHTML='<div class="toolbar" style="justify-content:space-between"><strong>'+passed+'/'+checks.length+' verificações passaram</strong><span class="badge">'+(failed?'Revisar':'Saudável')+'</span></div>'+checks.map(c=>'<div class="rb-admin-team" style="margin:8px 0"><strong>'+(c.ok?'✅ ':'⚠️ ')+rbEsc(c.name)+'</strong><p class="footnote" style="margin:4px 0">'+rbEsc(c.detail)+'</p></div>').join('')+(hiddenNotice&&rbIsOwner()?'<div class="rb-admin-team" style="margin:10px 0"><strong>Correção sugerida</strong><p class="footnote">Ative Avisos globais para que a mensagem atualmente salva possa aparecer. Esta ação altera apenas a flag do módulo e gera auditoria.</p><button type="button" id="rbAdminRepairNoticeFlag" class="primary">Corrigir: ativar Avisos globais</button></div>':'')+'<p class="footnote">Diagnóstico somente leitura, exceto quando você aciona uma correção específica e confirmada. Executado em '+rbEsc(new Date().toLocaleString('pt-BR'))+'.</p>';
+ const scheduledText=String(cfg?.scheduled_notice_text||'').trim();
+ const hasInvalidSchedule=!!(scheduledText&&(!cfg.scheduled_notice_start_at||!cfg.scheduled_notice_end_at||!Number.isFinite(new Date(cfg.scheduled_notice_start_at).getTime())||!Number.isFinite(new Date(cfg.scheduled_notice_end_at).getTime())||new Date(cfg.scheduled_notice_end_at)<=new Date(cfg.scheduled_notice_start_at)));
+ const hasRecentSqlErrors=Number(health?.recent_sql_errors_24h||0)>0;
+ const showDuplicateGroups=Number(health?.duplicate_team_names||0)>0;
+ const diagnosticActions=
+  (hiddenNotice&&rbIsOwner()?'<div class="rb-admin-team" style="margin:10px 0"><strong>Correção sugerida · aviso global oculto</strong><p class="footnote">Ative Avisos globais para que a mensagem atualmente salva possa aparecer. A ação exige confirmação, atualiza o Supabase e gera auditoria.</p><button type="button" id="rbAdminRepairNoticeFlag" class="primary">Corrigir: ativar Avisos globais</button></div>':'')+
+  (hasInvalidSchedule&&rbIsOwner()?'<div class="rb-admin-team" style="margin:10px 0"><strong>Correção sugerida · agendamento inconsistente</strong><p class="footnote">O texto agendado não possui um intervalo válido. Você pode limpar apenas esse agendamento; manutenção e aviso manual serão preservados. A mudança ficará no histórico privado.</p><button type="button" id="rbAdminRepairInvalidSchedule" class="primary">Corrigir: cancelar agendamento inválido</button></div>':'')+
+  (hasRecentSqlErrors&&rbIsOwner()?'<div class="rb-admin-team" style="margin:10px 0"><strong>Ação recomendada · falhas SQL recentes</strong><p class="footnote">Foram registradas falhas recentes. Abra a auditoria para identificar o comando e a mensagem do PostgreSQL antes de repetir a operação.</p><button type="button" id="rbAdminReviewSqlAudit">Abrir auditoria SQL</button></div>':'')+
+  (showDuplicateGroups&&duplicateTeamGroups.length?'<div class="rb-admin-team" style="margin:10px 0"><strong>Ação recomendada · nomes de equipe duplicados</strong><ul class="footnote">'+duplicateTeamGroups.map(group=>'<li>'+rbEsc(group[0].name||'(sem nome)')+' · '+group.length+' registros · IDs: '+rbEsc(group.map(team=>team.id||'sem ID').join(', '))+'</li>').join('')+'</ul><p class="footnote">Nenhum registro será renomeado ou excluído automaticamente. Revise os dados antes de decidir.</p><button type="button" id="rbAdminReviewTeamIntegrity">Abrir gestão de equipes</button></div>':'');
+ if(out)out.innerHTML='<div class="toolbar" style="justify-content:space-between"><strong>'+passed+'/'+checks.length+' verificações passaram</strong><span class="badge">'+(failed?'Revisar':'Saudável')+'</span></div>'+checks.map(c=>'<div class="rb-admin-team" style="margin:8px 0"><strong>'+(c.ok?'✅ ':'⚠️ ')+rbEsc(c.name)+'</strong><p class="footnote" style="margin:4px 0">'+rbEsc(c.detail)+'</p></div>').join('')+diagnosticActions+'<p class="footnote">Diagnóstico somente leitura, exceto quando você aciona uma correção específica e confirmada. Executado em '+rbEsc(new Date().toLocaleString('pt-BR'))+'.</p>';
  if(status)status.textContent=failed?'Diagnóstico concluído: '+failed+' ponto(s) precisam de atenção.':'Diagnóstico concluído: todos os testes passaram.';
  rbEl('rbAdminRepairNoticeFlag')?.addEventListener('click',()=>rbRun(async()=>{
   if(!rbIsOwner())throw new Error('Somente o proprietário pode executar esta correção.');
@@ -1442,8 +1473,40 @@ rbEl('rbAdminDiagnose')?.addEventListener('click',()=>rbRun(async()=>{
   if(!data?.feature_flags||data.feature_flags.global_notices!==true)throw new Error('O banco não confirmou a correção; nenhuma conclusão de sucesso será exibida.');
   rbGlobalSettingsSignature='';await rbLoadGlobalSettings();
   rbAdminStatus('Correção aplicada e confirmada no Supabase. Auditoria atualizada.');
+  const diagnosticsStatus=rbEl('rbAdminToolsStatus');if(diagnosticsStatus)diagnosticsStatus.textContent='Flag Avisos globais corrigida e confirmada.';
   rbEl('rbAdminDiagnose')?.click();
  }));
+ rbEl('rbAdminRepairInvalidSchedule')?.addEventListener('click',()=>rbRun(async()=>{
+  if(!rbIsOwner())throw new Error('Somente o proprietário pode corrigir avisos agendados.');
+  if(!confirm('Cancelar somente o agendamento inválido? O modo manutenção e o aviso manual serão preservados. A alteração criará um novo registro no histórico de configurações.'))return;
+  const current=rbGlobalSettingsCurrent||{};
+  const {data,error}=await rbClient.rpc('admin_update_rabbitech_operations_settings',{
+   p_maintenance_mode:current.maintenance_mode===true,
+   p_maintenance_message:String(current.maintenance_message||'O Rabbitech está em manutenção programada. Voltaremos em breve.'),
+   p_scheduled_notice_text:'',
+   p_scheduled_notice_type:current.scheduled_notice_type||'info',
+   p_scheduled_notice_start_at:null,
+   p_scheduled_notice_end_at:null
+  });
+  if(error)throw new Error('Não foi possível corrigir o agendamento: '+(error.message||String(error)));
+  if(!data||String(data.scheduled_notice_text||'')!=='')throw new Error('O Supabase não confirmou o cancelamento do agendamento.');
+  rbGlobalSettingsSignature='';await rbLoadGlobalSettings();
+  if(String(rbGlobalSettingsCurrent.scheduled_notice_text||'')!=='')throw new Error('A leitura posterior ainda mostra o agendamento. Confira as configurações antes de repetir.');
+  try{await rbAdminLoadSettingsHistory();}catch(historyError){console.warn('Agendamento corrigido; falhou apenas a atualização visual do histórico.',historyError);}
+  const operationStatus=rbEl('rbOperationsSettingsStatus');if(operationStatus)operationStatus.textContent='Agendamento inválido cancelado e verificado. A mudança foi registrada no histórico.';
+  rbAdminStatus('Agendamento inválido cancelado; manutenção e aviso manual foram preservados.');
+  rbEl('rbAdminDiagnose')?.click();
+ }));
+ rbEl('rbAdminReviewSqlAudit')?.addEventListener('click',()=>rbRun(async()=>{
+  if(!rbIsOwner())throw new Error('A auditoria SQL é exclusiva do proprietário.');
+  const section=rbEl('rbSqlConsoleSection');if(section)section.scrollIntoView({behavior:'smooth',block:'start'});
+  await rbSqlConsoleLoadLogs();
+  const consoleStatus=rbEl('rbSqlConsoleStatus');if(consoleStatus)consoleStatus.textContent='Auditoria carregada a partir da ação recomendada no diagnóstico.';
+ }));
+ rbEl('rbAdminReviewTeamIntegrity')?.addEventListener('click',()=>{
+  const disclosure=rbEl('rbAdminTeamsDisclosure');if(disclosure)disclosure.open=true;
+  const filter=rbEl('rbAdminTeamFilter');if(filter){filter.scrollIntoView({behavior:'smooth',block:'center'});filter.focus();}
+ });
 }));
 async function rbAdminLoadSettingsHistory(){
  const host=rbEl('rbSettingsHistory');if(!host)return;
@@ -1543,7 +1606,7 @@ rbEl('rbClearScheduledNotice')?.addEventListener('click',rbRun(async()=>{
   throw error;
  }
 }));
-const RB_APP_RELEASE_VERSION='2026.10.27.1';
+const RB_APP_RELEASE_VERSION='2026.10.27.2';
 async function rbReleaseCheck(){
  const status=rbEl('rbReleaseStatus'),notes=rbEl('rbReleaseNotes'),badge=rbEl('rbReleaseVersionBadge');
  if(status)status.textContent='Consultando a versão esperada no GitHub…';
