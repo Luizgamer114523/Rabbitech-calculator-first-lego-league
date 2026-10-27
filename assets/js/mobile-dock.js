@@ -298,11 +298,56 @@
   try{const user=await teamAuthUser();refs.button.hidden=!user;}
   finally{teamAuthCheckInFlight=false;}
  }
+ async function refreshTeamBackground(){
+  if(teamState.backgroundRefreshInFlight)return;
+  const root=$('rbTeamWorkspaceRoot');
+  if(!root||!$('page-team-workspace')?.classList.contains('active'))return;
+  const client=teamClient(),team=teamState.team;
+  if(!client||!team?.team_id)return;
+  teamState.backgroundRefreshInFlight=true;
+  try{
+   const teamId=team.team_id;
+   const [taskResult,roundResult,messageResult]=await Promise.all([
+    client.from('team_tasks').select('id,status').eq('team_id',teamId).limit(250),
+    client.from('team_round_logs').select('id,score,round_number,performed_at').eq('team_id',teamId).order('performed_at',{ascending:true}).limit(250),
+    client.from('team_messages').select('id,author_user_id,body,created_at').eq('team_id',teamId).order('created_at',{ascending:true}).limit(60)
+   ]);
+   if(taskResult.error||roundResult.error||messageResult.error)return;
+   // If the user navigated away while the queries were running, do not touch the page.
+   if(!$('page-team-workspace')?.classList.contains('active'))return;
+   const tasks=taskResult.data||[],rounds=roundResult.data||[],messages=messageResult.data||[];
+   const done=tasks.filter(t=>t.status==='done').length;
+   const progress=tasks.length?Math.round(done/tasks.length*100):0;
+   const avg=rounds.length?Math.round(rounds.reduce((sum,r)=>sum+Number(r.score||0),0)/rounds.length):0;
+   const stats=root.querySelectorAll('.tw-stat');
+   if(stats.length>=4){
+    const values=[tasks.length,done,progress+'%',avg];
+    values.forEach((value,i)=>{if(stats[i].textContent!==String(value))stats[i].textContent=String(value)});
+   }
+   const statLabels=root.querySelectorAll('.tw-stat + div');
+   if(statLabels.length>=4&&statLabels[3].textContent!==('Média dos rounds · '+rounds.length+' registros'))statLabels[3].textContent='Média dos rounds · '+rounds.length+' registros';
+   const messageBox=$('twMessages');
+   if(messageBox){
+    const previousLast=messageBox.querySelector('.tw-bubble:last-child')?.textContent||'';
+    const html=messages.map(m=>'<div class="tw-bubble"><strong>'+teamEsc(teamState.members?.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong><p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p><small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small></div>').join('');
+    const signature=messages.map(m=>m.id+':'+m.created_at).join('|');
+    if(signature!==teamState.messageSignature){
+     const wasNearBottom=messageBox.scrollHeight-messageBox.scrollTop-messageBox.clientHeight<48;
+     messageBox.innerHTML=html||'<p class="tw-muted">Nenhuma mensagem ainda.</p>';
+     if(wasNearBottom)messageBox.scrollTop=messageBox.scrollHeight;
+     teamState.messageSignature=signature;
+    }
+   }
+   teamState.backgroundData={taskCount:tasks.length,done,progress,avg,roundCount:rounds.length};
+  }catch(error){console.warn('Atualização em segundo plano da equipe falhou',error)}
+  finally{teamState.backgroundRefreshInFlight=false}
+ }
  function initTeamWorkspace(){
   syncTeamWorkspace();
-  window.addEventListener('rb-auth-state-changed',()=>{syncTeamWorkspace();if($('page-team-workspace')?.classList.contains('active'))renderTeamWorkspace()});
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))renderTeamWorkspace()});
-  setInterval(()=>{syncTeamWorkspace();if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))renderTeamWorkspace()},15000);
+  window.addEventListener('rb-auth-state-changed',()=>{syncTeamWorkspace();if($('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()});
+  // Atualiza somente os dados em segundo plano. Nunca reconstrói a aba a cada 15 s.
+  setInterval(()=>{syncTeamWorkspace();if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()},15000);
  }
 
  function init(){
