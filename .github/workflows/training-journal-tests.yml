@@ -1,0 +1,29 @@
+name: Rabbitech training journal tests
+
+on:
+  pull_request:
+    paths:
+      - "index.html"
+      - "assets/js/training-journal.mjs"
+      - "tests/training-journal.test.mjs"
+      - ".github/workflows/training-journal-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Training journal unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check module syntax
+        run: node --check assets/js/training-journal.mjs
+      - name: Run unit tests
+        run: node --test tests/training-journal.test.mjs

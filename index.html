@@ -589,6 +589,48 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 </div>
 </section>
 
+<div id="rbTrainingJournal" class="card" style="margin:14px 0">
+  <div class="section-title"><div><h2>🧪 Diário de testes do robô</h2><p>Registre experimentos, falhas repetidas e a próxima ação para cada ajuste.</p></div></div>
+  <p class="footnote">Os registros ficam somente neste navegador e neste aparelho. Não são enviados ao Supabase nem entram no ranking. Exporte um JSON para compartilhar o diário com a equipe.</p>
+  <form id="rbJournalForm">
+    <div class="two">
+      <label class="field">Versão/configuração do robô<input id="rbJournalRobotVersion" maxlength="60" placeholder="Ex.: Robô V3 · garra curta" required></label>
+      <label class="field">Missão ou área<select id="rbJournalMission">
+        <option value="general">Geral / navegação</option>
+        <option value="M01">M01</option><option value="M02">M02</option><option value="M03">M03</option><option value="M04">M04</option><option value="M05">M05</option>
+        <option value="M06">M06</option><option value="M07">M07</option><option value="M08">M08</option><option value="M09">M09</option><option value="M10">M10</option>
+        <option value="M11">M11</option><option value="M12">M12</option><option value="M13">M13</option><option value="M14">M14</option><option value="M15">M15</option>
+      </select></label>
+      <label class="field">Resultado<select id="rbJournalOutcome" required>
+        <option value="" selected disabled>Selecione o resultado</option>
+        <option value="passed">Concluído como esperado</option>
+        <option value="partial">Parcial</option>
+        <option value="failed">Falhou</option>
+        <option value="adjustment">Precisa de ajuste</option>
+      </select></label>
+      <label class="field">Repetições do teste<input id="rbJournalAttempts" type="number" min="1" max="50" step="1" value="1" required></label>
+    </div>
+    <label class="field" style="margin-top:10px">O que aconteceu?<textarea id="rbJournalObservation" maxlength="1200" rows="3" placeholder="Ex.: a garra deslizou na terceira repetição..." required></textarea></label>
+    <label class="field" style="margin-top:10px">Próxima ação<textarea id="rbJournalNextAction" maxlength="800" rows="2" placeholder="Ex.: aumentar o apoio e repetir cinco vezes."></textarea></label>
+    <div class="toolbar" style="margin-top:10px">
+      <button type="submit" id="rbJournalSave" class="primary">Registrar teste</button>
+      <button type="button" id="rbJournalExport" class="ghost">Exportar diário JSON</button>
+      <button type="button" id="rbJournalClear" class="danger">Apagar diário</button>
+    </div>
+  </form>
+  <p id="rbJournalStatus" class="footnote" role="status" aria-live="polite">Pronto para registrar o próximo teste.</p>
+  <div class="three">
+    <div class="mini-stat"><small>Testes registrados</small><strong id="rbJournalCount">0</strong></div>
+    <div class="mini-stat"><small>Taxa de sucesso</small><strong id="rbJournalSuccessRate">0%</strong></div>
+    <div class="mini-stat"><small>Testes com falha</small><strong id="rbJournalFailures">0</strong></div>
+  </div>
+  <label class="field" style="margin-top:12px">Filtrar registros
+    <select id="rbJournalFilter"><option value="all">Todos os resultados</option><option value="passed">Concluídos</option><option value="partial">Parciais</option><option value="failed">Falhas</option><option value="adjustment">Precisam de ajuste</option></select>
+  </label>
+  <div id="rbJournalEntries" class="history-list"><p class="footnote">Nenhum teste registrado ainda.</p></div>
+</div>
+<script type="module" src="/assets/js/training-journal.mjs"></script>
+
 
 <section id="page-routes" class="page">
 <div class="section-title"><div><h2>Mapa do tapete e estratégia de saída</h2><p>Monte a sequência de missões que o robô fará a partir da base e calcule uma estimativa de pontos por saída.</p></div></div>
