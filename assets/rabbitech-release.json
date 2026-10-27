@@ -1,9 +1,10 @@
 {
   "app": "Rabbitech BIOGLOW FLLC",
-  "version": "2026.10.27.4",
+  "version": "2026.10.27.5",
   "channel": "production",
   "release_date": "2026-10-27",
   "notes": [
+    "Ranking público explica o mínimo de 3 rounds sincronizados quando nenhuma equipe é elegível.",
     "Análise FLL ordena os rounds por data confiável, compara a tendência recente e distingue resultados sincronizados dos locais.",
     "Restauração de snapshots valida os 12 campos de configuração antes de informar sucesso.",
     "Diagnóstico mede separadamente o tempo de resposta das funções críticas do Supabase.",
