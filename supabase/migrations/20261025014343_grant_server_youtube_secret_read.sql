@@ -1,0 +1,1 @@
+GRANT SELECT ON TABLE public.rabbitech_private_secrets TO service_role;
