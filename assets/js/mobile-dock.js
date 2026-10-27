@@ -215,6 +215,7 @@
     query('team_round_logs','*','performed_at'),query('team_messages','*','created_at'),query('team_memberships','id,team_id,user_id,display_name,role,created_at','created_at')
    ]);
   }catch(e){teamShell('<div class="tw-card"><h2>'+teamEsc(profile.team_name)+'</h2><p>Não foi possível carregar todos os dados da equipe. Confira as políticas RLS.</p><p class="tw-muted">'+teamEsc(e.message||e)+'</p><button class="tw-btn" id="twRetry">Recarregar</button></div>');$('twRetry')?.addEventListener('click',renderTeamWorkspace);return}
+  teamState.members=members;
   const done=tasks.filter(t=>t.status==='done').length,progress=tasks.length?Math.round(done/tasks.length*100):0;
   const avg=rounds.length?Math.round(rounds.reduce((sum,r)=>sum+Number(r.score||0),0)/rounds.length):0;
   const recent=rounds.slice(-5),previous=rounds.slice(-10,-5);
