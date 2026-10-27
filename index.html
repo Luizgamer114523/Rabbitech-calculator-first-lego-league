@@ -425,9 +425,11 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
           <button type="button" data-admin-jump="rbAdminPublicRank">🏆 Ranking público</button>
           <button type="button" id="rbAdminExportTeams">📥 Exportar equipes CSV</button>
           <button type="button" id="rbAdminCheckData">🔎 Verificar dados</button>
+          <button type="button" id="rbAdminDiagnose">🩺 Diagnosticar Rabbitech</button>
           <button type="button" id="rbAdminRefreshAll">🔄 Recarregar tudo</button>
         </div>
         <p id="rbAdminToolsStatus" class="footnote" role="status" aria-live="polite">Ferramentas administrativas prontas.</p>
+        <div id="rbAdminDiagnostics" class="card hidden" style="margin-top:12px;background:var(--panel2)" aria-live="polite"><h4 style="margin-top:0">🩺 Diagnóstico do Rabbitech</h4><p class="footnote">Execute o diagnóstico para verificar conexão, configurações globais, módulos e dados de equipes sem modificar o banco.</p><div id="rbAdminDiagnosticsResults"></div></div>
        </div>
        <div id="rbAdminPublicRank" class="card" style="margin:14px 0;background:var(--panel2)"><div class="toolbar" style="justify-content:space-between;align-items:center"><h3 style="margin:0">🏆 Prévia do ranking público</h3><button type="button" id="rbAdminRankRefresh">Atualizar ranking</button></div><p class="footnote">Ordenado pela média de pontuação de cada equipe, não pela melhor partida. O ranking público completo também fica na aba Ranking.</p><div id="rbAdminRankPreview"><p class="footnote">Carregando ranking…</p></div><button type="button" data-admin-jump="rbAdminTeamFilter">Gerenciar equipes</button></div>
        <details class="rb-admin-collapsible" id="rbAdminTeamsDisclosure">
@@ -1260,6 +1262,50 @@ async function rbAdminRenderRankPreview(){const host=rbEl('rbAdminRankPreview');
 rbEl('rbAdminRankRefresh')?.addEventListener('click',()=>rbRun(rbAdminRenderRankPreview));
 rbEl('rbAdminExportTeams')?.addEventListener('click',()=>rbRun(async()=>{const {data,error}=await rbClient.rpc('get_rabbitech_admin_overview');if(error)throw error;const rows=Array.isArray(data?.teams)?data.teams:[];if(!rows.length)throw new Error('Nenhuma equipe disponível para exportar.');const esc=v=>'"'+String(v??'').replace(/"/g,'""')+'"';const csv='Equipe;Rounds;Média;Melhor round;Última atividade\r\n'+rows.map(t=>[t.name,t.rounds_count,t.average_score,t.best_score,t.last_round_at].map(esc).join(';')).join('\r\n');const blob=new Blob(['\\ufeff'+csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='rabbitech-equipes-'+new Date().toISOString().slice(0,10)+'.csv';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);rbEl('rbAdminToolsStatus').textContent='Exportação CSV gerada com '+rows.length+' equipes.';}));
 rbEl('rbAdminCheckData')?.addEventListener('click',()=>rbRun(async()=>{const {data,error}=await rbClient.rpc('get_rabbitech_admin_overview');if(error)throw error;const teams=Array.isArray(data?.teams)?data.teams:[];const empty=teams.filter(t=>Number(t.rounds_count||0)===0).length;const low=teams.filter(t=>Number(t.rounds_count||0)>0&&Number(t.rounds_count)<3).length;rbEl('rbAdminToolsStatus').textContent='Verificação concluída: '+teams.length+' equipes; '+empty+' sem rounds; '+low+' com menos de 3 rounds. Nenhum dado foi alterado.';}));
+rbEl('rbAdminDiagnose')?.addEventListener('click',()=>rbRun(async()=>{
+ if(!rbCloudUser||!rbClient||!(rbIsAdmin||rbIsOwner()))throw new Error('Entre com uma conta administradora autorizada.');
+ const panel=rbEl('rbAdminDiagnostics'),out=rbEl('rbAdminDiagnosticsResults'),status=rbEl('rbAdminToolsStatus');
+ if(panel)panel.classList.remove('hidden');
+ if(out)out.innerHTML='<p class="footnote">Verificando conexão e serviços…</p>';
+ if(status)status.textContent='Diagnóstico em andamento…';
+ const checks=[];
+ const add=(name,ok,detail)=>checks.push({name,ok:!!ok,detail:String(detail||'')});
+ add('Sessão autenticada',!!rbCloudUser?.id,'Conta: '+(rbCloudUser.email||rbCloudUser.id||'não identificada'));
+ let cfg=null,overview=null;
+ const [cfgResult,overviewResult]=await Promise.all([
+  rbClient.rpc('get_rabbitech_public_settings'),
+  rbClient.rpc('get_rabbitech_admin_overview')
+ ]);
+ if(cfgResult.error)add('Configurações públicas',false,cfgResult.error.message||'Falha ao consultar configurações.');
+ else{
+  cfg=cfgResult.data||{};
+  add('Configurações públicas',true,'Leitura do Supabase funcionando.');
+  const flags=cfg.feature_flags||{};
+  const off=Object.entries({youtube_tv:'Rabbitech TV',public_ranking:'Ranking público',music_player:'Música',global_notices:'Avisos globais',strategy:'Estratégia',routes:'Rotas',rules:'Regras'}).filter(([key])=>flags[key]===false).map(([,label])=>label);
+  add('Aviso global',cfg.notice_active===true && flags.global_notices!==false,cfg.notice_active===true?'Há um aviso ativo.':(flags.global_notices===false?'Avisos globais está desativado.':'Nenhum aviso ativo no momento.'));
+  add('Módulos globais',off.length===0,off.length?'Desativados: '+off.join(', '):'Nenhum módulo conhecido está desativado.');
+  add('Aparência global',!!(cfg.accent_color&&cfg.theme_name),'Tema: '+(cfg.theme_name||'não definido')+' · cor: '+(cfg.accent_color||'não definida'));
+ }
+ if(overviewResult.error)add('Dados administrativos',false,overviewResult.error.message||'Falha ao consultar dados.');
+ else{
+  overview=overviewResult.data||{};
+  const teams=Array.isArray(overview.teams)?overview.teams:[];
+  const empty=teams.filter(t=>Number(t.rounds_count||0)===0).length;
+  const low=teams.filter(t=>Number(t.rounds_count||0)>0&&Number(t.rounds_count)<3).length;
+  add('Dados administrativos',true,teams.length+' equipes · '+empty+' sem rounds · '+low+' com menos de 3 rounds.');
+ }
+ if(rbIsOwner()){
+  const logsResult=await rbClient.rpc('rabbitech_owner_sql_console_logs',{p_limit:1});
+  if(logsResult.error)add('Auditoria do console SQL',false,logsResult.error.message||'Não foi possível consultar a auditoria.');
+  else add('Auditoria do console SQL',true,'Função de auditoria acessível à conta proprietária.');
+  const adminResult=await rbClient.rpc('admin_list_rabbitech_admins');
+  if(adminResult.error)add('Lista de administradores',false,adminResult.error.message||'Falha ao consultar administradores.');
+  else add('Lista de administradores',true,(Array.isArray(adminResult.data)?adminResult.data.length:0)+' contas administrativas cadastradas.');
+ }
+ const passed=checks.filter(c=>c.ok).length,failed=checks.length-passed;
+ if(out)out.innerHTML='<div class="toolbar" style="justify-content:space-between"><strong>'+passed+'/'+checks.length+' verificações passaram</strong><span class="badge">'+(failed?'Revisar':'Saudável')+'</span></div>'+checks.map(c=>'<div class="rb-admin-team" style="margin:8px 0"><strong>'+(c.ok?'✅ ':'⚠️ ')+rbEsc(c.name)+'</strong><p class="footnote" style="margin:4px 0">'+rbEsc(c.detail)+'</p></div>').join('')+'<p class="footnote">Diagnóstico somente leitura. Nenhuma configuração ou pontuação foi alterada. Executado em '+rbEsc(new Date().toLocaleString('pt-BR'))+'.</p>';
+ if(status)status.textContent=failed?'Diagnóstico concluído: '+failed+' ponto(s) precisam de atenção.':'Diagnóstico concluído: todos os testes passaram.';
+}));
 rbEl('rbAdminRefreshAll')?.addEventListener('click',()=>rbRun(async()=>{await rbLoadAdmin();await rbAdminRenderRankPreview();await rbAdminLoadAdmins();rbEl('rbAdminToolsStatus').textContent='Painel e ranking recarregados.';}));
 
 function rbSqlConsoleIsDestructive(sql){return /^\s*(INSERT|UPDATE|DELETE)\b/i.test(sql||'');}
