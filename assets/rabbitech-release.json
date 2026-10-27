@@ -1,16 +1,16 @@
 {
   "app": "Rabbitech BIOGLOW FLLC",
-  "version": "2026.10.27.3",
+  "version": "2026.10.27.4",
   "channel": "production",
   "release_date": "2026-10-27",
   "notes": [
-    "Restauração de snapshots valida os 12 campos de configuração (avisos, tema, módulos, manutenção e agendamentos) antes de informar sucesso.",
+    "Análise FLL ordena os rounds por data confiável, compara a tendência recente e distingue resultados sincronizados dos locais.",
+    "Restauração de snapshots valida os 12 campos de configuração antes de informar sucesso.",
     "Diagnóstico mede separadamente o tempo de resposta das funções críticas do Supabase.",
     "Reparação guiada identifica avisos ocultos e agendamentos inconsistentes, com confirmação, verificação e histórico.",
     "Relatórios de integridade detalham grupos de nomes de equipe duplicados sem renomear ou excluir dados automaticamente.",
     "Monitor de saúde verifica tabelas críticas, rodadas órfãs, permissões, snapshots e falhas SQL recentes.",
     "Modo manutenção, notificações agendadas e restauração confirmada preservam configurações e histórico.",
-    "Central de atualizações compara a versão instalada com a esperada no repositório; a confirmação final da implantação deve ser conferida na Vercel.",
-    "Análise local de rounds: média, melhor pontuação, tendência e missões com menor aproveitamento."
+    "Central de atualizações compara a versão instalada com a esperada no repositório; a confirmação final da implantação deve ser conferida na Vercel."
   ]
 }
