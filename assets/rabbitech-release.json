@@ -4,7 +4,7 @@
   "channel": "production",
   "release_date": "2026-10-27",
   "notes": [
-    "Restauração de snapshots confirma todos os campos restaurados: avisos, tema, módulos, manutenção e agendamentos.",
+    "Restauração de snapshots valida os 12 campos de configuração (avisos, tema, módulos, manutenção e agendamentos) antes de informar sucesso.",
     "Diagnóstico mede separadamente o tempo de resposta das funções críticas do Supabase.",
     "Reparação guiada identifica avisos ocultos e agendamentos inconsistentes, com confirmação, verificação e histórico.",
     "Relatórios de integridade detalham grupos de nomes de equipe duplicados sem renomear ou excluir dados automaticamente.",
