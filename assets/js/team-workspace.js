@@ -86,10 +86,14 @@
   const [t,m,e,g,n,r,chat]=await Promise.all([
    sb.from('team_tasks').select('id,team_id,title,description,status,priority,due_date,assigned_to,created_by,completed_at,created_at,updated_at').eq('team_id',workspace.team_id).order('created_at',{ascending:false}),
    sb.from('team_memberships').select('user_id,display_name,role,created_at').eq('team_id',workspace.team_id).order('created_at',{ascending:true}),
-   sb.from('team_task_events').select('id,task_id,actor_user_id,old_status,new_status,note,created_at').eq('team_id',workspace.team_id).order('created_at',{ascending:false}).limit(20)
+   sb.from('team_task_events').select('id,task_id,actor_user_id,old_status,new_status,note,created_at').eq('team_id',workspace.team_id).order('created_at',{ascending:false}).limit(20),
+   sb.from('team_goals').select('*').eq('team_id',workspace.team_id).order('created_at',{ascending:false}),
+   sb.from('team_notes').select('*').eq('team_id',workspace.team_id).order('updated_at',{ascending:false}).limit(50),
+   sb.from('team_round_logs').select('*').eq('team_id',workspace.team_id).order('performed_at',{ascending:false}).limit(100),
+   sb.from('team_messages').select('*').eq('team_id',workspace.team_id).order('created_at',{ascending:false}).limit(100)
   ]);
-  if(t.error)throw t.error;if(m.error)throw m.error;if(e.error)throw e.error;
-  tasks=t.data||[];members=m.data||[];events=e.data||[];
+  if(t.error)throw t.error;if(m.error)throw m.error;if(e.error)throw e.error;if(g.error)throw g.error;if(n.error)throw n.error;if(r.error)throw r.error;if(chat.error)throw chat.error;
+  tasks=t.data||[];members=m.data||[];events=e.data||[];goals=g.data||[];notes=n.data||[];roundLogs=r.data||[];messages=(chat.data||[]).reverse();
  }
  function renderBoard(){
   const page=makePage();if(!page)return;page.replaceChildren();addStyles();
@@ -114,7 +118,7 @@
     row.append(left,node('small','rb-team-muted',new Date(ev.created_at).toLocaleString('pt-BR')));activity.append(row);
    });
   }
-  page.append(activity);
+  page.append(activity);page.append(renderGoals(),renderRounds(),renderNotes(),renderChat());
  }
  function renderGoals(){
   const panel=node('section','rb-team-panel');panel.append(node('h3','','🎯 Metas da equipe'));
