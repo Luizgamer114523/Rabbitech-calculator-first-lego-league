@@ -203,13 +203,25 @@
   if(page)page.querySelectorAll('input[id],textarea[id],select[id]').forEach(el=>{values[el.id]=el.value});
   try{
    await loadBoardData();
-   renderBoard();
-   const nextPage=$('page-team-workspace');
-   if(nextPage){
-    Object.entries(values).forEach(([id,value])=>{const el=$(id);if(el)el.value=value});
-    if(activeId&&$(activeId))$(activeId).focus({preventScroll:true});
-    requestAnimationFrame(()=>window.scrollTo({top:scrollY,behavior:'auto'}));
+   // Do not rebuild the whole page during a background refresh: that destroys the
+   // focused controls and can send mobile users back to the top of the document.
+   updateBoardSummaryInBackground();
+   const chatList=$('rbTeamChatMessages');
+   if(chatList){
+    const seen=new Set([...chatList.querySelectorAll('[data-message-id]')].map(el=>el.dataset.messageId));
+    messages.forEach(message=>{if(!message.id||!seen.has(String(message.id)))addMessageOnce(message)});
    }
+   // Refresh the task cards in place, retaining scroll, chat input and open form fields.
+   const cards=[...document.querySelectorAll('#page-team-workspace .rb-team-task')];
+   tasks.forEach(task=>{
+    const card=cards.find(el=>el.querySelector('h4')?.textContent===task.title);
+    if(!card)return;
+    const statusSelect=card.querySelector('select');
+    if(statusSelect&&document.activeElement!==statusSelect)statusSelect.value=task.status;
+   });
+   Object.entries(values).forEach(([id,value])=>{const el=$(id);if(el&&document.activeElement!==el)el.value=value});
+   if(activeId&&$(activeId)&&document.activeElement!==$(activeId))$(activeId).focus({preventScroll:true});
+   requestAnimationFrame(()=>window.scrollTo({top:scrollY,behavior:'auto'}));
   }catch(e){console.warn('Rabbitech background refresh failed',e)}
   finally{loading=false}
  }
