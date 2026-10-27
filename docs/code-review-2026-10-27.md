@@ -35,14 +35,14 @@ O limite de comprimento é aplicado somente ao campo de nome, e a confiança est
 
 ## Achados que exigem correção dedicada
 
-### Alta prioridade: duas camadas de consentimento disputam a tela inicial
-O HTML usa `#rbPrivacyGate` e cria também `#rbLanguageConsent` por script. Eles têm controladores e estados de aceite separados. A folha `assets/css/mobile-dock.css` dá prioridade de camada à tela de privacidade, enquanto o seletor de idioma usa outra camada; além disso, os botões de cada camada fecham elementos diferentes e atualizam a preferência de aceite de formas diferentes. Isso pode fazer a primeira tela parecer bloqueada ou exigir etapas duplicadas. A correção adequada é consolidar o fluxo em uma sequência única, preservando a confirmação explícita da política. Não alterei esse comportamento sem teste de interação para evitar contornar a confirmação de privacidade.
+### Alta prioridade: duas camadas de consentimento disputavam a tela inicial
+O HTML usa `#rbPrivacyGate` e cria também `#rbLanguageConsent` por script, com estados separados. Isso podia empilhar dois diálogos e competir com as regras CSS que escondem a navegação. Na branch, `mobile-dock.js` agora mantém `#rbPrivacyGate` como a única tela obrigatória e oculta o overlay duplicado quando ambos existem. O seletor de idioma gerado como `#rbLanguageHeader` também é reconhecido pelo controlador do dock. O aceite explícito da política continua sendo exigido pelo `#rbPrivacyGateConfirm`; não foi removido nem contornado.
 
 ### Alta prioridade: vários controladores mexem na mesma navegação
 O HTML contém scripts inline acumulados que adicionam listeners de navegação, controle de acesso e reparos de interface. O controlador externo também altera visibilidade e página ativa. É uma fonte plausível de regressões como o placar desaparecer depois de atualizar o painel. É preciso consolidar esses fluxos e reproduzir a sequência em navegador antes de declarar o bug corrigido.
 
 ### Média prioridade: configurações globais têm mais de um aplicador
-O HTML aplica configurações globais e avisos por `rbApplyGlobalSettings`/`rbApplyFeatureFlags`. O controlador `mobile-dock.js` também consulta `get_rabbitech_public_settings` e aplica visibilidade de módulos e aviso global. Como ambas as rotas alteram elementos relacionados, mudanças podem competir. A correção recomendada é manter uma única fonte de verdade e um único aplicador de estado público, depois testar publicar/desativar/reativar avisos.
+O HTML aplica configurações globais e avisos por `rbApplyGlobalSettings`/`rbApplyFeatureFlags`. O controlador `mobile-dock.js` também consulta `get_rabbitech_public_settings` e aplica visibilidade de módulos e aviso global. Na branch, foram corrigidos dois conflitos observáveis: quando um módulo é reativado, o controlador externo remove o `display:none!important` inline deixado pelo aplicador original; e avisos ativos sem texto continuam ocultos, em vez de mostrar um banner vazio. Ainda é recomendável consolidar os aplicadores depois de testes de interação, porque ambos continuam consultando e atualizando o mesmo estado.
 
 ### Média prioridade: warning em `/api/youtube-search`
 Os logs de produção mostram o aviso Node.js `DEP0169` ligado a `url.parse()`. A versão atual do arquivo `api/youtube-search.js` já usa `new URL()` e não contém chamada direta a `url.parse()`; a origem pode estar no runtime ou em uma dependência. Não fiz uma alteração especulativa. É preciso obter um stack trace útil para identificar a origem.
@@ -52,7 +52,7 @@ Os logs de produção mostram o aviso Node.js `DEP0169` ligado a `url.parse()`. 
 - Compilação sintática com `new Function` dos 8 scripts inline com conteúdo e dos 2 arquivos JS externos: **10/10 sem erro de sintaxe**.
 - O preview Vercel consultado respondeu HTTP 200.
 - A fonte do preview verificado incluía os dois arquivos JS esperados.
-- O preview consultado correspondia ao commit `87f553659d7024f0ec5ef9f793cb3c905423493f`. O commit posterior de limpeza de campos precisa de um novo preview antes de validar a versão completa.
+- O preview anterior respondeu HTTP 200 e incluía os dois arquivos JS externos. Os commits posteriores de correção precisam de novo preview e teste manual antes de considerar os fluxos validados.
 - Não há teste automatizado de interface configurado no `package.json`.
 - Não foram executados cliques reais em navegador nem testes end-to-end. A compilação sintática e o HTTP 200 não comprovam que os fluxos de consentimento, placar, avisos ou dock estão corretos.
 
@@ -64,3 +64,16 @@ Os logs de produção mostram o aviso Node.js `DEP0169` ligado a `url.parse()`. 
 4. Testar o dock a 360 px, 390 px e desktop, em contas de administrador e visitante.
 5. Diagnosticar a origem do warning `DEP0169` antes de mexer em código da API.
 6. Somente então integrar a branch e avaliar publicação.
+
+
+## Correções de conflitos aplicadas após a revisão
+
+- Um único overlay obrigatório de privacidade: `#rbPrivacyGate`; o overlay duplicado de idioma é ocultado se ambos existem.
+- O controlador do dock reconhece o seletor que o script inline renomeia para `#rbLanguageHeader`.
+- A função de escape HTML usada pelo diagnóstico foi definida.
+- O planejador de estratégia duplicado foi removido para não disputar IDs com o comparador de `competition-tools.js`.
+- O cronômetro adicional foi removido; permanece o cronômetro original do placar.
+- Reativar módulos limpa o `display:none!important` antigo aplicado pelo controlador inline.
+- Avisos globais sem texto não aparecem como banners vazios.
+- Os dois arquivos JS externos passaram pela verificação sintática `new Function` após as alterações.
+- As alterações permanecem na branch; a produção e o Supabase não foram modificados.
