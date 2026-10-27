@@ -54,7 +54,7 @@
   try{const {data,error}=await sb.rpc('get_my_team_workspace');if(error)throw error;workspace=data||null;
    if(workspace?.member&&workspace?.team_id){hideJoinCard();makeNav();makePage();return}
    removeNav();ensureJoinCard();
-  }catch(e){console.warn('Rabbitech team workspace could not load',e);removeNav();if(u)ensureJoinCard()}
+  }catch(e){console.warn('Rabbitech team workspace could not load',e);removeNav();hideJoinCard()}
  }
  async function joinTeam(){
   const sb=client(),name=$('rbTeamJoinName')?.value.trim(),code=$('rbTeamJoinCode')?.value.trim(),status=$('rbTeamJoinStatus');
