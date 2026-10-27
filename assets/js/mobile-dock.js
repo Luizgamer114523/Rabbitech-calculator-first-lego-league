@@ -75,13 +75,14 @@
   routes:{page:'routes',nav:'routes'},
   rules:{page:'rules',nav:'rules'}
  };
- let lastFeatureFlags=null,lastNoticeActive=null;
+ let settingsRefreshInFlight=false;
  function getSupabaseClient(){
   try{if(typeof rbClient!=='undefined'&&rbClient)return rbClient}catch(_){}
   return window.rbClient||window.supabaseClient||null;
  }
  async function loadPublicSettings(){
-  const client=getSupabaseClient();if(!client||typeof client.rpc!=='function')return;
+  const client=getSupabaseClient();if(!client||typeof client.rpc!=='function'||settingsRefreshInFlight)return;
+  settingsRefreshInFlight=true;
   try{
    const result=await client.rpc('get_rabbitech_public_settings');
    if(result?.error||!result?.data)return;
@@ -95,9 +96,9 @@
     ? settings.display_notice_text : (typeof settings.notice_text==='string'?settings.notice_text:'');
    const noticeType=typeof settings.display_notice_type==='string'
     ? settings.display_notice_type : (typeof settings.notice_type==='string'?settings.notice_type:'info');
-   lastFeatureFlags=flags;lastNoticeActive=activeNotice;
-   applyFeatureFlags(flags,lastNoticeActive,{text:noticeText,type:noticeType});
+   applyFeatureFlags(flags,activeNotice,{text:noticeText,type:noticeType});
   }catch(error){console.warn('Rabbitech feature flags could not be refreshed',error)}
+  finally{settingsRefreshInFlight=false;}
  }
  function applyFeatureFlags(flags,noticeActive,notice={}){
   Object.entries(FEATURE_TARGETS).forEach(([key,target])=>{
@@ -121,7 +122,6 @@
   if(musicFab)musicFab.hidden=!musicEnabled;
   if(musicOverlay){musicOverlay.hidden=!musicEnabled;if(!musicEnabled){musicOverlay.classList.remove('open','active','visible');musicOverlay.setAttribute('aria-hidden','true')}else musicOverlay.removeAttribute('aria-hidden')}
   if(!musicEnabled&&musicAudio){try{musicAudio.pause();musicAudio.currentTime=0}catch(_){}}
-  document.querySelectorAll('[data-feature-flag]').forEach(element=>{if(element.closest('#page-admin'))return;const key=element.getAttribute('data-feature-flag');if(Object.prototype.hasOwnProperty.call(flags,key))element.hidden=flags[key]===false});
   const noticesEnabled=flags.global_notices!==false&&noticeActive===true;
   document.querySelectorAll('[id*="globalNotice" i],[class*="global-notice" i],[data-global-notice]').forEach(element=>{
    if(element.closest('#page-admin'))return;
@@ -138,7 +138,7 @@
   // Update only dedicated text targets so the banner's icons/buttons are preserved.
   if(typeof notice.text==='string'){
    document.querySelectorAll('[data-global-notice-text],[data-global-notice-message],#rbGlobalNoticeText,#rbGlobalNoticeMessage,.global-notice-text,.global-notice-message').forEach(element=>{
-    if(!element.closest('#page-admin'))element.textContent=notice.text;
+    if(!element.closest('#page-admin')&&element.textContent!==notice.text)element.textContent=notice.text;
    });
   }
   document.querySelectorAll('[data-feature-flag]').forEach(element=>{
@@ -161,13 +161,13 @@
   const out=$('rbSystemDiagnosticsResults');if(!out)return;const checks=[];
   const add=(n,ok,d)=>checks.push({n,ok,d});
   const nav=document.querySelector('nav.rb-samsung-dock'),client=getSupabaseClient(),lang=$('rbLanguageConsent');
-  add('Acesso administrativo',adminAllowed(),adminAllowed()?'Sessão administrativa detectada.':'Nenhuma sessão administrativa detectada.');
+  add('Indicador local de administrador',adminAllowed(),adminAllowed()?'Sinal local presente; a autorização real continua sendo validada pelo Supabase.':'Sinal local de administrador não detectado.');
   add('Menu principal',!!nav,nav?'Menu encontrado.':'Menu de navegação não encontrado.');
   add('Página do placar',!!$('page-score'),$('page-score')?'Página encontrada.':'Elemento page-score ausente.');
   add('Página administrativa',!!$('page-admin'),$('page-admin')?'Página encontrada.':'Elemento page-admin ausente.');
-  add('Tela de idioma',!lang||lang.hidden||getComputedStyle(lang).display==='none',!lang?'Sobreposição não encontrada.':(lang.hidden||getComputedStyle(lang).display==='none'?'Não está visível.':'Ainda está visível; verifique os controles.'));
+  add('Estrutura da tela de idioma',!!lang&& (lang.hidden||getComputedStyle(lang).display==='none'),!lang?'Elemento #rbLanguageConsent ausente.':(lang.hidden||getComputedStyle(lang).display==='none'?'Tela de idioma fechada.':'A tela ainda está visível; verifique se isso é esperado.'));
   add('Cliente Supabase',!!client&&typeof client.rpc==='function',client?'RPC disponível.':'Cliente/RPC não encontrado.');
-  if(client&&typeof client.rpc==='function'){try{const r=await Promise.race([client.rpc('get_rabbitech_public_settings'),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tempo limite de 8 s')),8000))]);add('RPC de configurações',!r?.error&&!!r?.data,r?.error?String(r.error.message||r.error).slice(0,180):r?.data?'Resposta recebida.':'Resposta sem dados.')}catch(e){add('RPC de configurações',false,String(e?.message||e).slice(0,180))}}else add('RPC de configurações',false,'Não foi possível testar sem cliente.');
+  if(client&&typeof client.rpc==='function'){const startedAt=Date.now();try{const r=await Promise.race([client.rpc('get_rabbitech_public_settings'),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tempo limite de 8 s')),8000))]);const elapsed=Date.now()-startedAt;add('RPC de configurações',!r?.error&&!!r?.data,r?.error?String(r.error.message||r.error).slice(0,180):r?.data?'Resposta recebida em '+elapsed+' ms.':'Resposta sem dados após '+elapsed+' ms.')}catch(e){add('RPC de configurações',false,String(e?.message||e).slice(0,180)+' ('+(Date.now()-startedAt)+' ms)')}}else add('RPC de configurações',false,'Não foi possível testar sem cliente.');
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   out.innerHTML=checks.map(x=>'<div style="padding:8px 0;border-bottom:1px solid #263d2c"><strong style="color:'+(x.ok?'#b8ef8b':'#ffb4a9')+'">'+(x.ok?'✓ ':'! ')+esc(x.n)+'</strong><div>'+esc(x.d)+'</div></div>').join('')+'<p>'+checks.filter(x=>x.ok).length+'/'+checks.length+' verificações aprovadas · '+new Date().toLocaleString()+'</p>';
  }
@@ -176,7 +176,7 @@
  function escapeDiagnosticText(value){
   return String(value??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
  }
- function safeLocalGet(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(_){return []}}
+ function safeLocalGet(key){try{const value=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(value)?value:[]}catch(_){return []}}
  function addExtraTools(){
   const routes=$('page-routes'),admin=$('page-admin');
   if(routes&&!$('rbTrainingNotebook')){
@@ -195,8 +195,10 @@
 
  function init(){
   setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();addDiagnostics();addExtraTools();
+  let refreshFrame=0;
   const observer=new MutationObserver(()=>{
-   setupDock();placeLanguageButton();syncAdmin();addDiagnostics();addExtraTools();
+   if(refreshFrame)return;
+   refreshFrame=requestAnimationFrame(()=>{refreshFrame=0;setupDock();placeLanguageButton();syncAdmin();addDiagnostics();addExtraTools();});
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
