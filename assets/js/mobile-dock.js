@@ -133,7 +133,7 @@
  // Team workspace: leader/member portal backed by Supabase RLS and RPCs.
  const TEAM_STATES=['todo','in_progress','done'];
  const TEAM_LABELS={todo:'A fazer',in_progress:'Em andamento',done:'Concluído'};
- let teamState={profile:null,team:null,loading:false,refreshing:false,inviteCode:'',timer:null};
+ let teamState={profile:null,team:null,loading:false,refreshing:false,inviteCode:'',timer:null,realtimeChannel:null,realtimeTeamId:null,realtimeReady:false,messageSignature:'',backgroundRefreshInFlight:false};
  const teamEsc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const teamClient=()=>getSupabaseClient();
  function ensureTeamPage(){
@@ -216,6 +216,7 @@
    ]);
   }catch(e){teamShell('<div class="tw-card"><h2>'+teamEsc(profile.team_name)+'</h2><p>Não foi possível carregar todos os dados da equipe. Confira as políticas RLS.</p><p class="tw-muted">'+teamEsc(e.message||e)+'</p><button class="tw-btn" id="twRetry">Recarregar</button></div>');$('twRetry')?.addEventListener('click',renderTeamWorkspace);return}
   teamState.members=members;
+  setupTeamChatRealtime(teamId);
   const done=tasks.filter(t=>t.status==='done').length,progress=tasks.length?Math.round(done/tasks.length*100):0;
   const avg=rounds.length?Math.round(rounds.reduce((sum,r)=>sum+Number(r.score||0),0)/rounds.length):0;
   const recent=rounds.slice(-5),previous=rounds.slice(-10,-5);
@@ -288,9 +289,60 @@
   const t=teamState.team,p=teamState.profile,title=$('twNoteTitle')?.value.trim(),body=$('twNoteBody')?.value.trim();if(!title||!body){teamFeedback('Preencha o título e o conteúdo da anotação.',true);return}
   await teamWrite(c=>c.from('team_notes').insert({team_id:t.team_id,author_user_id:p.user_id,title,body}));
  }
+ function appendTeamMessage(message,pending=false){
+  const box=$('twMessages');if(!box)return;
+  const name=teamState.members?.find(m=>m.user_id===message.author_user_id)?.display_name||teamState.profile?.display_name||'Membro';
+  const bubble=document.createElement('div');bubble.className='tw-bubble';if(pending)bubble.dataset.pendingMessage='true';
+  const strong=document.createElement('strong');strong.textContent=name;
+  const body=document.createElement('p');body.style.cssText='white-space:pre-wrap;margin:4px 0';body.textContent=message.body;
+  const time=document.createElement('small');time.className='tw-muted';time.textContent=pending?'Enviando…':new Date(message.created_at).toLocaleString();
+  bubble.append(strong,body,time);box.appendChild(bubble);box.scrollTop=box.scrollHeight;
+ }
  async function sendTeamMessage(){
-  const t=teamState.team,p=teamState.profile,body=$('twMessageBody')?.value.trim();if(!body)return;
-  await teamWrite(c=>c.from('team_messages').insert({team_id:t.team_id,author_user_id:p.user_id,body}));
+  const t=teamState.team,p=teamState.profile,input=$('twMessageBody'),button=$('twSendMessage'),body=input?.value.trim();
+  if(!body||!t?.team_id||!p?.user_id)return;
+  const c=teamClient();if(!c)return;
+  const localId='pending-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
+  const box=$('twMessages');const oldScroll=box?.scrollTop||0;
+  if(button)button.disabled=true;
+  appendTeamMessage({id:localId,team_id:t.team_id,author_user_id:p.user_id,body,created_at:new Date().toISOString()},true);
+  input.value='';
+  try{
+   const result=await c.from('team_messages').insert({team_id:t.team_id,author_user_id:p.user_id,body}).select('id,team_id,author_user_id,body,created_at').single();
+   if(result.error)throw result.error;
+   const pending=box?.querySelector('[data-pending-message="true"]');
+   if(pending){
+    pending.removeAttribute('data-pending-message');
+    const time=pending.querySelector('small');if(time)time.textContent=new Date(result.data.created_at).toLocaleString();
+    pending.dataset.messageId=result.data.id;
+   }
+   teamState.messageSignature='';
+   refreshTeamBackground();
+  }catch(e){
+   const pending=box?.querySelector('[data-pending-message="true"]');if(pending)pending.remove();
+   input.value=body;
+   teamFeedback('Não foi possível enviar a mensagem: '+(e?.message||'verifique a conexão.'),true);
+   if(box)box.scrollTop=oldScroll;
+  }finally{if(button)button.disabled=false;input?.focus()}
+ }
+ function setupTeamChatRealtime(teamId){
+  const client=teamClient();if(!client?.channel||!teamId)return;
+  if(teamState.realtimeTeamId===teamId&&teamState.realtimeChannel)return;
+  if(teamState.realtimeChannel){try{client.removeChannel(teamState.realtimeChannel)}catch(_){}}
+  teamState.realtimeTeamId=teamId;teamState.realtimeReady=false;
+  const channel=client.channel('rabbitech-team-chat-'+teamId)
+   .on('postgres_changes',{event:'INSERT',schema:'public',table:'team_messages',filter:'team_id=eq.'+teamId},payload=>{
+    const message=payload?.new;if(!message||message.team_id!==teamId)return;
+    const box=$('twMessages');
+    if(message.author_user_id===teamState.profile?.user_id){
+     const duplicate=[...(box?.querySelectorAll('.tw-bubble')||[])].some(el=>el.dataset.messageId===message.id);
+     if(duplicate)return;
+    }
+    teamState.messageSignature='';
+    refreshTeamBackground();
+   })
+   .subscribe(status=>{teamState.realtimeReady=status==='SUBSCRIBED';if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Chat realtime indisponível; usando atualização de reserva.')});
+  teamState.realtimeChannel=channel;
  }
  let teamAuthCheckInFlight=false;
  async function syncTeamWorkspace(){
@@ -348,7 +400,7 @@
   window.addEventListener('rb-auth-state-changed',()=>{syncTeamWorkspace();if($('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()});
   // Atualiza somente os dados em segundo plano. Nunca reconstrói a aba a cada 15 s.
-  setInterval(()=>{syncTeamWorkspace();if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()},15000);
+  setInterval(()=>{syncTeamWorkspace();if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()},3000);
  }
 
  function init(){
