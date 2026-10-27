@@ -221,8 +221,16 @@
   script.onerror=()=>console.error('Rabbitech team workspace script failed to load');
   document.head.appendChild(script);
  }
+ let settingsRealtimeChannel=null;
+ function startSettingsRealtime(){
+  const client=getSupabaseClient();
+  if(!client||typeof client.channel!=='function'||settingsRealtimeChannel)return;
+  settingsRealtimeChannel=client.channel('rabbitech-site-settings-live')
+   .on('postgres_changes',{event:'UPDATE',schema:'public',table:'rabbitech_site_settings',filter:'id=eq.true'},()=>loadPublicSettings())
+   .subscribe((status)=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){settingsRealtimeChannel=null}});
+ }
  function init(){
-  unifyConsentOverlays();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();addDiagnostics();addExtraTools();loadTeamWorkspaceScript();
+  unifyConsentOverlays();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();startSettingsRealtime();addDiagnostics();addExtraTools();loadTeamWorkspaceScript();
   let refreshFrame=0;
   const observer=new MutationObserver(()=>{
    if(refreshFrame)return;
