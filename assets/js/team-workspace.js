@@ -1,0 +1,121 @@
+/* Rabbitech Team Workspace: member-only Kanban board, backed by Supabase RLS/RPCs. */
+(()=>{'use strict';
+ const $=id=>document.getElementById(id);
+ const esc=v=>String(v??'');
+ let workspace=null, tasks=[], members=[], loading=false, scriptReady=false;
+ const STATUS=[['todo','A fazer'],['in_progress','Em andamento'],['done','Concluída']];
+ const PRIORITY=[['low','Baixa'],['normal','Normal'],['high','Alta']];
+ function client(){try{if(typeof rbClient!=='undefined'&&rbClient)return rbClient}catch(_){}return window.rbClient||window.supabaseClient||null}
+ function user(){try{return (typeof rbCloudUser!=='undefined'&&rbCloudUser)||window.rbCloudUser||null}catch(_){return window.rbCloudUser||null}}
+ function node(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=text;return el}
+ function button(text,cls,action){const b=node('button',cls||'rb-team-btn',text);b.type='button';if(action)b.addEventListener('click',action);return b}
+ function input(labelText,type,value,placeholder){const wrap=node('label','rb-team-label',labelText);const el=document.createElement(type==='textarea'?'textarea':'input');if(type!=='textarea')el.type=type||'text';if(value!==undefined)el.value=value;if(placeholder)el.placeholder=placeholder;wrap.appendChild(el);return {wrap,el}}
+ function select(labelText,options,value){const wrap=node('label','rb-team-label',labelText),el=node('select');options.forEach(([v,t])=>{const o=node('option','',t);o.value=v;el.appendChild(o)});if(value!==undefined)el.value=value;wrap.appendChild(el);return {wrap,el}}
+ function addStyles(){if($('rbTeamWorkspaceStyles'))return;const style=node('style');style.id='rbTeamWorkspaceStyles';style.textContent=`
+  #page-team-workspace{max-width:1200px;margin:0 auto;padding:clamp(12px,3vw,26px);color:var(--text,#edf7ed)}
+  .rb-team-panel{border:1px solid var(--line,rgba(208,244,119,.22));border-radius:16px;padding:16px;background:var(--panel,rgba(7,19,12,.88));margin:12px 0;min-width:0}
+  .rb-team-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+  .rb-team-muted{color:var(--muted,#a9b9ad);font-size:13px;line-height:1.5}
+  .rb-team-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  .rb-team-stat{padding:12px;border:1px solid var(--line,rgba(208,244,119,.2));border-radius:12px;min-width:0}
+  .rb-team-stat strong{display:block;font-size:24px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+  .rb-team-stat span{font-size:12px;color:var(--muted,#a9b9ad)}
+  .rb-team-kanban{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}
+  .rb-team-column{min-width:0;padding:10px;border:1px solid var(--line,rgba(208,244,119,.18));border-radius:14px;background:rgba(0,0,0,.12)}
+  .rb-team-column h3{font-size:15px;margin:3px 0 12px}
+  .rb-team-task{padding:12px;margin:9px 0;border:1px solid var(--line,rgba(208,244,119,.18));border-radius:12px;background:var(--panel,#07140d);overflow-wrap:anywhere}
+  .rb-team-task h4{margin:0 0 7px;font-size:15px}
+  .rb-team-task p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+  .rb-team-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .rb-team-label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted,#a9b9ad);min-width:0}
+  .rb-team-label input,.rb-team-label textarea,.rb-team-label select{box-sizing:border-box;width:100%;min-width:0;border:1px solid var(--line,#49684b);border-radius:9px;padding:10px;background:var(--panel2,#07140d);color:var(--text,#edf7ed);font:inherit}
+  .rb-team-label textarea{resize:vertical;min-height:80px}
+  .rb-team-btn{border:1px solid var(--line,#49684b);border-radius:10px;padding:9px 12px;min-height:38px;background:rgba(208,244,119,.1);color:inherit;font:inherit;font-weight:700;cursor:pointer}
+  .rb-team-btn:disabled{opacity:.5;cursor:wait}
+  .rb-team-badge{display:inline-block;border:1px solid var(--line,#49684b);border-radius:99px;padding:3px 8px;font-size:11px;margin:2px 4px 2px 0}
+  .rb-team-notice{padding:10px 12px;border-radius:10px;background:rgba(208,244,119,.08);overflow-wrap:anywhere}
+  .rb-team-member-row{display:flex;justify-content:space-between;gap:10px;padding:10px 0;border-bottom:1px solid var(--line,rgba(208,244,119,.12))}
+  @media(max-width:760px){.rb-team-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.rb-team-kanban{grid-template-columns:minmax(0,1fr)}.rb-team-fields{grid-template-columns:minmax(0,1fr)}}
+  @media(prefers-reduced-motion:reduce){#page-team-workspace *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+ `;document.head.appendChild(style)}
+ function makePage(){let page=$('page-team-workspace');if(!page){const main=document.querySelector('main');if(!main)return null;page=node('section','page');page.id='page-team-workspace';page.hidden=true;page.setAttribute('aria-labelledby','rbTeamTitle');main.appendChild(page)}return page}
+ function makeNav(){const nav=document.querySelector('nav button[data-page]')?.closest('nav');if(!nav)return null;let b=nav.querySelector('button[data-page="team-workspace"]');if(!b){b=button('Equipe','',()=>openBoard());b.dataset.page='team-workspace';b.setAttribute('aria-label','Espaço da equipe');b.title='Tarefas e acompanhamento da equipe';const admin=nav.querySelector('#rbAdminNav,button[data-page="admin"]');if(admin)nav.insertBefore(b,admin);else nav.appendChild(b)}return b}
+ function removeNav(){const b=document.querySelector('nav button[data-page="team-workspace"]');if(b)b.remove();const page=$('page-team-workspace');if(page){page.hidden=true;page.classList.remove('active')}}
+ function goToPage(){const page=makePage();if(!page)return;document.querySelectorAll('main .page').forEach(p=>{p.classList.remove('active');p.hidden=true});page.hidden=false;page.classList.add('active');document.querySelectorAll('nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page==='team-workspace'));page.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})}
+ function showJoinCard(){if(!$('rbTeamJoinCard')||!user())return;const card=$('rbTeamJoinCard');card.hidden=false}
+ function hideJoinCard(){const card=$('rbTeamJoinCard');if(card)card.remove()}
+ function ensureJoinCard(){
+  if(!$('rbTeamJoinCard')){const host=$('page-score')||document.querySelector('main');if(!host)return;const card=node('section','rb-team-panel');card.id='rbTeamJoinCard';card.hidden=true;card.append(node('h3','','Entrar no espaço da equipe'));card.append(node('p','rb-team-muted','Entre com sua conta Google no Rabbitech e use o código de convite fornecido pela liderança da equipe. O código vincula sua conta à equipe correta.'));const fields=node('div','rb-team-fields');const name=input('Nome que aparecerá para a equipe','text','','Seu nome');name.el.maxLength=80;name.el.autocomplete='name';name.el.id='rbTeamJoinName';const code=input('Código de convite','text','','Cole o código da liderança');code.el.maxLength=100;code.el.autocomplete='off';code.el.id='rbTeamJoinCode';fields.append(name.wrap,code.wrap);card.append(fields);const status=node('p','rb-team-muted','');status.id='rbTeamJoinStatus';card.append(status,button('Entrar na equipe','rb-team-btn',joinTeam));host.appendChild(card)}
+  showJoinCard()
+ }
+ async function loadWorkspace(){
+  const sb=client(),u=user();
+  if(!sb||!u||typeof sb.rpc!=='function'){workspace=null;removeNav();hideJoinCard();return}
+  try{const {data,error}=await sb.rpc('get_my_team_workspace');if(error)throw error;workspace=data||null;
+   if(workspace?.member&&workspace?.team_id){hideJoinCard();makeNav();makePage();return}
+   removeNav();ensureJoinCard();
+  }catch(e){console.warn('Rabbitech team workspace could not load',e);removeNav();if(u)ensureJoinCard()}
+ }
+ async function joinTeam(){
+  const sb=client(),name=$('rbTeamJoinName')?.value.trim(),code=$('rbTeamJoinCode')?.value.trim(),status=$('rbTeamJoinStatus');
+  if(!sb||!name||!code){if(status)status.textContent='Preencha seu nome e o código de convite.';return}
+  const b=$('rbTeamJoinCard')?.querySelector('button');if(b)b.disabled=true;if(status)status.textContent='Validando convite…';
+  try{const {data,error}=await sb.rpc('join_team_with_code',{p_code:code,p_display_name:name});if(error)throw error;if(status)status.textContent='Conta vinculada à equipe '+(data?.team_name||'')+'.';await loadWorkspace();if(workspace?.member)await openBoard()}
+  catch(e){if(status)status.textContent=e?.message||'Não foi possível entrar. Confira o código com a liderança.'}
+  finally{if(b)b.disabled=false}
+ }
+ function setMessage(id,text){const el=$(id);if(el)el.textContent=text}
+ function addStat(host,value,label){const s=node('div','rb-team-stat');s.append(node('strong','',String(value)),node('span','',label));host.appendChild(s)}
+ function dateText(v){if(!v)return 'Sem prazo';const d=new Date(v+'T12:00:00');return Number.isNaN(d.getTime())?String(v):d.toLocaleDateString('pt-BR')}
+ function taskStatusName(v){return STATUS.find(x=>x[0]===v)?.[1]||v}
+ function priorityName(v){return PRIORITY.find(x=>x[0]===v)?.[1]||v}
+ async function loadBoardData(){
+  const sb=client();if(!sb||!workspace?.team_id)return;
+  const [t,m]=await Promise.all([
+   sb.from('team_tasks').select('id,team_id,title,description,status,priority,due_date,assigned_to,created_by,completed_at,created_at,updated_at').eq('team_id',workspace.team_id).order('created_at',{ascending:false}),
+   sb.from('team_memberships').select('user_id,display_name,role,created_at').eq('team_id',workspace.team_id).order('created_at',{ascending:true})
+  ]);
+  if(t.error)throw t.error;if(m.error)throw m.error;
+  tasks=t.data||[];members=m.data||[];
+ }
+ function renderBoard(){
+  const page=makePage();if(!page)return;page.replaceChildren();addStyles();
+  const head=node('div','rb-team-panel rb-team-head');const intro=node('div');intro.append(node('h2','','📋 Espaço da equipe'));intro.append(node('p','rb-team-muted',(workspace?.team_name||'Equipe')+' · Quadro de tarefas e acompanhamento'));head.append(intro);
+  const actions=node('div','');actions.style.display='flex';actions.style.flexWrap='wrap';actions.style.gap='8px';actions.append(button('Atualizar','rb-team-btn',()=>openBoard()),button('Gerar convite','rb-team-btn',createInvite));head.append(actions);page.append(head);
+  const summary=node('section','rb-team-panel');summary.append(node('h3','','Resumo de progresso'));const stats=node('div','rb-team-grid');const done=tasks.filter(t=>t.status==='done').length,active=tasks.filter(t=>t.status==='in_progress').length,total=tasks.length,percent=total?Math.round(done/total*100):0;const memberDone=tasks.filter(t=>t.status==='done'&&t.assigned_to===user()?.id).length;const average=members.length?Math.round(members.reduce((sum,m)=>sum+tasks.filter(t=>t.status==='done'&&t.assigned_to===m.user_id).length,0)/members.length*10)/10:0;
+  addStat(stats,percent+'%','Tarefas concluídas na equipe');addStat(stats,done+'/'+total,'Concluídas');addStat(stats,active,'Em andamento');addStat(stats,memberDone,'Concluídas por você');summary.append(stats,node('p','rb-team-muted','Média da equipe: '+average+' tarefas concluídas por membro atribuído. Tarefas sem responsável entram no total da equipe, mas não na média individual.'));page.append(summary);
+  if(workspace?.is_manager)page.append(createTaskForm());
+  const board=node('section','rb-team-panel');board.append(node('h3','','Quadro Kanban'));const kanban=node('div','rb-team-kanban');
+  STATUS.forEach(([status,label])=>{const col=node('div','rb-team-column');const inCol=tasks.filter(t=>t.status===status);col.append(node('h3','',label+' · '+inCol.length));inCol.forEach(t=>col.append(createTaskCard(t)));if(!inCol.length)col.append(node('p','rb-team-muted','Nenhuma tarefa aqui.'));kanban.append(col)});board.append(kanban);page.append(board);
+  const people=node('section','rb-team-panel');people.append(node('h3','','Membros e médias'));const rows=node('div');if(!members.length)rows.append(node('p','rb-team-muted','Ainda não há membros cadastrados além da liderança.'));members.forEach(m=>{const mine=tasks.filter(t=>t.assigned_to===m.user_id),completed=mine.filter(t=>t.status==='done').length,pct=mine.length?Math.round(completed/mine.length*100):0;const row=node('div','rb-team-member-row');const left=node('div');left.append(node('strong','',m.display_name+(m.role==='leader'?' · liderança':'')),node('div','rb-team-muted',completed+' de '+mine.length+' tarefas atribuídas concluídas'));const right=node('strong','',pct+'%');row.append(left,right);rows.append(row)});people.append(rows);page.append(people);
+  if(workspace?.is_manager)page.append(createInvitePanel());
+ }
+ function createTaskForm(){
+  const panel=node('section','rb-team-panel');panel.append(node('h3','','Nova tarefa'));panel.append(node('p','rb-team-muted','Crie uma tarefa, defina prioridade e, se quiser, atribua a um membro.'));const fields=node('div','rb-team-fields');
+  const title=input('Tarefa','text','','Ex.: testar sensor de cor');title.el.maxLength=120;title.el.id='rbNewTaskTitle';
+  const due=input('Prazo','date');due.el.id='rbNewTaskDue';
+  const priority=select('Prioridade',PRIORITY,'normal');priority.el.id='rbNewTaskPriority';
+  const assigned=select('Responsável',[['','Sem responsável'],...members.map(m=>[m.user_id,m.display_name])],'');assigned.el.id='rbNewTaskAssigned';
+  const desc=input('Descrição','textarea','','Detalhes, critério de conclusão…');desc.el.maxLength=2000;desc.el.id='rbNewTaskDescription';
+  fields.append(title.wrap,due.wrap,priority.wrap,assigned.wrap,desc.wrap);panel.append(fields);const status=node('p','rb-team-muted','');status.id='rbNewTaskStatus';panel.append(status,button('Criar tarefa','rb-team-btn',createTask));return panel;
+ }
+ function createTaskCard(task){
+  const card=node('article','rb-team-task');const title=node('h4','',task.title);card.append(title);if(task.description)card.append(node('p','',task.description));
+  const assignee=members.find(m=>m.user_id===task.assigned_to);const meta=node('div','');meta.append(node('span','rb-team-badge',priorityName(task.priority)),node('span','rb-team-badge',assignee?assignee.display_name:'Sem responsável'),node('span','rb-team-badge','Prazo: '+dateText(task.due_date)));card.append(meta);
+  const status=select('Mover para',STATUS,task.status);status.el.setAttribute('aria-label','Status da tarefa '+task.title);status.el.addEventListener('change',async()=>{const next=status.el.value;status.el.disabled=true;try{const {error}=await client().rpc('set_team_task_status',{p_task_id:task.id,p_status:next,p_note:''});if(error)throw error;await openBoard()}catch(e){status.el.value=task.status;status.el.disabled=false;alert(e?.message||'Não foi possível atualizar a tarefa.')}});card.append(status.wrap);
+  if(workspace?.is_manager)card.append(button('Excluir tarefa','rb-team-btn',async()=>{if(!confirm('Excluir a tarefa “'+task.title+'”?'))return;const {error}=await client().from('team_tasks').delete().eq('id',task.id).eq('team_id',workspace.team_id);if(error){alert(error.message);return}await openBoard()}));
+  return card;
+ }
+ async function createTask(){
+  const sb=client(),title=$('rbNewTaskTitle')?.value.trim(),status=$('rbNewTaskStatus');if(!title){setMessage('rbNewTaskStatus','Escreva o título da tarefa.');return}
+  const b=$('page-team-workspace')?.querySelector('button');if(b)b.disabled=true;
+  try{const payload={team_id:workspace.team_id,title,description:$('rbNewTaskDescription')?.value.trim()||'',priority:$('rbNewTaskPriority')?.value||'normal',due_date:$('rbNewTaskDue')?.value||null,assigned_to:$('rbNewTaskAssigned')?.value||null,created_by:user().id};const {error}=await sb.from('team_tasks').insert(payload);if(error)throw error;await openBoard()}
+  catch(e){if(status)status.textContent=e?.message||'Não foi possível criar a tarefa.'}
+  finally{if(b)b.disabled=false}
+ }
+ function createInvitePanel(){const panel=node('section','rb-team-panel');panel.append(node('h3','','Convidar membros'));panel.append(node('p','rb-team-muted','Gere um código de uso limitado. Envie-o apenas aos membros que devem entrar nesta equipe.'));const controls=node('div','rb-team-fields');const days=select('Validade',['1','3','7','14','30'].map(v=>[v,v+' dias']),'7');days.el.id='rbInviteDays';const uses=select('Quantidade de usos',[['1','1 pessoa'],['5','5 pessoas'],['10','10 pessoas'],['20','20 pessoas'],['50','50 pessoas'],['100','100 pessoas']],'20');uses.el.id='rbInviteUses';controls.append(days.wrap,uses.wrap);panel.append(controls);const out=node('div','rb-team-notice');out.id='rbInviteOutput';out.hidden=true;panel.append(out);return panel}
+ async function createInvite(){const sb=client();if(!workspace?.is_manager)return;try{const {data,error}=await sb.rpc('create_team_invite',{p_team_id:workspace.team_id,p_expires_days:Number($('rbInviteDays')?.value||7),p_max_uses:Number($('rbInviteUses')?.value||20)});if(error)throw error;const out=$('rbInviteOutput');if(out){out.hidden=false;out.replaceChildren(node('strong','','Código de convite'));out.append(node('p','',data.code),node('p','rb-team-muted','Expira em '+new Date(data.expires_at).toLocaleString('pt-BR')+' · limite '+data.max_uses+' usos'),button('Copiar código','rb-team-btn',()=>{if(navigator.clipboard?.writeText)navigator.clipboard.writeText(data.code).then(()=>setMessage('rbInviteOutput','Código copiado.')).catch(()=>setMessage('rbInviteOutput','Copie manualmente: '+data.code));else setMessage('rbInviteOutput','Copie manualmente: '+data.code)}))}}catch(e){alert(e?.message||'Não foi possível gerar o convite.')}}
+ async function openBoard(){if(loading)return;loading=true;try{await loadWorkspace();if(!workspace?.member||!workspace?.team_id){removeNav();return}makeNav();makePage();goToPage();const page=$('page-team-workspace');page.replaceChildren(node('p','rb-team-muted','Carregando tarefas…'));await loadBoardData();renderBoard()}catch(e){const page=makePage();if(page){page.replaceChildren(node('section','rb-team-panel'),node('p','rb-team-muted',e?.message||'Falha ao carregar o quadro. Verifique sua conexão e tente novamente.'));page.hidden=false}}finally{loading=false}}
+ function init(){if(scriptReady)return;scriptReady=true;loadWorkspace();window.addEventListener('rb-auth-state-changed',()=>{loadWorkspace()});document.addEventListener('click',e=>{const b=e.target.closest('nav button[data-page]');if(!b)return;if(b.dataset.page==='team-workspace'){e.preventDefault();e.stopPropagation();openBoard()}else{const page=$('page-team-workspace');if(page){page.hidden=true;page.classList.remove('active')}}},true);window.addEventListener('rb-team-workspace-refresh',loadWorkspace)}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
