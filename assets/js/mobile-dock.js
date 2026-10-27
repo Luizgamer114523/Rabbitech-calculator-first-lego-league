@@ -172,10 +172,45 @@
   out.innerHTML=checks.map(x=>'<div style="padding:8px 0;border-bottom:1px solid #263d2c"><strong style="color:'+(x.ok?'#b8ef8b':'#ffb4a9')+'">'+(x.ok?'✓ ':'! ')+esc(x.n)+'</strong><div>'+esc(x.d)+'</div></div>').join('')+'<p>'+checks.filter(x=>x.ok).length+'/'+checks.length+' verificações aprovadas · '+new Date().toLocaleString()+'</p>';
  }
 
+
+ function safeLocalGet(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(_){return []}}
+ function addExtraTools(){
+  const score=$('page-score'),strategy=$('page-strategy'),routes=$('page-routes'),admin=$('page-admin');
+  if(score&&!$('rbCompetitionTimer')){
+   const box=document.createElement('section');box.id='rbCompetitionTimer';box.style.cssText='margin:14px auto;padding:14px;max-width:720px;border:1px solid #49684b;border-radius:14px;background:rgba(9,25,15,.95);color:#edf7ed';
+   box.innerHTML='<h3>⏱️ Cronômetro de competição</h3><div id="rbTimerDisplay" style="font-size:36px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums">02:30</div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button type="button" id="rbTimerStart">Iniciar</button><button type="button" id="rbTimerPause">Pausar</button><button type="button" id="rbTimerReset">Reiniciar</button></div><p style="font-size:12px;opacity:.75">Cronômetro local de 2 min e 30 s. Não altera nem envia pontuações.</p>';
+   score.append(box);let remaining=150000,deadline=0,interval=null;
+   const display=()=>{const sec=Math.max(0,Math.ceil(remaining/1000));$('rbTimerDisplay').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')};
+   $('rbTimerStart').addEventListener('click',()=>{if(interval)return;deadline=Date.now()+remaining;interval=setInterval(()=>{remaining=Math.max(0,deadline-Date.now());display();if(!remaining){clearInterval(interval);interval=null;try{if(navigator.vibrate)navigator.vibrate([250,100,250])}catch(_){}}},200)});
+   $('rbTimerPause').addEventListener('click',()=>{if(interval){remaining=Math.max(0,deadline-Date.now());clearInterval(interval);interval=null;display()}});
+   $('rbTimerReset').addEventListener('click',()=>{if(interval)clearInterval(interval);interval=null;remaining=150000;display()});
+  }
+  if(strategy&&!$('rbStrategyPlanner')){
+   const box=document.createElement('section');box.id='rbStrategyPlanner';box.style.cssText='margin:14px auto;padding:14px;max-width:720px;border:1px solid #49684b;border-radius:14px;background:rgba(9,25,15,.95);color:#edf7ed';
+   box.innerHTML='<h3>🧠 Planejador rápido de estratégia</h3><p>Monte uma lista de missões e estime os pontos. Os valores são estimativas da equipe, não regras oficiais.</p><label>Nome da estratégia <input id="rbStrategyName" maxlength="60" placeholder="Ex.: rota lado esquerdo"></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><input id="rbStrategyMission" maxlength="80" placeholder="Missão / objetivo"><input id="rbStrategyPoints" type="number" min="0" max="999" step="1" value="10" aria-label="Pontos estimados"><button type="button" id="rbStrategyAdd">Adicionar</button></div><ul id="rbStrategyList"></ul><p>Total estimado: <strong id="rbStrategyTotal">0</strong> pontos</p><button type="button" id="rbStrategySave">Salvar estratégia neste dispositivo</button><div id="rbStrategySaved" aria-live="polite"></div>';
+   strategy.append(box);let items=[];
+   const render=()=>{$('rbStrategyList').innerHTML=items.map((x,i)=>'<li>'+escapeDiagnosticText(x.name)+' · '+x.points+' pts <button type="button" data-remove="'+i+'">Remover</button></li>').join('');$('rbStrategyTotal').textContent=items.reduce((n,x)=>n+x.points,0);box.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>{items.splice(Number(b.dataset.remove),1);render()}))};
+   $('rbStrategyAdd').addEventListener('click',()=>{const name=$('rbStrategyMission').value.trim(),points=Number($('rbStrategyPoints').value);if(!name||!Number.isFinite(points)||points<0)return;items.push({name,points:Math.round(points)});$('rbStrategyMission').value='';render()});
+   $('rbStrategySave').addEventListener('click',()=>{const saved=safeLocalGet('rabbitech_strategy_drafts');saved.push({name:$('rbStrategyName').value.trim()||'Estratégia sem nome',items,total:items.reduce((n,x)=>n+x.points,0),savedAt:new Date().toISOString()});try{localStorage.setItem('rabbitech_strategy_drafts',JSON.stringify(saved.slice(-30)));$('rbStrategySaved').textContent='Estratégia salva neste dispositivo.'}catch(_){$('rbStrategySaved').textContent='Não foi possível salvar no armazenamento local.'}});
+  }
+  if(routes&&!$('rbTrainingNotebook')){
+   const box=document.createElement('section');box.id='rbTrainingNotebook';box.style.cssText='margin:14px auto;padding:14px;max-width:720px;border:1px solid #49684b;border-radius:14px;background:rgba(9,25,15,.95);color:#edf7ed';
+   box.innerHTML='<h3>📓 Diário de testes do robô</h3><input id="rbTestTitle" maxlength="80" placeholder="Teste / alteração"><textarea id="rbTestNotes" maxlength="1500" rows="3" placeholder="O que aconteceu? O que vamos mudar?"></textarea><button type="button" id="rbTestSave">Registrar teste</button><ul id="rbTestEntries"></ul><p style="font-size:12px;opacity:.75">Os registros ficam somente neste navegador. Não são enviados ao Supabase.</p>';
+   routes.append(box);
+   const render=()=>{$('rbTestEntries').innerHTML=safeLocalGet('rabbitech_test_log').slice(-20).reverse().map(x=>'<li><strong>'+escapeDiagnosticText(x.title)+'</strong><div>'+escapeDiagnosticText(x.notes)+'</div><small>'+escapeDiagnosticText(new Date(x.at).toLocaleString())+'</small></li>').join('')||'<li>Nenhum teste registrado ainda.</li>'};
+   $('rbTestSave').addEventListener('click',()=>{const title=$('rbTestTitle').value.trim(),notes=$('rbTestNotes').value.trim();if(!title||!notes)return;const entries=safeLocalGet('rabbitech_test_log');entries.push({title,notes,at:new Date().toISOString()});try{localStorage.setItem('rabbitech_test_log',JSON.stringify(entries.slice(-100)));$('rbTestTitle').value='';$('rbTestNotes').value='';render()}catch(_){$('rbTestEntries').textContent='Armazenamento local indisponível.'}});render();
+  }
+  if(admin&&!$('rbFeatureStatus')){
+   const box=document.createElement('section');box.id='rbFeatureStatus';box.style.cssText='margin:14px auto;padding:14px;max-width:720px;border:1px solid #49684b;border-radius:14px;background:rgba(9,25,15,.95);color:#edf7ed';
+   box.innerHTML='<h3>🧩 Estado dos módulos</h3><p>Resumo local dos módulos encontrados no HTML. Não altera as chaves globais.</p><button id="rbFeatureStatusRefresh" type="button">Atualizar diagnóstico de módulos</button><ul id="rbFeatureStatusList"></ul>';
+   admin.append(box);const render=()=>{const keys=[...new Set([...document.querySelectorAll('nav button[data-page]')].map(b=>b.dataset.page))];$('rbFeatureStatusList').innerHTML=keys.map(k=>{const b=document.querySelector('nav button[data-page="'+k+'"]'),p=$('page-'+k);return '<li><strong>'+escapeDiagnosticText(k)+'</strong>: botão '+(b?(b.hidden?'oculto':'presente'):'ausente')+', página '+(p?(p.hidden?'oculta':'presente'):'ausente')+'</li>'}).join('')||'<li>Nenhum módulo encontrado.</li>'};$('rbFeatureStatusRefresh').addEventListener('click',render);render();
+  }
+ }
+
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();addDiagnostics();
+  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();addDiagnostics();addExtraTools();
   const observer=new MutationObserver(()=>{
-   setupDock();placeLanguageButton();syncAdmin();addDiagnostics();
+   setupDock();placeLanguageButton();syncAdmin();addDiagnostics();addExtraTools();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
