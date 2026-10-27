@@ -294,8 +294,9 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
     <div class="rb-maintenance-mark">RABBITECH BIOGLOW · MANUTENÇÃO</div>
     <h1>Estamos preparando uma versão melhor.</h1>
     <p id="rbMaintenanceMessage">O Rabbitech está em manutenção programada. Voltaremos em breve.</p>
-    <p class="footnote">A manutenção é temporária. Se você é o proprietário, entre com sua conta Google para acessar os controles administrativos.</p>
-    <button type="button" id="rbMaintenanceOwnerLogin" class="primary">Entrar como proprietário</button>
+    <p class="footnote">A manutenção é temporária. O proprietário pode entrar com a conta Google para acessar os controles administrativos.</p>
+    <label class="field">Nome da equipe para continuar com Google<input id="rbMaintenanceLoginTeam" type="text" maxlength="100" autocomplete="organization" placeholder="Informe o nome da equipe"></label>
+    <button type="button" id="rbMaintenanceOwnerLogin" class="primary">Entrar com Google</button>
   </div>
 </div>
 <section id="rabbitechCloud" aria-label="Conta e sincronização na nuvem">
@@ -1532,7 +1533,13 @@ async function rbReleaseCheck(){
  }catch(error){if(status)status.textContent='Não foi possível verificar a versão remota ('+(error.message||String(error))+'). O estado da publicação permanece não confirmado.';}
 }
 rbEl('rbReleaseCheck')?.addEventListener('click',()=>rbRun(rbReleaseCheck));
-rbEl('rbMaintenanceOwnerLogin')?.addEventListener('click',()=>rbEl('rbCloudGoogle')?.click());
+rbEl('rbMaintenanceOwnerLogin')?.addEventListener('click',()=>{
+ const team=String(rbEl('rbMaintenanceLoginTeam')?.value||'').trim();
+ const destination=rbEl('rbCloudTeam');
+ if(!team){rbEl('rbMaintenanceLoginTeam')?.focus();return;}
+ if(destination)destination.value=team;
+ rbEl('rbCloudGoogle')?.click();
+});
 
 rbEl('rbAdminRefreshAll')?.addEventListener('click',()=>rbRun(async()=>{await rbLoadAdmin();await rbAdminRenderRankPreview();await rbAdminLoadAdmins();rbEl('rbAdminToolsStatus').textContent='Painel e ranking recarregados.';}));
 
