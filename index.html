@@ -1419,6 +1419,8 @@ rbEl('rbAdminDiagnose')?.addEventListener('click',()=>rbRun(async()=>{
   add('Tabelas críticas',missing.length===0,missing.length?'Ausentes: '+missing.join(', '):'Tabelas e funções principais disponíveis.');
   add('Rodadas órfãs',Number(health.orphan_rounds||0)===0,Number(health.orphan_rounds||0)+' rodada(s) sem equipe correspondente.');
   add('Nomes de equipe duplicados',Number(health.duplicate_team_names||0)===0,Number(health.duplicate_team_names||0)+' nome(s) duplicado(s), ignorando maiúsculas e espaços.');
+  const recentSqlErrors=Number(health.recent_sql_errors_24h||0);const lastSqlError=health.last_sql_error_at?new Date(health.last_sql_error_at).toLocaleString('pt-BR'):'';
+  add('Falhas recentes do console SQL (24 h)',recentSqlErrors===0,recentSqlErrors===0?'Nenhuma falha de execução registrada nas últimas 24 horas.':recentSqlErrors+' falha(s) registradas nas últimas 24 horas'+(lastSqlError?' · última: '+lastSqlError:'')+'. Revise a auditoria SQL antes de repetir alterações.');
   add('Histórico de restauração',health.settings_history_available===true,health.settings_history_available?'Snapshots de configurações estão disponíveis.':'Tabela de snapshots indisponível.');
   add('Conta proprietária',health.owner_registered===true,health.owner_registered?'Proprietário registrado nas permissões.':'A conta proprietária não foi encontrada em app_admins.');
   if(rbEl('rbAdminHealthStatus'))rbEl('rbAdminHealthStatus').textContent='Supabase · '+Math.round(performance.now()-started)+' ms · '+(health.ok?'tabelas e vínculos íntegros':'atenção necessária');
