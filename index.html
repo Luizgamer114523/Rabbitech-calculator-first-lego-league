@@ -1468,8 +1468,11 @@ async function rbAdminLoadSettingsHistory(){
    button.disabled=true;button.textContent='Restaurando…';
    try{
     const {data,error}=await rbClient.rpc('admin_restore_rabbitech_settings_history',{p_history_id:Number(button.dataset.rbRestoreSettings),p_confirmation_phrase:phrase});
-    if(error)throw error;if(!data?.ok)throw new Error('O Supabase não confirmou a restauração.');
-    rbGlobalSettingsSignature='';await rbLoadGlobalSettings();await rbAdminLoadSettingsHistory();
+    if(error)throw error;if(!data?.ok)throw new Error(data?.message||'O Supabase não confirmou a restauração.');
+    rbGlobalSettingsSignature='';await rbLoadGlobalSettings();
+    const restored=data.settings||{},actual=rbGlobalSettingsCurrent||{};
+    if(actual.theme_name!==restored.theme_name||actual.accent_color!==restored.accent_color||actual.maintenance_mode!==restored.maintenance_mode||JSON.stringify(actual.feature_flags||{})!==JSON.stringify(restored.feature_flags||{}))throw new Error('A restauração foi solicitada, mas a leitura posterior não confirmou todas as configurações. Atualize o painel e confira o histórico antes de repetir.');
+    await rbAdminLoadSettingsHistory();
     const status=rbEl('rbOperationsSettingsStatus');if(status)status.textContent='Configurações restauradas e verificadas. O estado anterior também foi preservado no histórico.';
     rbAdminStatus('Configurações restauradas. Equipes, rounds e placares não foram alterados.');
    }catch(error){button.disabled=false;button.textContent='Restaurar esta versão';throw error;}
@@ -1477,16 +1480,18 @@ async function rbAdminLoadSettingsHistory(){
  }catch(error){host.innerHTML='<p class="footnote" role="alert">Falha ao carregar histórico: '+rbEsc(error.message||String(error))+'</p>';throw error;}
 }
 rbEl('rbRefreshSettingsHistory')?.addEventListener('click',()=>rbRun(rbAdminLoadSettingsHistory));
-rbEl('rbSaveOperationsSettings')?.addEventListener('click',()=>rbRun(async()=>{
+async function rbPersistOperationsSettings(){
  if(!rbIsOwner())throw new Error('Somente o proprietário pode alterar as operações do site.');
+ if(!rbClient)throw new Error('O Supabase ainda não está conectado. Atualize a página e tente novamente.');
  const maintenance=!!rbEl('rbMaintenanceMode')?.checked;
  const currentMode=rbGlobalSettingsCurrent.maintenance_mode===true;
- if(maintenance!==currentMode&&!confirm(maintenance?'Ativar o modo manutenção para todos os visitantes? A conta proprietária continuará tendo acesso.':'Desativar o modo manutenção e liberar o site para visitantes?'))return;
+ if(maintenance!==currentMode&&!confirm(maintenance?'Ativar o modo manutenção para todos os visitantes? A conta proprietária continuará tendo acesso.':'Desativar o modo manutenção e liberar o site para visitantes?'))return false;
  const scheduledText=String(rbEl('rbScheduledNoticeText')?.value||'').trim();
  const startRaw=rbEl('rbScheduledNoticeStart')?.value||'',endRaw=rbEl('rbScheduledNoticeEnd')?.value||'';
- if(scheduledText&&(!startRaw||!endRaw||new Date(endRaw)<=new Date(startRaw)))throw new Error('Informe início e fim válidos para o aviso agendado.');
+ if(scheduledText&&(!startRaw||!endRaw||!Number.isFinite(new Date(startRaw).getTime())||!Number.isFinite(new Date(endRaw).getTime())||new Date(endRaw)<=new Date(startRaw)))throw new Error('Informe início e fim válidos para o aviso agendado. O fim precisa ser posterior ao início.');
  const toIso=value=>value?new Date(value).toISOString():null;
- const status=rbEl('rbOperationsSettingsStatus');if(status)status.textContent='Salvando e conferindo as operações no Supabase…';
+ const status=rbEl('rbOperationsSettingsStatus');
+ if(status)status.textContent='Salvando operações no Supabase…';
  const {data,error}=await rbClient.rpc('admin_update_rabbitech_operations_settings',{
   p_maintenance_mode:maintenance,
   p_maintenance_message:String(rbEl('rbMaintenanceMessageInput')?.value||'').trim(),
@@ -1495,17 +1500,48 @@ rbEl('rbSaveOperationsSettings')?.addEventListener('click',()=>rbRun(async()=>{
   p_scheduled_notice_start_at:scheduledText?toIso(startRaw):null,
   p_scheduled_notice_end_at:scheduledText?toIso(endRaw):null
  });
- if(error)throw new Error('O Supabase recusou a alteração: '+(error.message||String(error)));
- if(!data||data.maintenance_mode!==maintenance||String(data.scheduled_notice_text||'')!==scheduledText)throw new Error('O Supabase não confirmou todos os campos; verifique o estado antes de tentar novamente.');
- rbGlobalSettingsSignature='';await rbLoadGlobalSettings();await rbAdminLoadSettingsHistory();
+ if(error){if(status)status.textContent='Falha ao salvar operações: '+(error.message||String(error));throw new Error('O Supabase recusou a alteração: '+(error.message||String(error)));}
+ if(!data||data.maintenance_mode!==maintenance||String(data.scheduled_notice_text||'')!==scheduledText){
+  const message='O Supabase não confirmou todos os campos. Nenhum sucesso será informado; confira o estado antes de tentar novamente.';
+  if(status)status.textContent=message;
+  throw new Error(message);
+ }
+ rbGlobalSettingsSignature='';
+ await rbLoadGlobalSettings();
+ const actual=rbGlobalSettingsCurrent||{};
+ if(actual.maintenance_mode!==maintenance||String(actual.scheduled_notice_text||'')!==scheduledText){
+  const message='O salvamento respondeu, mas a leitura posterior não confirmou os valores. Atualize a página antes de repetir a operação.';
+  if(status)status.textContent=message;
+  throw new Error(message);
+ }
+ try{await rbAdminLoadSettingsHistory();}
+ catch(historyError){
+  if(status)status.textContent='Operações salvas e verificadas, mas o histórico não atualizou: '+(historyError.message||String(historyError));
+  rbAdminStatus('Operações salvas; falhou apenas a atualização visual do histórico.');
+  return true;
+ }
  if(status)status.textContent='Operações salvas e verificadas. O histórico privado registrou a alteração.';
  rbAdminStatus('Configurações operacionais confirmadas no Supabase.');
-}));
+ return true;
+}
+rbEl('rbSaveOperationsSettings')?.addEventListener('click',()=>rbRun(rbPersistOperationsSettings));
 rbEl('rbClearScheduledNotice')?.addEventListener('click',()=>rbRun(async()=>{
  if(!rbIsOwner())throw new Error('Somente o proprietário pode cancelar um aviso agendado.');
  if(!confirm('Cancelar o aviso agendado? A mensagem manual e os rounds serão preservados.'))return;
- rbEl('rbScheduledNoticeText').value='';rbEl('rbScheduledNoticeStart').value='';rbEl('rbScheduledNoticeEnd').value='';
- rbEl('rbSaveOperationsSettings')?.click();
+ const previous={text:rbEl('rbScheduledNoticeText')?.value||'',start:rbEl('rbScheduledNoticeStart')?.value||'',end:rbEl('rbScheduledNoticeEnd')?.value||''};
+ rbEl('rbScheduledNoticeText').value='';
+ rbEl('rbScheduledNoticeStart').value='';
+ rbEl('rbScheduledNoticeEnd').value='';
+ try{
+  const saved=await rbPersistOperationsSettings();
+  if(!saved)throw new Error('Cancelamento não concluído.');
+  const status=rbEl('rbOperationsSettingsStatus');if(status)status.textContent='Aviso agendado cancelado e confirmado no Supabase.';
+ }catch(error){
+  rbEl('rbScheduledNoticeText').value=previous.text;
+  rbEl('rbScheduledNoticeStart').value=previous.start;
+  rbEl('rbScheduledNoticeEnd').value=previous.end;
+  throw error;
+ }
 }));
 const RB_APP_RELEASE_VERSION='2026.10.27.1';
 async function rbReleaseCheck(){
