@@ -88,8 +88,12 @@
    const settings=Array.isArray(result.data)?result.data[0]:result.data;
    const flags=settings?.feature_flags;
    if(!flags||typeof flags!=='object')return;
-   lastFeatureFlags=flags;lastNoticeActive=settings.notice_active===true;
-   applyFeatureFlags(flags,lastNoticeActive);
+   lastFeatureFlags=flags;
+   const noticeActive=typeof settings.display_notice_active==='boolean'?settings.display_notice_active:settings.notice_active===true;
+   const noticeText=typeof settings.display_notice_text==='string'?settings.display_notice_text:(settings.notice_text||'');
+   const noticeType=typeof settings.display_notice_type==='string'?settings.display_notice_type:(settings.notice_type||'info');
+   lastNoticeActive=noticeActive;
+   applyFeatureFlags(flags,noticeActive,{text:noticeText,type:noticeType});
   }catch(error){console.warn('Rabbitech feature flags could not be refreshed',error)}
  }
  let settingsRealtimeChannel=null;
@@ -100,7 +104,7 @@
    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'rabbitech_site_settings',filter:'id=eq.true'},()=>loadPublicSettings())
    .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Atualização em tempo real das configurações indisponível; usando fallback.')});
  }
- function applyFeatureFlags(flags,noticeActive){
+ function applyFeatureFlags(flags,noticeActive,notice={}){
   Object.entries(FEATURE_TARGETS).forEach(([key,target])=>{
    const enabled=flags[key]!==false;
    document.querySelectorAll('nav button[data-page="'+target.nav+'"]').forEach(button=>{button.hidden=!enabled});
@@ -123,13 +127,21 @@
   if(musicOverlay){musicOverlay.hidden=!musicEnabled;if(!musicEnabled){musicOverlay.classList.remove('open','active','visible');musicOverlay.setAttribute('aria-hidden','true')}else musicOverlay.removeAttribute('aria-hidden')}
   if(!musicEnabled&&musicAudio){try{musicAudio.pause();musicAudio.currentTime=0}catch(_){}}
   document.querySelectorAll('[data-feature-flag]').forEach(element=>{if(element.closest('#page-admin'))return;const key=element.getAttribute('data-feature-flag');if(Object.prototype.hasOwnProperty.call(flags,key))element.hidden=flags[key]===false});
-  const noticesEnabled=flags.global_notices!==false&&noticeActive===true;
+  const noticesEnabled=flags.global_notices!==false&&noticeActive===true&&String(notice.text||'').trim().length>0;
   document.querySelectorAll('[id*="globalNotice" i],[class*="global-notice" i],[data-global-notice]').forEach(element=>{
    if(element.closest('#page-admin'))return;
    element.hidden=!noticesEnabled;
    element.classList.toggle('hidden',!noticesEnabled);
+   const type=['info','success','warning'].includes(notice.type)?notice.type:'info';
+   element.dataset.noticeType=type;
+   element.classList.remove('rb-notice-info','rb-notice-success','rb-notice-warning');
+   element.classList.add('rb-notice-'+type);
    if(!noticesEnabled)element.setAttribute('aria-hidden','true');
    else element.removeAttribute('aria-hidden');
+   if(element.id==='rbGlobalNotice')element.setAttribute('role',type==='warning'?'alert':'status');
+  });
+  document.querySelectorAll('[data-global-notice-text],[data-global-notice-message],#rbGlobalNoticeText,#rbGlobalNoticeMessage,.global-notice-text,.global-notice-message').forEach(element=>{
+   if(!element.closest('#page-admin')&&typeof notice.text==='string'&&element.textContent!==notice.text)element.textContent=notice.text;
   });
   document.querySelectorAll('[data-feature-flag]').forEach(element=>{
    const enabled=flags[element.getAttribute('data-feature-flag')]!==false;
@@ -181,6 +193,9 @@
  }
  function teamShell(body){
   const root=$('rbTeamWorkspaceRoot');if(!root)return;
+  const scrollY=window.scrollY,active=document.activeElement;
+  const activeId=active&&root.contains(active)?active.id:'';
+  const activeValue=activeId&&'value' in active?active.value:null;
   root.innerHTML='<style>'+
    '#rbTeamWorkspaceRoot .tw-card{background:rgba(12,29,18,.92);border:1px solid #34543a;border-radius:16px;padding:16px;margin:12px 0;min-width:0}'+
    '#rbTeamWorkspaceRoot .tw-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}'+
@@ -194,6 +209,8 @@
    '#rbTeamWorkspaceRoot .tw-stat{font-size:1.65rem;font-weight:800;color:#d0f477}'+
    '@media(max-width:650px){#rbTeamWorkspaceRoot .tw-board{grid-template-columns:repeat(3,minmax(205px,1fr))}}'+
    '</style>'+body;
+  if(scrollY>0)requestAnimationFrame(()=>window.scrollTo({top:scrollY,behavior:'instant'}));
+  if(activeId){const restored=$(activeId);if(restored){restored.focus({preventScroll:true});if(activeValue!==null&&'value' in restored)restored.value=activeValue}}
  }
  function teamFormField(id,label,placeholder,type='text',attrs=''){
   return '<label style="display:block;margin:7px 0">'+teamEsc(label)+'<input class="tw-field" id="'+id+'" type="'+type+'" placeholder="'+teamEsc(placeholder)+'" '+attrs+'></label>';
@@ -355,7 +372,8 @@
     const time=pending.querySelector('small');if(time)time.textContent=new Date(result.data.created_at).toLocaleString();
     pending.dataset.messageId=result.data.id;
    }
-   teamState.messageSignature='';
+   const renderedMessages=[...(box?.querySelectorAll('.tw-bubble')||[])].map(el=>el.dataset.messageId||'').filter(Boolean);
+   teamState.messageSignature=renderedMessages.join('|');
    refreshTeamBackground();
   }catch(e){
    const pending=box?.querySelector('[data-pending-message="true"]');if(pending)pending.remove();
@@ -451,8 +469,8 @@
   syncTeamWorkspace();
   window.addEventListener('rb-auth-state-changed',()=>{syncTeamWorkspace();if($('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()});
-  // Atualiza somente os dados em segundo plano. Nunca reconstrói a aba a cada 15 s.
-  setInterval(()=>{if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()},5000);
+  // Realtime é o caminho principal. O polling de reserva é lento e atualiza somente os dados, sem reconstruir a tela.
+  setInterval(()=>{if(!document.hidden&&!teamState.realtimeReady&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()},30000);
  }
 
  function init(){
