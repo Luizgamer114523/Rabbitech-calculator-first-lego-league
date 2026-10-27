@@ -1,0 +1,15 @@
+{
+  "app": "Rabbitech BIOGLOW FLLC",
+  "version": "2026.10.27.1",
+  "channel": "production",
+  "release_date": "2026-10-27",
+  "notes": [
+    "Monitor de saúde do Supabase com duração, integridade das tabelas e qualidade dos dados.",
+    "Diagnóstico com correção guiada de configurações inconsistentes, confirmação e auditoria.",
+    "Modo manutenção do site, com acesso de manutenção preservado para o proprietário.",
+    "Avisos agendados com início e término automáticos.",
+    "Histórico privado de configurações com restauração confirmada.",
+    "Central de atualizações que compara a versão instalada com a versão esperada do repositório.",
+    "Análise local de rounds: média, melhor pontuação, tendência e missões com menor aproveitamento."
+  ]
+}
