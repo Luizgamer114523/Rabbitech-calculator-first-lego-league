@@ -200,6 +200,8 @@
    const items=[
     ['Supabase / configurações públicas',settingsResult?.error?'Falhou':(settings?'Conectado':'Sem dados'),!settingsResult?.error&&!!settings],
     ['RPC de saúde administrativa',healthResult?.error?'Falhou':(health?'Respondendo':'Sem dados'),!healthResult?.error&&!!health],
+    ['Integridade estrutural',health?.ok===true?'OK':'Verificar',health?.ok===true],
+    ['Objetos críticos ausentes',Array.isArray(health?.critical_objects_missing)&&health.critical_objects_missing.length?health.critical_objects_missing.join(', '):'Nenhum',!Array.isArray(health?.critical_objects_missing)||health.critical_objects_missing.length===0],
     ['Tempo das verificações',elapsed+' ms',true]
    ];
    if(health){
@@ -211,7 +213,7 @@
      ['Erros SQL nas últimas 24 h',health.recent_sql_errors_24h??'Não informado',Number(health.recent_sql_errors_24h||0)===0],
      ['Proprietário registrado',health.owner_registered===true?'Sim':'Não',health.owner_registered===true],
      ['Modo de manutenção',health.maintenance_mode===true?'Ativado':'Desativado',true],
-     ['Módulo de avisos',health.notice_module_enabled===true?'Ativado':'Desativado',health.notice_module_enabled===true]
+     ['Módulo de avisos',health.notice_module_enabled===true?'Ativado':'Desativado',true]
     );
    }
    renderHealthResults(results,items);
