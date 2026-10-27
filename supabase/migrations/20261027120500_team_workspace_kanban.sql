@@ -327,11 +327,12 @@ AS $$
 DECLARE
   v_user uuid := auth.uid();
   v_task public.team_tasks%ROWTYPE;
+  v_old_status text;
 BEGIN
   IF v_user IS NULL THEN
     RAISE EXCEPTION 'Entre na sua conta para atualizar uma tarefa.' USING errcode = '42501';
   END IF;
-  IF p_status NOT IN ('todo', 'in_progress', 'done') THEN
+  IF p_status IS NULL OR p_status NOT IN ('todo', 'in_progress', 'done') THEN
     RAISE EXCEPTION 'Status de tarefa inválido.' USING errcode = '22023';
   END IF;
   IF p_note IS NOT NULL AND char_length(p_note) > 500 THEN
@@ -348,6 +349,7 @@ BEGIN
     RAISE EXCEPTION 'Esta tarefa está atribuída a outro membro.' USING errcode = '42501';
   END IF;
 
+  v_old_status := v_task.status;
   UPDATE public.team_tasks
   SET status = p_status,
       completed_at = CASE WHEN p_status = 'done' THEN coalesce(completed_at, now()) ELSE NULL END,
@@ -356,7 +358,7 @@ BEGIN
   RETURNING * INTO v_task;
 
   INSERT INTO public.team_task_events(task_id, team_id, actor_user_id, old_status, new_status, note)
-  VALUES (v_task.id, v_task.team_id, v_user, NULL, v_task.status, coalesce(trim(p_note), ''));
+  VALUES (v_task.id, v_task.team_id, v_user, v_old_status, v_task.status, coalesce(trim(p_note), ''));
 
   RETURN jsonb_build_object(
     'id', v_task.id, 'status', v_task.status, 'completed_at', v_task.completed_at,
