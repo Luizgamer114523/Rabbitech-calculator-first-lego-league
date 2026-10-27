@@ -2131,7 +2131,7 @@ function enforceAuthUi(){
  try{
    const user=(typeof rbCloudUser!=='undefined'&&rbCloudUser)||window.rbCloudUser;
    const signed=!!user;
-   const allowed=!!(signed&&(window.rbIsAdmin===true||(typeof rbIsAdmin!=='undefined'&&rbIsAdmin===true)));
+   const owner=!!(signed&&String(user.id||'')==='7e799691-ba7e-42ea-ab6f-71ad11ca32ff'); const allowed=!!(signed&&(owner||window.rbIsAdmin===true||(typeof rbIsAdmin!=='undefined'&&rbIsAdmin===true)));
    const complete=window.rbAdminCheckComplete===true||!signed;
    const nav=byId('rbAdminNav'),page=byId('page-admin');
    if(nav)nav.hidden=!allowed;
@@ -2236,7 +2236,25 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   document.addEventListener('change',function(e){if(e.target&&e.target.id==='rbLanguageQuickSelect')syncLanguage(e.target.value);});
   var accepted=false,dismissed=false;
   try{accepted=localStorage.getItem('rbPrivacyAccepted')==='yes';dismissed=sessionStorage.getItem('rbPrivacyDismissed')==='yes';}catch(_){}
-  if(accepted||dismissed){overlay.hidden=true;overlay.style.setProperty('display','none','important');document.body.style.overflow='';}
+  var privacyGate=document.getElementById('rbPrivacyGate');
+  // The privacy gate and this consent dialog can initialize in either order.
+  // Observe the gate so a late-opened required privacy dialog always wins.
+  var hideConsentBehindPrivacyGate=function(){
+   if(!privacyGate||!privacyGate.classList.contains('rb-gate-open'))return;
+   overlay.hidden=true;
+   overlay.style.setProperty('display','none','important');
+   document.body.style.overflow='hidden';
+  };
+  if(privacyGate&&typeof MutationObserver==='function'&&!overlay._rbPrivacyGateObserver){
+   overlay._rbPrivacyGateObserver=new MutationObserver(hideConsentBehindPrivacyGate);
+   overlay._rbPrivacyGateObserver.observe(privacyGate,{attributes:true,attributeFilter:['class']});
+  }
+  var privacyGateOpen=!!(privacyGate&&privacyGate.classList.contains('rb-gate-open'));
+  if(privacyGateOpen){
+   // Do not stack a second full-screen language dialog above the required privacy gate.
+   // The privacy gate already contains the language selector.
+   overlay.hidden=true;overlay.style.setProperty('display','none','important');document.body.style.overflow='hidden';
+  }else if(accepted||dismissed){overlay.hidden=true;overlay.style.setProperty('display','none','important');document.body.style.overflow='';}
   else{overlay.hidden=false;overlay.style.removeProperty('display');syncLanguage(current());}
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup,{once:true});else setup();

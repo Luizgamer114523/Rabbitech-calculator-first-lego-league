@@ -88,7 +88,9 @@
    const settings=Array.isArray(result.data)?result.data[0]:result.data;
    const flags=settings?.feature_flags;
    if(!flags||typeof flags!=='object')return;
-   lastFeatureFlags=flags;lastNoticeActive=settings.notice_active===true;
+   lastFeatureFlags=flags;
+   const effectiveNoticeActive=settings.display_notice_active??settings.notice_active;
+   lastNoticeActive=effectiveNoticeActive===true;
    applyFeatureFlags(flags,lastNoticeActive);
   }catch(error){console.warn('Rabbitech feature flags could not be refreshed',error)}
  }
