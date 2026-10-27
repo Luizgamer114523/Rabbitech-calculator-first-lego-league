@@ -53,7 +53,7 @@
   if(!sb||!u||typeof sb.rpc!=='function'){workspace=null;removeNav();hideJoinCard();return}
   try{const {data,error}=await sb.rpc('get_my_team_workspace');if(error)throw error;workspace=data||null;
    if(workspace?.member&&workspace?.team_id){hideJoinCard();makeNav();makePage();return}
-   removeNav();ensureJoinCard();
+   removeNav();ensureJoinCard();ensureCreateTeamCard();
   }catch(e){console.warn('Rabbitech team workspace could not load',e);removeNav();hideJoinCard()}
  }
  function ensureCreateTeamCard(){
