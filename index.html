@@ -457,9 +457,9 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
         <div id="rbAdminDiagnostics" class="card hidden" style="margin-top:12px;background:var(--panel2)" aria-live="polite"><h4 style="margin-top:0">🩺 Diagnóstico do Rabbitech</h4><p class="footnote">Execute o diagnóstico para verificar conexão, configurações globais, módulos e dados de equipes sem modificar o banco.</p><div id="rbAdminDiagnosticsResults"></div></div>
        </div>
        <div id="rbReleaseCenter" class="card" style="margin:14px 0;background:var(--panel2)">
-        <div class="toolbar" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🚀 Central de atualizações</h3><p class="footnote">Versão instalada, alterações recentes e comparação com a versão esperada no repositório.</p></div><span class="badge" id="rbReleaseVersionBadge">v2026.10.27.4</span></div>
+        <div class="toolbar" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🚀 Central de atualizações</h3><p class="footnote">Versão instalada, alterações recentes e comparação com a versão esperada no repositório.</p></div><span class="badge" id="rbReleaseVersionBadge">v2026.10.27.5</span></div>
         <p id="rbReleaseStatus" class="rb-release-status footnote" role="status" aria-live="polite">Verifique a versão do repositório para comparar com este site.</p>
-        <h4>Alterações desta versão</h4><ul id="rbReleaseNotes" class="footnote"><li>Monitor de saúde e diagnóstico com reparação guiada.</li><li>Modo manutenção, avisos agendados e restauração do histórico de configurações.</li><li>Análise de pontuação e evolução dos rounds.</li></ul>
+        <h4>Alterações desta versão</h4><ul id="rbReleaseNotes" class="footnote"><li>Monitor de saúde e diagnóstico com reparação guiada.</li><li>Modo manutenção, avisos agendados e restauração do histórico de configurações.</li><li>Análise de pontuação e evolução dos rounds.</li><li>Ranking público explica o mínimo de 3 rounds sincronizados para entrar na classificação.</li></ul>
         <button type="button" id="rbReleaseCheck" class="primary">Verificar publicação</button>
        </div>
        <div id="rbAdminPublicRank" class="card" style="margin:14px 0;background:var(--panel2)"><div class="toolbar" style="justify-content:space-between;align-items:center"><h3 style="margin:0">🏆 Prévia do ranking público</h3><button type="button" id="rbAdminRankRefresh">Atualizar ranking</button></div><p class="footnote">Ordenado pela média de pontuação de cada equipe, não pela melhor partida. O ranking público completo também fica na aba Ranking.</p><div id="rbAdminRankPreview"><p class="footnote">Carregando ranking…</p></div><button type="button" data-admin-jump="rbAdminTeamFilter">Gerenciar equipes</button></div>
@@ -1355,7 +1355,7 @@ async function rbLoadLeaderboard(showStatus=true){
   const host=rbEl('rbLeaderboardRows');
   if(signature!==rbLeaderboardSignature){
    rbLeaderboardSignature=signature;
-   if(!rows.length)host.innerHTML='<p class="footnote">Ainda não há rounds sincronizados para calcular as médias. Registre e sincronize ao menos um round para uma equipe aparecer.</p>';
+   if(!rows.length)host.innerHTML='<p class="footnote">O ranking exige pelo menos 3 rounds sincronizados por equipe. No momento, nenhuma equipe atingiu esse mínimo; sincronize novos rounds para aparecer na classificação.</p>';
    else host.innerHTML=rows.map((r,i)=>`<div class="rb-rank-row"><div class="rb-rank-pos">${Number(r.rank_position)||i+1}</div><div class="rb-rank-name">${rbEsc(r.team_name)}<small class="rb-rank-meta">${Number(r.rounds_count)||0} rounds considerados</small></div><div class="rb-rank-score">${Math.round(Number(r.average_score)||0)}<small class="rb-rank-meta">média</small></div></div>`).join('');
   }
   rbEl('rbLeaderboardUpdated').textContent='Atualizado às '+new Date().toLocaleTimeString('pt-BR');
@@ -1662,7 +1662,7 @@ rbEl('rbClearScheduledNotice')?.addEventListener('click',rbRun(async()=>{
   throw error;
  }
 }));
-const RB_APP_RELEASE_VERSION='2026.10.27.4';
+const RB_APP_RELEASE_VERSION='2026.10.27.5';
 async function rbReleaseCheck(){
  const status=rbEl('rbReleaseStatus'),notes=rbEl('rbReleaseNotes'),badge=rbEl('rbReleaseVersionBadge');
  if(status)status.textContent='Consultando a versão esperada no GitHub…';
