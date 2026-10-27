@@ -18,6 +18,16 @@
   if(page&&!allowed){page.hidden=true;page.classList.remove('active')}
   else if(page&&allowed&&page.classList.contains('active'))page.hidden=false;
  }
+ function unifyConsentOverlays(){
+  // Two independently rendered consent dialogs were competing for the top layer.
+  // Keep the privacy gate as the single required gate; the header selector handles language choice.
+  const privacyGate=$('rbPrivacyGate'),languageOverlay=$('rbLanguageConsent');
+  if(privacyGate&&languageOverlay){
+   languageOverlay.hidden=true;
+   languageOverlay.style.setProperty('display','none','important');
+   languageOverlay.setAttribute('aria-hidden','true');
+  }
+ }
  function setupDock(){
   const nav=document.querySelector('nav button[data-page]')?.closest('nav');
   if(!nav)return null;
@@ -43,7 +53,8 @@
   return nav;
  }
  function placeLanguageButton(){
-  const button=$('rbLanguageQuick'),header=document.querySelector('body>header');
+  // The inline language controller renames the generated selector to rbLanguageHeader.
+  const button=$('rbLanguageHeader')||$('rbLanguageQuick'),header=document.querySelector('body>header');
   const season=header?.querySelector('.season');
   if(!button||!season)return;
   // Keep the persistent language selector in the header, above "Founders Edition",
@@ -194,7 +205,7 @@
  }
 
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();addDiagnostics();addExtraTools();
+  unifyConsentOverlays();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();addDiagnostics();addExtraTools();
   let refreshFrame=0;
   const observer=new MutationObserver(()=>{
    if(refreshFrame)return;
