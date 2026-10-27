@@ -1,37 +1,61 @@
-# Revisão inicial de segurança do Supabase
+# Revisão de segurança do Supabase
 
 **Projeto auditado:** `ieijssfqonoucqheedac` (Rabbitech-calculator-first-lego-league)  
-**Tipo de revisão:** leitura somente; nenhuma permissão, política ou função foi alterada.  
-**Data:** 2026-10-27
+**Data da verificação:** 2026-10-27  
+**Método:** consultas somente de leitura sobre funções, ACLs, RLS, políticas e advisors.
 
-## Observações confirmadas
+## Resultado executivo
 
-### Funções com privilégios elevados
+Não encontrei evidência, nesta amostra, de que usuários anônimos possam executar as funções administrativas consultadas ou ler diretamente as tabelas administrativas pela Data API. Isso não substitui uma auditoria completa, mas é importante distinguir alertas genéricos do advisor de uma falha efetiva de autorização.
 
-As funções abaixo usam `SECURITY DEFINER`. Isso não significa, por si só, que estejam vulneráveis; é necessário revisar o corpo, as permissões de execução e o contexto de chamada.
+### Funções SECURITY DEFINER
 
-- `public.get_public_leaderboard()`: retorna nome da equipe, média, quantidade de rodadas e posição. A consulta inclui somente equipes com pelo menos três rodadas.
-- `public.get_rabbitech_public_settings()`: retorna configurações destinadas à interface pública, incluindo avisos, tema, cor de destaque e sinalizadores de funcionalidades. Revisar cuidadosamente cada campo para garantir que nenhum valor privado seja adicionado no futuro.
-- `public.claim_team_name(text)`: exige usuário autenticado, normaliza o nome e verifica vínculos existentes antes de reivindicar uma equipe.
-- `public.get_rabbitech_admin_overview()`: verifica se o usuário autenticado existe em `public.app_admins` antes de retornar estatísticas e dados administrativos.
-- `public.admin_add_rabbitech_admin_by_email(text)`: verifica que o usuário autenticado corresponde ao UUID fixo do proprietário antes de adicionar um administrador.
+A lista de permissões de execução confirmou que somente duas funções SECURITY DEFINER consultadas permitem execução por `anon`:
 
-### Pontos de atenção
+- `public.get_public_leaderboard()`
+- `public.get_rabbitech_public_settings()`
 
-1. Algumas funções administrativas usam UUID fixo para identificar o proprietário, enquanto outras verificam associação em `app_admins`. Documentar a política de autorização pretendida e revisar todas as funções administrativas com o mesmo critério.
-2. Verificar privilégios `EXECUTE` para `PUBLIC`, `anon` e `authenticated` por função. O alerta do advisor não prova exploração, mas privilégios amplos devem ser justificados.
-3. Confirmar as tabelas sem políticas RLS. A ausência de políticas pode ser intencional se o acesso for exclusivamente por RPC autorizada; não adicionar políticas genéricas sem avaliar os caminhos de acesso.
-4. Confirmar que as funções públicas retornam apenas dados destinados ao público.
-5. Avaliar os alertas de desempenho das políticas RLS que reavaliam funções de autenticação por linha; otimizar em migração separada após testes.
+Os seus propósitos e retornos indicam que foram projetadas como APIs públicas. O ranking retorna posição, nome da equipe, média e quantidade de rodadas para equipes com pelo menos três rodadas; as configurações públicas incluem tema, avisos e sinalizadores. Manter essas funções públicas só é seguro enquanto elas continuarem retornando exclusivamente dados destinados ao público.
 
-## Ordem recomendada para correções
+As demais funções SECURITY DEFINER consultadas não permitem execução por `anon`. Várias permitem execução por `authenticated`, mas as funções administrativas inspecionadas verificam `auth.uid()` e a associação administrativa; as funções de proprietário verificam o guardião de proprietário. O aviso do Supabase para as 22 funções autenticadas merece acompanhamento, mas não é, por si só, prova de exploração.
 
-1. Exportar e revisar definições completas de funções, grants e políticas atuais.
-2. Escrever testes para usuário anônimo, usuário autenticado comum, administrador e proprietário.
-3. Preparar migração SQL versionada para mudanças mínimas de privilégios, caso a auditoria confirme permissões excessivas.
-4. Testar em ambiente de desenvolvimento ou preview.
-5. Aplicar em produção apenas após validar que login, ranking público, vínculo de equipes e painel administrativo continuam funcionando.
+### RLS e privilégios das tabelas
 
-## Limitações
+- `public.teams` e `public.rounds`: RLS habilitado e políticas de propriedade presentes.
+- `public.rabbitech_private_secrets`: RLS habilitado e política que nega acesso do cliente.
+- `public.app_admins`, `public.rabbitech_admin_audit_log`, `public.rabbitech_site_settings`, `rabbitech_private.site_settings_history` e `rabbitech_private.sql_console_audit`: RLS habilitado, sem políticas. As concessões consultadas não mostram acesso de tabela para `anon` ou `authenticated`; o acesso direto é restrito aos papéis de servidor. Não adicionar políticas genéricas a essas tabelas, pois isso poderia expor dados administrativos.
 
-Esta é uma revisão inicial por amostragem de funções críticas, não uma auditoria completa de segurança. Nenhuma credencial foi lida ou exibida; nenhuma consulta modificou dados. Não foram alteradas funções, permissões, tabelas, políticas RLS ou migrações.
+O schema `rabbitech_private` não concede privilégio `USAGE` a `anon` nem a `authenticated` na verificação executada.
+
+## Problema real identificado: desempenho das políticas RLS
+
+O advisor de desempenho aponta quatro políticas com chamada a `auth.uid()` reavaliada por linha:
+
+- `teams_select_own`
+- `rounds_select_own`
+- `rounds_insert_own`
+- `rounds_update_own`
+
+A proposta em [proposed-rls-policy-performance-fix.sql](proposed-rls-policy-performance-fix.sql) substitui as expressões por `(select auth.uid())`, preservando o predicado de propriedade, os comandos e os papéis da política. A proposta não foi aplicada ao banco.
+
+## Reconciliação das migrações: bloqueio antes de novas alterações SQL
+
+O projeto remoto lista 25 migrações aplicadas, enquanto a árvore atual do GitHub contém apenas 12 arquivos em `supabase/migrations/` e parte dos identificadores não corresponde aos registros remotos. Algumas migrações aplicadas não possuem script rastreável na árvore atual; não foi possível recuperá-las através dos caminhos consultados no histórico do GitHub.
+
+**Não executar `supabase db push` até reconciliar o histórico local/remoto.** O procedimento recomendado é recuperar ou reconstruir scripts ausentes, comparar cada um com o estado real do banco, documentar a proveniência e só então criar/aplicar uma migração nova. Não é seguro resolver essa divergência com resets ou migrações inventadas.
+
+## Resultado funcional observado
+
+A consulta de verificação encontrou 147 equipes e 288 rodadas. Nenhuma equipe tinha três rodadas no mesmo retrato consultado; portanto, o RPC público do ranking retornou zero equipes. Isso parece explicar o estado vazio segundo a regra atual de elegibilidade de três rodadas, e não prova que o RPC esteja quebrado.
+
+## Próximos passos seguros
+
+1. Recuperar e reconciliar o histórico de migrações.
+2. Testar as funções públicas com os campos que devem ser expostos e testar cada função administrativa como anônimo, usuário comum, administrador e proprietário.
+3. Aplicar a otimização das políticas RLS por migração revisada em ambiente isolado.
+4. Executar novamente os advisors e consultas de verificação.
+5. Só depois agendar mudanças de produção.
+
+## Limitações e alterações feitas
+
+Esta revisão é uma amostra direcionada, não uma auditoria integral. As consultas executadas foram somente de leitura. Nenhuma credencial foi lida ou exibida; nenhuma tabela, função, política, permissão, migração ou dado foi alterado.
