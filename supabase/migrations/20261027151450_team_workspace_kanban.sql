@@ -76,9 +76,6 @@ AS $$
       SELECT 1 FROM public.teams t
       WHERE t.id = p_team_id AND t.auth_user_id = auth.uid()
     )
-    OR EXISTS (
-      SELECT 1 FROM public.app_admins a WHERE a.user_id = auth.uid()
-    )
   );
 $$;
 
@@ -93,9 +90,6 @@ AS $$
     EXISTS (
       SELECT 1 FROM public.teams t
       WHERE t.id = p_team_id AND t.auth_user_id = auth.uid()
-    )
-    OR EXISTS (
-      SELECT 1 FROM public.app_admins a WHERE a.user_id = auth.uid()
     )
     OR EXISTS (
       SELECT 1 FROM public.team_memberships m
