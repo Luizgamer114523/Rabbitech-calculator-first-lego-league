@@ -176,15 +176,6 @@
  function safeLocalGet(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(_){return []}}
  function addExtraTools(){
   const score=$('page-score'),strategy=$('page-strategy'),routes=$('page-routes'),admin=$('page-admin');
-  if(score&&!$('rbCompetitionTimer')){
-   const box=document.createElement('section');box.id='rbCompetitionTimer';box.style.cssText='margin:14px auto;padding:14px;max-width:720px;border:1px solid #49684b;border-radius:14px;background:rgba(9,25,15,.95);color:#edf7ed';
-   box.innerHTML='<h3>⏱️ Cronômetro de competição</h3><div id="rbTimerDisplay" style="font-size:36px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums">02:30</div><div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button type="button" id="rbTimerStart">Iniciar</button><button type="button" id="rbTimerPause">Pausar</button><button type="button" id="rbTimerReset">Reiniciar</button></div><p style="font-size:12px;opacity:.75">Cronômetro local de 2 min e 30 s. Não altera nem envia pontuações.</p>';
-   score.append(box);let remaining=150000,deadline=0,interval=null;
-   const display=()=>{const sec=Math.max(0,Math.ceil(remaining/1000));$('rbTimerDisplay').textContent=String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')};
-   $('rbTimerStart').addEventListener('click',()=>{if(interval)return;deadline=Date.now()+remaining;interval=setInterval(()=>{remaining=Math.max(0,deadline-Date.now());display();if(!remaining){clearInterval(interval);interval=null;try{if(navigator.vibrate)navigator.vibrate([250,100,250])}catch(_){}}},200)});
-   $('rbTimerPause').addEventListener('click',()=>{if(interval){remaining=Math.max(0,deadline-Date.now());clearInterval(interval);interval=null;display()}});
-   $('rbTimerReset').addEventListener('click',()=>{if(interval)clearInterval(interval);interval=null;remaining=150000;display()});
-  }
   if(strategy&&!$('rbStrategyPlanner')){
    const box=document.createElement('section');box.id='rbStrategyPlanner';box.style.cssText='margin:14px auto;padding:14px;max-width:720px;border:1px solid #49684b;border-radius:14px;background:rgba(9,25,15,.95);color:#edf7ed';
    box.innerHTML='<h3>🧠 Planejador rápido de estratégia</h3><p>Monte uma lista de missões e estime os pontos. Os valores são estimativas da equipe, não regras oficiais.</p><label>Nome da estratégia <input id="rbStrategyName" maxlength="60" placeholder="Ex.: rota lado esquerdo"></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><input id="rbStrategyMission" maxlength="80" placeholder="Missão / objetivo"><input id="rbStrategyPoints" type="number" min="0" max="999" step="1" value="10" aria-label="Pontos estimados"><button type="button" id="rbStrategyAdd">Adicionar</button></div><ul id="rbStrategyList"></ul><p>Total estimado: <strong id="rbStrategyTotal">0</strong> pontos</p><button type="button" id="rbStrategySave">Salvar estratégia neste dispositivo</button><div id="rbStrategySaved" aria-live="polite"></div>';
