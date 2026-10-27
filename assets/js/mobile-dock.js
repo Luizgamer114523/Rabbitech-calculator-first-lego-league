@@ -173,17 +173,12 @@
  }
 
 
+ function escapeDiagnosticText(value){
+  return String(value??'').replace(/[&<>\"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
+ }
  function safeLocalGet(key){try{return JSON.parse(localStorage.getItem(key)||'[]')}catch(_){return []}}
  function addExtraTools(){
-  const score=$('page-score'),strategy=$('page-strategy'),routes=$('page-routes'),admin=$('page-admin');
-  if(strategy&&!$('rbStrategyPlanner')){
-   const box=document.createElement('section');box.id='rbStrategyPlanner';box.style.cssText='margin:14px auto;padding:14px;max-width:720px;border:1px solid #49684b;border-radius:14px;background:rgba(9,25,15,.95);color:#edf7ed';
-   box.innerHTML='<h3>🧠 Planejador rápido de estratégia</h3><p>Monte uma lista de missões e estime os pontos. Os valores são estimativas da equipe, não regras oficiais.</p><label>Nome da estratégia <input id="rbStrategyName" maxlength="60" placeholder="Ex.: rota lado esquerdo"></label><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><input id="rbStrategyMission" maxlength="80" placeholder="Missão / objetivo"><input id="rbStrategyPoints" type="number" min="0" max="999" step="1" value="10" aria-label="Pontos estimados"><button type="button" id="rbStrategyAdd">Adicionar</button></div><ul id="rbStrategyList"></ul><p>Total estimado: <strong id="rbStrategyTotal">0</strong> pontos</p><button type="button" id="rbStrategySave">Salvar estratégia neste dispositivo</button><div id="rbStrategySaved" aria-live="polite"></div>';
-   strategy.append(box);let items=[];
-   const render=()=>{$('rbStrategyList').innerHTML=items.map((x,i)=>'<li>'+escapeDiagnosticText(x.name)+' · '+x.points+' pts <button type="button" data-remove="'+i+'">Remover</button></li>').join('');$('rbStrategyTotal').textContent=items.reduce((n,x)=>n+x.points,0);box.querySelectorAll('[data-remove]').forEach(b=>b.addEventListener('click',()=>{items.splice(Number(b.dataset.remove),1);render()}))};
-   $('rbStrategyAdd').addEventListener('click',()=>{const name=$('rbStrategyMission').value.trim(),points=Number($('rbStrategyPoints').value);if(!name||!Number.isFinite(points)||points<0)return;items.push({name,points:Math.round(points)});$('rbStrategyMission').value='';render()});
-   $('rbStrategySave').addEventListener('click',()=>{const saved=safeLocalGet('rabbitech_strategy_drafts');saved.push({name:$('rbStrategyName').value.trim()||'Estratégia sem nome',items,total:items.reduce((n,x)=>n+x.points,0),savedAt:new Date().toISOString()});try{localStorage.setItem('rabbitech_strategy_drafts',JSON.stringify(saved.slice(-30)));$('rbStrategySaved').textContent='Estratégia salva neste dispositivo.'}catch(_){$('rbStrategySaved').textContent='Não foi possível salvar no armazenamento local.'}});
-  }
+  const routes=$('page-routes'),admin=$('page-admin');
   if(routes&&!$('rbTrainingNotebook')){
    const box=document.createElement('section');box.id='rbTrainingNotebook';box.style.cssText='margin:14px auto;padding:14px;max-width:720px;border:1px solid #49684b;border-radius:14px;background:rgba(9,25,15,.95);color:#edf7ed';
    box.innerHTML='<h3>📓 Diário de testes do robô</h3><input id="rbTestTitle" maxlength="80" placeholder="Teste / alteração"><textarea id="rbTestNotes" maxlength="1500" rows="3" placeholder="O que aconteceu? O que vamos mudar?"></textarea><button type="button" id="rbTestSave">Registrar teste</button><ul id="rbTestEntries"></ul><p style="font-size:12px;opacity:.75">Os registros ficam somente neste navegador. Não são enviados ao Supabase.</p>';
