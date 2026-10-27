@@ -212,8 +212,17 @@
   }
  }
 
+ function loadTeamWorkspaceScript(){
+  if(document.querySelector('script[data-rb-team-workspace]'))return;
+  const script=document.createElement('script');
+  script.src='/assets/js/team-workspace.js?v=20261027';
+  script.defer=true;
+  script.dataset.rbTeamWorkspace='true';
+  script.onerror=()=>console.error('Rabbitech team workspace script failed to load');
+  document.head.appendChild(script);
+ }
  function init(){
-  unifyConsentOverlays();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();addDiagnostics();addExtraTools();
+  unifyConsentOverlays();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();addDiagnostics();addExtraTools();loadTeamWorkspaceScript();
   let refreshFrame=0;
   const observer=new MutationObserver(()=>{
    if(refreshFrame)return;
