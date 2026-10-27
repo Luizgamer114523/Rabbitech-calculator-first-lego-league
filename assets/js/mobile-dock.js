@@ -236,6 +236,13 @@
   },700);
   window.addEventListener('rb-auth-state-changed',syncAdmin);
   window.addEventListener('rb-site-settings-updated',loadPublicSettings);
+  const settingsClient=getSupabaseClient();
+  if(settingsClient&&typeof settingsClient.channel==='function'){
+   try{
+    const channel=settingsClient.channel('rb-public-settings-realtime').on('postgres_changes',{event:'UPDATE',schema:'public',table:'rabbitech_site_settings',filter:'id=eq.true'},()=>loadPublicSettings()).subscribe();
+    window.rbPublicSettingsRealtimeChannel=channel;
+   }catch(error){console.warn('Rabbitech settings realtime unavailable',error)}
+  }
   setInterval(loadPublicSettings,15000);
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
