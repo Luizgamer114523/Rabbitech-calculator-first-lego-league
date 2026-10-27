@@ -288,6 +288,8 @@
  async function changeTeamTaskStatus(id,status){
   if(!TEAM_STATES.includes(status))return;
   const select=document.querySelector('[data-task-status="'+CSS.escape(id)+'"]');
+  const oldStatus=select?.value||'todo';
+  if(oldStatus===status)return;
   if(select)select.disabled=true;
   const c=teamClient();
   try{
@@ -295,21 +297,16 @@
    if(r.error)throw r.error;
    const card=select?.closest('.tw-task');
    if(card){
-    const title=card.querySelector('strong')?.textContent||'';
-    const description=card.querySelector('p')?.textContent||'';
-    const priority=card.querySelectorAll('p.tw-muted')[0]?.textContent||'';
-    const assignee=card.querySelectorAll('p.tw-muted')[1]?.textContent||'';
-    const replacementCard=document.createElement('article');
-    replacementCard.className='tw-task';
-    replacementCard.innerHTML='<strong>'+teamEsc(title)+'</strong><p>'+teamEsc(description)+'</p><p class="tw-muted">'+teamEsc(priority)+'</p><p class="tw-muted">'+teamEsc(assignee)+'</p><label class="tw-muted">Status <select class="tw-field" data-task-status="'+teamEsc(id)+'">'+TEAM_STATES.map(s=>'<option value="'+s+'" '+(s===status?'selected':'')+'>'+TEAM_LABELS[s]+'</option>').join('')+'</select></label>';
-    card.replaceWith(replacementCard);
-    const newSelect=replacementCard.querySelector('[data-task-status]');
-    newSelect?.addEventListener('change',()=>changeTeamTaskStatus(id,newSelect.value));
     const target=[...document.querySelectorAll('#rbTeamWorkspaceRoot .tw-card')].find(section=>section.querySelector('h3')?.textContent?.startsWith(TEAM_LABELS[status]+' ('));
-    if(target&&replacementCard.parentElement!==target)target.append(replacementCard);
+    if(target&&card.parentElement!==target)target.append(card);
+    const currentSelect=card.querySelector('[data-task-status]');
+    if(currentSelect){currentSelect.value=status;currentSelect.disabled=false;currentSelect.onchange=()=>changeTeamTaskStatus(id,currentSelect.value)}
     document.querySelectorAll('#rbTeamWorkspaceRoot .tw-card > h3').forEach(h=>{
      const key=Object.entries(TEAM_LABELS).find(([,v])=>h.textContent.startsWith(v+' ('))?.[0];
-     if(key){const count=h.textContent.match(/\((\d+)\)/);const n=target===h.parentElement?Number(count?.[1]||0)+1:Math.max(0,Number(count?.[1]||0)-1);h.textContent=TEAM_LABELS[key]+' ('+n+')'}
+     if(!key)return;
+     const match=h.textContent.match(/\((\d+)\)/),count=Number(match?.[1]||0);
+     const delta=key===oldStatus?-1:(key===status?1:0);
+     if(delta)h.textContent=TEAM_LABELS[key]+' ('+Math.max(0,count+delta)+')';
     });
    }
    teamFeedback('Tarefa atualizada.');
