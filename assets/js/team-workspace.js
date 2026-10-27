@@ -152,9 +152,20 @@
   const sb=client();if(!sb||!workspace?.team_id||typeof sb.channel!=='function')return;
   if(window.rbTeamRealtimeChannel){try{sb.removeChannel(window.rbTeamRealtimeChannel)}catch(_){}}
   const teamId=workspace.team_id;
+  let refreshQueued=false;
+  const refreshWithoutRebuild=()=>{
+   if(refreshQueued)return;
+   refreshQueued=true;
+   queueMicrotask(async()=>{refreshQueued=false;await refreshBoardInBackground()});
+  };
   window.rbTeamRealtimeChannel=sb.channel('rabbitech-team-'+teamId)
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'team_messages',filter:'team_id=eq.'+teamId},payload=>addMessageOnce(payload.new))
-   .subscribe();
+   .on('postgres_changes',{event:'*',schema:'public',table:'team_tasks',filter:'team_id=eq.'+teamId},refreshWithoutRebuild)
+   .on('postgres_changes',{event:'*',schema:'public',table:'team_goals',filter:'team_id=eq.'+teamId},refreshWithoutRebuild)
+   .on('postgres_changes',{event:'*',schema:'public',table:'team_notes',filter:'team_id=eq.'+teamId},refreshWithoutRebuild)
+   .on('postgres_changes',{event:'*',schema:'public',table:'team_round_logs',filter:'team_id=eq.'+teamId},refreshWithoutRebuild)
+   .on('postgres_changes',{event:'*',schema:'public',table:'team_memberships',filter:'team_id=eq.'+teamId},refreshWithoutRebuild)
+   .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Rabbitech team Realtime connection:',status)});
  }
  function renderChat(){
   const panel=node('section','rb-team-panel');panel.append(node('h3','','💬 Chat da equipe'),node('p','rb-team-muted','Mensagens de texto para integrantes autenticados da equipe.'));
