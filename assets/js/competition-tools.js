@@ -16,8 +16,6 @@
    .rb-tool-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
    .rb-tool-fields label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted,#a9b9ad)}
    .rb-tool-fields input{box-sizing:border-box;width:100%;min-width:0;padding:10px;border-radius:9px;border:1px solid var(--line,#49684b);background:var(--panel2,#07140d);color:var(--text,#edf7ed);font:inherit}
-   .rb-timer-digits{font-variant-numeric:tabular-nums;text-align:center;font-size:clamp(40px,6vw,64px);font-weight:900;letter-spacing:.03em;padding:13px 0;color:var(--lime,#d0f477)}
-   .rb-timer-digits.rb-time-ended{color:#ffb4ab}
    .rb-tool-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
    .rb-tool-button{min-height:40px;padding:9px 12px;border:1px solid var(--line,#49684b);border-radius:10px;background:rgba(208,244,119,.1);color:inherit;font:inherit;font-weight:700;cursor:pointer}
    .rb-tool-button:disabled{opacity:.45;cursor:not-allowed}
@@ -35,19 +33,6 @@
    @media(prefers-reduced-motion:reduce){.rb-tool-card *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
   `;
   document.head.appendChild(style);
- }
- function createTimerCard(){
-  const card=make('section','rb-tool-card');card.id='rbCompetitionTimer';card.setAttribute('aria-labelledby','rbCompetitionTimerTitle');
-  const title=make('h3','', '⏱️ Cronômetro de treino');title.id='rbCompetitionTimerTitle';card.appendChild(title);
-  card.appendChild(make('p','rb-tool-subtitle','Cronômetro independente para simular uma tentativa. O valor inicial é 150 segundos e pode ser ajustado. O tempo continua correndo se você trocar de aba.'));
-  const fields=make('div','rb-tool-fields');const label=make('label','','Duração da tentativa (segundos)');
-  const input=make('input');input.id='rbTimerDuration';input.type='number';input.min='10';input.max='600';input.step='5';input.value='150';input.inputMode='numeric';input.setAttribute('aria-label','Duração da tentativa em segundos');label.appendChild(input);fields.appendChild(label);
-  const displayWrap=make('div');displayWrap.style.display='flex';displayWrap.style.flexDirection='column';displayWrap.style.justifyContent='center';
-  displayWrap.appendChild(make('small','','Tempo restante'));
-  const display=make('div','rb-timer-digits','02:30');display.id='rbTimerDisplay';display.setAttribute('role','timer');display.setAttribute('aria-label','Tempo restante');displayWrap.appendChild(display);fields.appendChild(displayWrap);card.appendChild(fields);
-  const actions=make('div','rb-tool-actions');const start=make('button','rb-tool-button','Iniciar');start.type='button';start.id='rbTimerStart';const reset=make('button','rb-tool-button','Reiniciar');reset.type='button';reset.id='rbTimerReset';actions.append(start,reset);card.appendChild(actions);
-  const status=make('p','rb-tool-status','Pronto para iniciar.');status.id='rbTimerStatus';status.setAttribute('role','status');card.appendChild(status);
-  return card;
  }
  function createStrategyCard(){
   const card=make('section','rb-tool-card');card.id='rbStrategyCompare';card.setAttribute('aria-labelledby','rbStrategyCompareTitle');
@@ -73,23 +58,6 @@
   return card;
  }
  function formatTime(seconds){const n=Math.max(0,Math.ceil(seconds));return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');}
- function wireTimer(){
-  const input=$('rbTimerDuration'),display=$('rbTimerDisplay'),start=$('rbTimerStart'),reset=$('rbTimerReset'),status=$('rbTimerStatus');
-  let remaining=150,deadline=0,interval=null,running=false;
-  const configured=()=>clamp(Math.round(asNumber(input.value,150)),10,600);
-  const render=()=>{display.textContent=formatTime(remaining);display.classList.toggle('rb-time-ended',remaining<=0);start.textContent=running?'Pausar':(remaining===0?'Iniciar novamente':(remaining<configured()?'Continuar':'Iniciar'));input.disabled=running;};
-  const stop=()=>{if(interval!==null)clearInterval(interval);interval=null;running=false;};
-  const tick=()=>{remaining=Math.max(0,(deadline-Date.now())/1000);if(remaining<=0){remaining=0;stop();status.textContent='Tempo encerrado. Registre o resultado da tentativa na equipe.';}render();};
-  input.addEventListener('change',()=>{if(running)return;remaining=configured();input.value=String(configured());status.textContent='Duração ajustada. Pronto para iniciar.';render();});
-  start.addEventListener('click',()=>{
-   if(running){tick();if(!running){render();return;}remaining=Math.max(0,(deadline-Date.now())/1000);stop();status.textContent='Cronômetro pausado.';render();return;}
-   if(remaining<=0)remaining=configured();
-   if(!Number.isFinite(remaining)||remaining<=0)remaining=150;
-   deadline=Date.now()+remaining*1000;running=true;status.textContent='Cronômetro em andamento.';render();interval=setInterval(tick,200);
-  });
-  reset.addEventListener('click',()=>{stop();remaining=configured();input.value=String(configured());status.textContent='Cronômetro reiniciado.';render();});
-  remaining=configured();render();
- }
  function readStrategies(){
   try{const parsed=JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]');return Array.isArray(parsed)?parsed.filter(p=>p&&typeof p.name==='string'&&Number.isFinite(Number(p.points))&&Number.isFinite(Number(p.confidence))&&Number.isFinite(Number(p.time))):[];}
   catch(_){return [];}
@@ -135,10 +103,10 @@
   addStyles();
   const header=page.querySelector('.section-title');
   if(!header)return;
-  const grid=make('div','rb-tools-grid');grid.id='rbCompetitionTools';grid.append(createTimerCard(),createStrategyCard());
+  const grid=make('div','rb-tools-grid');grid.id='rbCompetitionTools';grid.append(createStrategyCard());
   const priorities=[...page.querySelectorAll('.section-title')].find(el=>el.textContent.includes('Prioridades para a competição'));
   if(priorities)page.insertBefore(grid,priorities);else header.insertAdjacentElement('afterend',grid);
-  wireTimer();wireStrategies();
+  wireStrategies();
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();
