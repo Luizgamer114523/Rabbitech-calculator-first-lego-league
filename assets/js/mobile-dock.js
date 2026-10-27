@@ -291,21 +291,24 @@
   const t=teamState.team,p=teamState.profile,body=$('twMessageBody')?.value.trim();if(!body)return;
   await teamWrite(c=>c.from('team_messages').insert({team_id:t.team_id,author_user_id:p.user_id,body}));
  }
- function syncTeamWorkspace(){
-  const refs=ensureTeamPage();if(!refs)return;
-  const user=teamClientUser();refs.button.hidden=!user;
+ let teamAuthCheckInFlight=false;
+ async function syncTeamWorkspace(){
+  const refs=ensureTeamPage();if(!refs||teamAuthCheckInFlight)return;
+  teamAuthCheckInFlight=true;
+  try{const user=await teamAuthUser();refs.button.hidden=!user;}
+  finally{teamAuthCheckInFlight=false;}
  }
  function initTeamWorkspace(){
   syncTeamWorkspace();
   window.addEventListener('rb-auth-state-changed',()=>{syncTeamWorkspace();if($('page-team-workspace')?.classList.contains('active'))renderTeamWorkspace()});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))renderTeamWorkspace()});
-  setInterval(()=>{if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))renderTeamWorkspace()},15000);
+  setInterval(()=>{syncTeamWorkspace();if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))renderTeamWorkspace()},15000);
  }
 
  function init(){
   setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();
   const observer=new MutationObserver(()=>{
-   setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();
+   setupDock();placeLanguageButton();syncAdmin();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
