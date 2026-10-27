@@ -165,7 +165,10 @@ BEGIN
     RAISE EXCEPTION 'Auditoria disponível somente para a conta proprietária autenticada.' USING errcode = '42501';
   END IF;
 
-  SELECT coalesce(jsonb_agg(to_jsonb(q) ORDER BY q.created_at DESC), '[]'::jsonb)
+  SELECT coalesce(
+    jsonb_agg(to_jsonb(q) ORDER BY q.created_at DESC),
+    '[]'::jsonb
+  )
   INTO v_result
   FROM (
     SELECT id, actor_user_id, sql_text, command_kind, success, row_count, result_preview, error_message, created_at
