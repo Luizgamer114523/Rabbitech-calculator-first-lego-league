@@ -457,7 +457,7 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
         <div id="rbAdminDiagnostics" class="card hidden" style="margin-top:12px;background:var(--panel2)" aria-live="polite"><h4 style="margin-top:0">🩺 Diagnóstico do Rabbitech</h4><p class="footnote">Execute o diagnóstico para verificar conexão, configurações globais, módulos e dados de equipes sem modificar o banco.</p><div id="rbAdminDiagnosticsResults"></div></div>
        </div>
        <div id="rbReleaseCenter" class="card" style="margin:14px 0;background:var(--panel2)">
-        <div class="toolbar" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🚀 Central de atualizações</h3><p class="footnote">Versão instalada, alterações recentes e comparação com a versão esperada no repositório.</p></div><span class="badge" id="rbReleaseVersionBadge">v2026.10.27.2</span></div>
+        <div class="toolbar" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🚀 Central de atualizações</h3><p class="footnote">Versão instalada, alterações recentes e comparação com a versão esperada no repositório.</p></div><span class="badge" id="rbReleaseVersionBadge">v2026.10.27.3</span></div>
         <p id="rbReleaseStatus" class="rb-release-status footnote" role="status" aria-live="polite">Verifique a versão do repositório para comparar com este site.</p>
         <h4>Alterações desta versão</h4><ul id="rbReleaseNotes" class="footnote"><li>Monitor de saúde e diagnóstico com reparação guiada.</li><li>Modo manutenção, avisos agendados e restauração do histórico de configurações.</li><li>Análise de pontuação e evolução dos rounds.</li></ul>
         <button type="button" id="rbReleaseCheck" class="primary">Verificar publicação</button>
@@ -1534,7 +1534,43 @@ async function rbAdminLoadSettingsHistory(){
     if(error)throw error;if(!data?.ok)throw new Error(data?.message||'O Supabase não confirmou a restauração.');
     rbGlobalSettingsSignature='';await rbLoadGlobalSettings();
     const restored=data.settings||{},actual=rbGlobalSettingsCurrent||{};
-    if(actual.theme_name!==restored.theme_name||actual.accent_color!==restored.accent_color||actual.maintenance_mode!==restored.maintenance_mode||JSON.stringify(actual.feature_flags||{})!==JSON.stringify(restored.feature_flags||{}))throw new Error('A restauração foi solicitada, mas a leitura posterior não confirmou todas as configurações. Atualize o painel e confira o histórico antes de repetir.');
+    const snapshot=rows.find(row=>Number(row.id)===Number(button.dataset.rbRestoreSettings))?.after_state||{};
+    const defaultFlags={public_ranking:true,youtube_tv:true,music_player:true,global_notices:true,strategy:true,routes:true,rules:true};
+    const expected={
+     notice_text:String(snapshot.notice_text??''),
+     notice_active:snapshot.notice_active===true,
+     notice_type:String(snapshot.notice_type||'info'),
+     accent_color:String(snapshot.accent_color||'#d0f477'),
+     theme_name:String(snapshot.theme_name||'BioGlow Verde'),
+     feature_flags:snapshot.feature_flags&&typeof snapshot.feature_flags==='object'&&!Array.isArray(snapshot.feature_flags)?snapshot.feature_flags:defaultFlags,
+     maintenance_mode:snapshot.maintenance_mode===true,
+     maintenance_message:String(snapshot.maintenance_message||'O Rabbitech está em manutenção programada. Voltaremos em breve.'),
+     scheduled_notice_text:String(snapshot.scheduled_notice_text||''),
+     scheduled_notice_type:String(snapshot.scheduled_notice_type||'info'),
+     scheduled_notice_start_at:snapshot.scheduled_notice_start_at||null,
+     scheduled_notice_end_at:snapshot.scheduled_notice_end_at||null
+    };
+    const normalizeInstant=value=>{if(!value)return null;const parsed=Date.parse(value);return Number.isFinite(parsed)?parsed:String(value);};
+    const stableFlags=value=>{const flags=value&&typeof value==='object'&&!Array.isArray(value)?value:{};return JSON.stringify(Object.keys(flags).sort().reduce((result,key)=>{result[key]=flags[key];return result;},{}));};
+    const verifySnapshot=state=>{
+     const mismatches=[];
+     const compare=(label,actualValue,expectedValue)=>{if(actualValue!==expectedValue)mismatches.push(label);};
+     compare('texto do aviso',String(state.notice_text??''),expected.notice_text);
+     compare('estado do aviso',state.notice_active===true,expected.notice_active);
+     compare('tipo do aviso',String(state.notice_type||'info'),expected.notice_type);
+     compare('cor de destaque',String(state.accent_color||'#d0f477'),expected.accent_color);
+     compare('nome do tema',String(state.theme_name||'BioGlow Verde'),expected.theme_name);
+     compare('módulos',stableFlags(state.feature_flags),stableFlags(expected.feature_flags));
+     compare('modo manutenção',state.maintenance_mode===true,expected.maintenance_mode);
+     compare('mensagem de manutenção',String(state.maintenance_message||'O Rabbitech está em manutenção programada. Voltaremos em breve.'),expected.maintenance_message);
+     compare('texto do aviso agendado',String(state.scheduled_notice_text||''),expected.scheduled_notice_text);
+     compare('tipo do aviso agendado',String(state.scheduled_notice_type||'info'),expected.scheduled_notice_type);
+     compare('início do agendamento',normalizeInstant(state.scheduled_notice_start_at),normalizeInstant(expected.scheduled_notice_start_at));
+     compare('fim do agendamento',normalizeInstant(state.scheduled_notice_end_at),normalizeInstant(expected.scheduled_notice_end_at));
+     return mismatches;
+    };
+    const responseMismatch=verifySnapshot(restored),readMismatch=verifySnapshot(actual);
+    if(responseMismatch.length||readMismatch.length)throw new Error('Restauração não confirmada em todos os campos. Resposta do banco: '+(responseMismatch.join(', ')||'ok')+'; leitura posterior: '+(readMismatch.join(', ')||'ok')+'. O histórico foi mantido; atualize e confira antes de repetir.');
     await rbAdminLoadSettingsHistory();
     const status=rbEl('rbOperationsSettingsStatus');if(status)status.textContent='Configurações restauradas e verificadas. O estado anterior também foi preservado no histórico.';
     rbAdminStatus('Configurações restauradas. Equipes, rounds e placares não foram alterados.');
@@ -1606,7 +1642,7 @@ rbEl('rbClearScheduledNotice')?.addEventListener('click',rbRun(async()=>{
   throw error;
  }
 }));
-const RB_APP_RELEASE_VERSION='2026.10.27.2';
+const RB_APP_RELEASE_VERSION='2026.10.27.3';
 async function rbReleaseCheck(){
  const status=rbEl('rbReleaseStatus'),notes=rbEl('rbReleaseNotes'),badge=rbEl('rbReleaseVersionBadge');
  if(status)status.textContent='Consultando a versão esperada no GitHub…';
