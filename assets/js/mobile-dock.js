@@ -209,7 +209,7 @@
    '#rbTeamWorkspaceRoot .tw-stat{font-size:1.65rem;font-weight:800;color:#d0f477}'+
    '@media(max-width:650px){#rbTeamWorkspaceRoot .tw-board{grid-template-columns:repeat(3,minmax(205px,1fr))}}'+
    '</style>'+body;
-  if(scrollY>0)requestAnimationFrame(()=>window.scrollTo({top:scrollY,behavior:'instant'}));
+  if(scrollY>0)requestAnimationFrame(()=>window.scrollTo({top:scrollY,behavior:'auto'}));
   if(activeId){const restored=$(activeId);if(restored){restored.focus({preventScroll:true});if(activeValue!==null&&'value' in restored)restored.value=activeValue}}
  }
  function teamFormField(id,label,placeholder,type='text',attrs=''){
