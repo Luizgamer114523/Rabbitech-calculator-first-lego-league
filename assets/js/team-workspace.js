@@ -2,7 +2,7 @@
 (()=>{'use strict';
  const $=id=>document.getElementById(id);
  const esc=v=>String(v??'');
- let workspace=null, tasks=[], members=[], loading=false, scriptReady=false;
+ let workspace=null, tasks=[], members=[], events=[], loading=false, scriptReady=false;
  const STATUS=[['todo','A fazer'],['in_progress','Em andamento'],['done','Concluída']];
  const PRIORITY=[['low','Baixa'],['normal','Normal'],['high','Alta']];
  function client(){try{if(typeof rbClient!=='undefined'&&rbClient)return rbClient}catch(_){}return window.rbClient||window.supabaseClient||null}
@@ -71,12 +71,13 @@
  function priorityName(v){return PRIORITY.find(x=>x[0]===v)?.[1]||v}
  async function loadBoardData(){
   const sb=client();if(!sb||!workspace?.team_id)return;
-  const [t,m]=await Promise.all([
+  const [t,m,e]=await Promise.all([
    sb.from('team_tasks').select('id,team_id,title,description,status,priority,due_date,assigned_to,created_by,completed_at,created_at,updated_at').eq('team_id',workspace.team_id).order('created_at',{ascending:false}),
-   sb.from('team_memberships').select('user_id,display_name,role,created_at').eq('team_id',workspace.team_id).order('created_at',{ascending:true})
+   sb.from('team_memberships').select('user_id,display_name,role,created_at').eq('team_id',workspace.team_id).order('created_at',{ascending:true}),
+   sb.from('team_task_events').select('id,task_id,actor_user_id,old_status,new_status,note,created_at').eq('team_id',workspace.team_id).order('created_at',{ascending:false}).limit(20)
   ]);
-  if(t.error)throw t.error;if(m.error)throw m.error;
-  tasks=t.data||[];members=m.data||[];
+  if(t.error)throw t.error;if(m.error)throw m.error;if(e.error)throw e.error;
+  tasks=t.data||[];members=m.data||[];events=e.data||[];
  }
  function renderBoard(){
   const page=makePage();if(!page)return;page.replaceChildren();addStyles();
@@ -89,6 +90,19 @@
   STATUS.forEach(([status,label])=>{const col=node('div','rb-team-column');const inCol=tasks.filter(t=>t.status===status);col.append(node('h3','',label+' · '+inCol.length));inCol.forEach(t=>col.append(createTaskCard(t)));if(!inCol.length)col.append(node('p','rb-team-muted','Nenhuma tarefa aqui.'));kanban.append(col)});board.append(kanban);page.append(board);
   const people=node('section','rb-team-panel');people.append(node('h3','','Membros e médias'));const rows=node('div');if(!members.length)rows.append(node('p','rb-team-muted','Ainda não há membros cadastrados além da liderança.'));members.forEach(m=>{const mine=tasks.filter(t=>t.assigned_to===m.user_id),completed=mine.filter(t=>t.status==='done').length,pct=mine.length?Math.round(completed/mine.length*100):0;const row=node('div','rb-team-member-row');const left=node('div');left.append(node('strong','',m.display_name+(m.role==='leader'?' · liderança':'')),node('div','rb-team-muted',completed+' de '+mine.length+' tarefas atribuídas concluídas'));const right=node('strong','',pct+'%');row.append(left,right);rows.append(row)});people.append(rows);page.append(people);
   if(workspace?.is_manager)page.append(createInvitePanel());
+  const activity=node('section','rb-team-panel');activity.append(node('h3','','Atividade recente'));
+  if(!events.length)activity.append(node('p','rb-team-muted','Ainda não há alterações registradas. Quando alguém mover uma tarefa, o histórico aparecerá aqui.'));
+  else{
+   const taskById=new Map(tasks.map(t=>[t.id,t]));
+   events.slice(0,12).forEach(ev=>{
+    const task=taskById.get(ev.task_id),member=members.find(m=>m.user_id===ev.actor_user_id);
+    const row=node('div','rb-team-member-row');const left=node('div');
+    left.append(node('strong','',(member?.display_name||'Integrante')+' · '+(task?.title||'Tarefa')));
+    left.append(node('div','rb-team-muted',(ev.old_status?taskStatusName(ev.old_status)+' → ':'')+taskStatusName(ev.new_status)+(ev.note?' · '+ev.note:'')));
+    row.append(left,node('small','rb-team-muted',new Date(ev.created_at).toLocaleString('pt-BR')));activity.append(row);
+   });
+  }
+  page.append(activity);
  }
  function createTaskForm(){
   const panel=node('section','rb-team-panel');panel.append(node('h3','','Nova tarefa'));panel.append(node('p','rb-team-muted','Crie uma tarefa, defina prioridade e, se quiser, atribua a um membro.'));const fields=node('div','rb-team-fields');
@@ -114,7 +128,7 @@
   finally{if(b)b.disabled=false}
  }
  function createInvitePanel(){const panel=node('section','rb-team-panel');panel.append(node('h3','','Convidar membros'));panel.append(node('p','rb-team-muted','Gere um código de uso limitado. Envie-o apenas aos membros que devem entrar nesta equipe.'));const controls=node('div','rb-team-fields');const days=select('Validade',['1','3','7','14','30'].map(v=>[v,v+' dias']),'7');days.el.id='rbInviteDays';const uses=select('Quantidade de usos',[['1','1 pessoa'],['5','5 pessoas'],['10','10 pessoas'],['20','20 pessoas'],['50','50 pessoas'],['100','100 pessoas']],'20');uses.el.id='rbInviteUses';controls.append(days.wrap,uses.wrap);panel.append(controls);const out=node('div','rb-team-notice');out.id='rbInviteOutput';out.hidden=true;panel.append(out);return panel}
- async function createInvite(){const sb=client();if(!workspace?.is_manager)return;try{const {data,error}=await sb.rpc('create_team_invite',{p_team_id:workspace.team_id,p_expires_days:Number($('rbInviteDays')?.value||7),p_max_uses:Number($('rbInviteUses')?.value||20)});if(error)throw error;const out=$('rbInviteOutput');if(out){out.hidden=false;out.replaceChildren(node('strong','','Código de convite'));out.append(node('p','',data.code),node('p','rb-team-muted','Expira em '+new Date(data.expires_at).toLocaleString('pt-BR')+' · limite '+data.max_uses+' usos'),button('Copiar código','rb-team-btn',()=>{if(navigator.clipboard?.writeText)navigator.clipboard.writeText(data.code).then(()=>setMessage('rbInviteStatus','Código copiado.')).catch(()=>setMessage('rbInviteStatus','Copie manualmente: '+data.code));else setMessage('rbInviteOutput','Copie manualmente: '+data.code)}))}}catch(e){alert(e?.message||'Não foi possível gerar o convite.')}}
+ async function createInvite(){const sb=client();if(!workspace?.is_manager)return;try{const {data,error}=await sb.rpc('create_team_invite',{p_team_id:workspace.team_id,p_expires_days:Number($('rbInviteDays')?.value||7),p_max_uses:Number($('rbInviteUses')?.value||20)});if(error)throw error;const out=$('rbInviteOutput');if(out){out.hidden=false;out.replaceChildren(node('strong','','Código de convite'),node('p','',data.code),node('p','rb-team-muted','Expira em '+new Date(data.expires_at).toLocaleString('pt-BR')+' · limite '+data.max_uses+' usos'));const status=node('p','rb-team-muted','');status.id='rbInviteStatus';out.append(status,button('Copiar código','rb-team-btn',()=>{if(navigator.clipboard?.writeText)navigator.clipboard.writeText(data.code).then(()=>setMessage('rbInviteStatus','Código copiado.')).catch(()=>setMessage('rbInviteStatus','Copie manualmente: '+data.code));else setMessage('rbInviteStatus','Copie manualmente: '+data.code)}))}}catch(e){alert(e?.message||'Não foi possível gerar o convite.')}}
  async function openBoard(){if(loading)return;loading=true;try{await loadWorkspace();if(!workspace?.member||!workspace?.team_id){removeNav();return}makeNav();makePage();goToPage();const page=$('page-team-workspace');page.replaceChildren(node('p','rb-team-muted','Carregando tarefas…'));await loadBoardData();renderBoard()}catch(e){const page=makePage();if(page){page.replaceChildren(node('section','rb-team-panel'),node('p','rb-team-muted',e?.message||'Falha ao carregar o quadro. Verifique sua conexão e tente novamente.'));page.hidden=false}}finally{loading=false}}
  function init(){if(scriptReady)return;scriptReady=true;loadWorkspace();window.addEventListener('rb-auth-state-changed',()=>{loadWorkspace()});document.addEventListener('click',e=>{const b=e.target.closest('nav button[data-page]');if(!b)return;if(b.dataset.page==='team-workspace'){e.preventDefault();e.stopPropagation();openBoard()}else{const page=$('page-team-workspace');if(page){page.hidden=true;page.classList.remove('active')}}},true);window.addEventListener('rb-team-workspace-refresh',loadWorkspace)}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
