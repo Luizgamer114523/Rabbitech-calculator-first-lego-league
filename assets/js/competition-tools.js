@@ -42,13 +42,13 @@
   const setup=[
    ['Nome do plano','rbStrategyName','text','Plano A',''],
    ['Pontos potenciais estimados','rbStrategyPoints','number','120','0'],
-   ['Confiabilidade estimada (%)','rbStrategyConfidence','number','75','1'],
+   ['Confiabilidade estimada (%)','rbStrategyConfidence','number','75','0'],
    ['Tempo da sequência (segundos)','rbStrategyTime','number','120','10']
   ];
   setup.forEach(([labelText,id,type,value,min])=>{
    const label=make('label','',labelText);const input=make('input');input.id=id;input.type=type;input.value=value;
    if(type==='number'){input.min=min;input.max=id==='rbStrategyPoints'?'500':id==='rbStrategyConfidence'?'100':'150';input.step=id==='rbStrategyConfidence'?'5':'5';input.inputMode='numeric';}
-   input.maxLength= id==='rbStrategyName'?40:undefined;
+   if(id==='rbStrategyName')input.maxLength=40;
    label.appendChild(input);fields.appendChild(label);
   });
   card.appendChild(fields);
