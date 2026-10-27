@@ -13,6 +13,7 @@ Plataforma de apoio à equipe e à temporada FIRST LEGO League (FLL), com ferram
 - [Backups e manutenção](docs/maintenance.md)
 - [Inventário dos backups atuais](docs/backup-inventory.md)
 - [Auditoria operacional GitHub/Vercel/Supabase](docs/operational-audit-2026-10-27.md)
+- [Guia de proteção da branch main](docs/github-branch-protection.md)
 - [Revisão inicial de segurança do Supabase](docs/security-audit.md)
 - [Proposta de otimização das políticas RLS](docs/proposed-rls-policy-performance-fix.sql)
 - [Rascunho para o perfil GitHub](docs/profile-refresh.md)
