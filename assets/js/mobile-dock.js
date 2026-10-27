@@ -148,10 +148,34 @@
   });
  }
 
+
+ function addDiagnostics(){
+  if($('rbSystemDiagnosticsButton')||!$('page-admin'))return;
+  const b=document.createElement('button');b.id='rbSystemDiagnosticsButton';b.type='button';b.textContent='Diagnóstico do sistema';
+  b.style.cssText='display:block;width:100%;margin:12px auto;padding:12px;border:1px solid #7eaa63;border-radius:12px;background:#102318;color:#efffe8;font-weight:700';
+  const p=document.createElement('section');p.id='rbSystemDiagnostics';p.hidden=true;p.style.cssText='margin:12px auto;padding:14px;border:1px solid #49684b;border-radius:14px;background:#0b1710;color:#edf7ed;overflow-wrap:anywhere';
+  p.innerHTML='<h3>Diagnóstico Rabbitech</h3><p>Verifica a interface e a conexão pública. Não exibe credenciais nem altera configurações.</p><div id="rbSystemDiagnosticsResults" aria-live="polite">Pronto para verificar.</div><button id="rbSystemDiagnosticsRun" type="button">Executar verificação</button>';
+  $('page-admin').append(b,p);b.addEventListener('click',()=>{p.hidden=!p.hidden;if(!p.hidden)runDiagnostics()});p.querySelector('#rbSystemDiagnosticsRun').addEventListener('click',runDiagnostics);
+ }
+ async function runDiagnostics(){
+  const out=$('rbSystemDiagnosticsResults');if(!out)return;const checks=[];
+  const add=(n,ok,d)=>checks.push({n,ok,d});
+  const nav=document.querySelector('nav.rb-samsung-dock'),client=getSupabaseClient(),lang=$('rbLanguageConsent');
+  add('Acesso administrativo',adminAllowed(),adminAllowed()?'Sessão administrativa detectada.':'Nenhuma sessão administrativa detectada.');
+  add('Menu principal',!!nav,nav?'Menu encontrado.':'Menu de navegação não encontrado.');
+  add('Página do placar',!!$('page-score'),$('page-score')?'Página encontrada.':'Elemento page-score ausente.');
+  add('Página administrativa',!!$('page-admin'),$('page-admin')?'Página encontrada.':'Elemento page-admin ausente.');
+  add('Tela de idioma',!lang||lang.hidden||getComputedStyle(lang).display==='none',!lang?'Sobreposição não encontrada.':(lang.hidden||getComputedStyle(lang).display==='none'?'Não está visível.':'Ainda está visível; verifique os controles.'));
+  add('Cliente Supabase',!!client&&typeof client.rpc==='function',client?'RPC disponível.':'Cliente/RPC não encontrado.');
+  if(client&&typeof client.rpc==='function'){try{const r=await Promise.race([client.rpc('get_rabbitech_public_settings'),new Promise((_,rej)=>setTimeout(()=>rej(new Error('Tempo limite de 8 s')),8000))]);add('RPC de configurações',!r?.error&&!!r?.data,r?.error?String(r.error.message||r.error).slice(0,180):r?.data?'Resposta recebida.':'Resposta sem dados.')}catch(e){add('RPC de configurações',false,String(e?.message||e).slice(0,180))}}else add('RPC de configurações',false,'Não foi possível testar sem cliente.');
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  out.innerHTML=checks.map(x=>'<div style="padding:8px 0;border-bottom:1px solid #263d2c"><strong style="color:'+(x.ok?'#b8ef8b':'#ffb4a9')+'">'+(x.ok?'✓ ':'! ')+esc(x.n)+'</strong><div>'+esc(x.d)+'</div></div>').join('')+'<p>'+checks.filter(x=>x.ok).length+'/'+checks.length+' verificações aprovadas · '+new Date().toLocaleString()+'</p>';
+ }
+
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();
+  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();addDiagnostics();
   const observer=new MutationObserver(()=>{
-   setupDock();placeLanguageButton();syncAdmin();
+   setupDock();placeLanguageButton();syncAdmin();addDiagnostics();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
