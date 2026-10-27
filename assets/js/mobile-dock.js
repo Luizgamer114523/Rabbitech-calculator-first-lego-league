@@ -114,17 +114,25 @@
  function applyFeatureFlags(flags,noticeActive,notice={}){
   Object.entries(FEATURE_TARGETS).forEach(([key,target])=>{
    const enabled=flags[key]!==false;
-   document.querySelectorAll('nav button[data-page="'+target.nav+'"]').forEach(button=>{button.hidden=!enabled});
+   document.querySelectorAll('nav button[data-page="'+target.nav+'"]').forEach(button=>{
+    button.hidden=!enabled;
+    // The inline settings controller uses display:none!important for disabled modules.
+    // Clear that inline override when a module is re-enabled.
+    if(enabled)button.style.removeProperty('display');
+    else button.style.setProperty('display','none','important');
+   });
    const page=$('page-'+target.page);
    if(page){
     if(!enabled&&page.classList.contains('active')){
      page.classList.remove('active');
      const score=$('page-score');
-     if(score){score.classList.add('active');score.hidden=false}
+     if(score){score.classList.add('active');score.hidden=false;score.style.removeProperty('display')}
      document.querySelectorAll('main .page').forEach(other=>{if(other!==score){other.classList.remove('active');other.hidden=true}});
      document.querySelectorAll('nav button[data-page]').forEach(button=>button.classList.toggle('active',button.dataset.page==='score'));
     }
     page.hidden=!enabled;
+    if(enabled)page.style.removeProperty('display');
+    else page.style.setProperty('display','none','important');
    }
   });
   // Music is a module, so disabling it hides both the dock tab and floating library player.
