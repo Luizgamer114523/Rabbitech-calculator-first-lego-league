@@ -15,7 +15,7 @@ const checks = [
     if (start < 0 || end < 0) return false;
     const refresh = index.slice(start, end);
     return (refresh.match(/preserveAdminView\(\)/g) ?? []).length >= 4
-      && refresh.includes('rbIsLocallyAuthorized')
+      && refresh.includes('isLocallyAuthorized')
       && refresh.includes('rbAdminStatus(');
   })()],
   ['owner remains explicitly authorized in the late admin UI sync', index.includes("const owner=!!(signed&&String(user.id||'')==='7e799691-ba7e-42ea-ab6f-71ad11ca32ff')")],
@@ -31,4 +31,4 @@ for (const [label, pass] of checks) {
   assert.ok(pass, `FAIL: ${label}`);
   console.log(`PASS: ${label}`);
 }
-console.log(`\\n${checks.length} regression checks passed.`);
+console.log(`\n${checks.length} regression checks passed.`);
