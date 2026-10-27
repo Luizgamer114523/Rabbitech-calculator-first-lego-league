@@ -2,7 +2,7 @@
 (()=>{'use strict';
  const $=id=>document.getElementById(id);
  const esc=v=>String(v??'');
- let workspace=null, tasks=[], members=[], events=[], loading=false, scriptReady=false;
+ let workspace=null, tasks=[], members=[], events=[], goals=[], notes=[], roundLogs=[], messages=[], loading=false, scriptReady=false;
  const STATUS=[['todo','A fazer'],['in_progress','Em andamento'],['done','Concluída']];
  const PRIORITY=[['low','Baixa'],['normal','Normal'],['high','Alta']];
  function client(){try{if(typeof rbClient!=='undefined'&&rbClient)return rbClient}catch(_){}return window.rbClient||window.supabaseClient||null}
@@ -56,6 +56,18 @@
    removeNav();ensureJoinCard();
   }catch(e){console.warn('Rabbitech team workspace could not load',e);removeNav();hideJoinCard()}
  }
+ function ensureCreateTeamCard(){
+  if($('rbTeamCreateCard'))return;const host=$('rbTeamJoinCard');if(!host)return;
+  const card=node('section','rb-team-panel');card.id='rbTeamCreateCard';card.append(node('h3','','Criar equipe como mentor/responsável'),node('p','rb-team-muted','Crie o espaço da sua equipe e depois gere convites para os alunos entrarem com suas próprias contas.'));
+  const fields=node('div','rb-team-fields'),name=input('Nome da equipe','text','','Ex.: Techscorpions'),display=input('Seu nome','text','','Nome do mentor');name.el.maxLength=80;display.el.maxLength=80;name.el.id='rbTeamCreateName';display.el.id='rbTeamCreateDisplayName';fields.append(name.wrap,display.wrap);card.append(fields);
+  const status=node('p','rb-team-muted','');status.id='rbTeamCreateStatus';card.append(status,button('Criar equipe','rb-team-btn',createTeamWorkspace));host.append(card)
+ }
+ async function createTeamWorkspace(){
+  const name=$('rbTeamCreateName')?.value.trim(),display=$('rbTeamCreateDisplayName')?.value.trim(),status=$('rbTeamCreateStatus'),b=$('rbTeamCreateCard')?.querySelector('button');
+  if(!name||!display){if(status)status.textContent='Preencha o nome da equipe e seu nome.';return}if(b)b.disabled=true;
+  try{const {data,error}=await client().rpc('create_team_workspace',{p_name:name,p_display_name:display});if(error)throw error;if(status)status.textContent='Equipe criada: '+(data?.team_name||name);await loadWorkspace();if(workspace?.member)await openBoard()}
+  catch(e){if(status)status.textContent=e?.message||'Não foi possível criar a equipe.'}finally{if(b)b.disabled=false}
+ }
  async function joinTeam(){
   const sb=client(),name=$('rbTeamJoinName')?.value.trim(),code=$('rbTeamJoinCode')?.value.trim(),status=$('rbTeamJoinStatus');
   if(!sb||!name||!code){if(status)status.textContent='Preencha seu nome e o código de convite.';return}
@@ -71,7 +83,7 @@
  function priorityName(v){return PRIORITY.find(x=>x[0]===v)?.[1]||v}
  async function loadBoardData(){
   const sb=client();if(!sb||!workspace?.team_id)return;
-  const [t,m,e]=await Promise.all([
+  const [t,m,e,g,n,r,chat]=await Promise.all([
    sb.from('team_tasks').select('id,team_id,title,description,status,priority,due_date,assigned_to,created_by,completed_at,created_at,updated_at').eq('team_id',workspace.team_id).order('created_at',{ascending:false}),
    sb.from('team_memberships').select('user_id,display_name,role,created_at').eq('team_id',workspace.team_id).order('created_at',{ascending:true}),
    sb.from('team_task_events').select('id,task_id,actor_user_id,old_status,new_status,note,created_at').eq('team_id',workspace.team_id).order('created_at',{ascending:false}).limit(20)
@@ -103,6 +115,24 @@
    });
   }
   page.append(activity);
+ }
+ function renderGoals(){
+  const panel=node('section','rb-team-panel');panel.append(node('h3','','🎯 Metas da equipe'));
+  if(workspace?.is_manager){const title=input('Meta','text','','Ex.: 12 rounds de treino');title.el.maxLength=120;title.el.id='rbGoalTitle';const tasksGoal=input('Tarefas desejadas','number','10');tasksGoal.el.min=0;tasksGoal.el.id='rbGoalTasks';const roundsGoal=input('Rounds desejados','number','5');roundsGoal.el.min=0;roundsGoal.el.id='rbGoalRounds';const scoreGoal=input('Média de pontos desejada','number','0');scoreGoal.el.min=0;scoreGoal.el.id='rbGoalScore';const due=input('Prazo','date');due.el.id='rbGoalDue';const desc=input('Descrição','textarea','','Critério para concluir a meta');desc.el.maxLength=1000;desc.el.id='rbGoalDesc';const fields=node('div','rb-team-fields');fields.append(title.wrap,tasksGoal.wrap,roundsGoal.wrap,scoreGoal.wrap,due.wrap,desc.wrap);panel.append(fields,button('Salvar meta','rb-team-btn',async()=>{const t=$('rbGoalTitle').value.trim();if(!t)return;const {error}=await client().from('team_goals').insert({team_id:workspace.team_id,title:t,description:$('rbGoalDesc').value.trim(),target_tasks:Number($('rbGoalTasks').value||0),target_rounds:Number($('rbGoalRounds').value||0),target_average_score:Number($('rbGoalScore').value||0),due_date:$('rbGoalDue').value||null,created_by:user().id});if(error)alert(error.message);else openBoard()}))}
+  if(!goals.length)panel.append(node('p','rb-team-muted','Nenhuma meta definida ainda.'));
+  goals.forEach(g=>{const box=node('article','rb-team-task');box.append(node('h4','',g.title),node('p','',g.description||''));const completed=tasks.filter(t=>t.status==='done').length,avg=roundLogs.length?roundLogs.reduce((s,r)=>s+Number(r.score||0),0)/roundLogs.length:0;[['Tarefas',completed,g.target_tasks],['Rounds',roundLogs.length,g.target_rounds],['Média de pontos',avg,g.target_average_score]].forEach(([label,val,target])=>{const pct=Number(target)>0?Math.min(100,Math.round(Number(val)/Number(target)*100)):0;box.append(node('small','rb-team-muted',label+': '+(Number(val)%1?Number(val).toFixed(1):val)+' / '+target));const bar=node('div','rb-team-progress'),fill=node('span');fill.style.width=pct+'%';bar.append(fill);box.append(bar)});panel.append(box)});return panel
+ }
+ function renderRounds(){
+  const panel=node('section','rb-team-panel');panel.append(node('h3','','🤖 Rounds e desempenho'));const fields=node('div','rb-team-fields');const num=input('Número do round','number',String(roundLogs.length+1)),score=input('Pontuação','number','0'),start=input('Posição inicial','text','','Ex.: canto sudoeste'),mission=input('Missões tentadas','textarea','','Missões e resultado'),note=input('O que melhorar?','textarea','','Observações');num.el.min=1;num.el.id='rbRoundNum';score.el.min=0;score.el.max=10000;score.el.id='rbRoundPts';start.el.maxLength=120;start.el.id='rbRoundStart';mission.el.maxLength=2000;mission.el.id='rbRoundMission';note.el.maxLength=2000;note.el.id='rbRoundNote';fields.append(num.wrap,score.wrap,start.wrap,mission.wrap,note.wrap);panel.append(fields,button('Registrar round','rb-team-btn',async()=>{const n=Number($('rbRoundNum').value),s=Number($('rbRoundPts').value||0);if(!Number.isInteger(n)||n<1||s<0||s>10000){alert('Confira número e pontuação do round.');return}const {error}=await client().from('team_round_logs').insert({team_id:workspace.team_id,created_by:user().id,round_number:n,score:Math.round(s),start_position:$('rbRoundStart').value.trim(),missions:$('rbRoundMission').value.trim(),notes:$('rbRoundNote').value.trim()});if(error)alert(error.message);else openBoard()}));
+  const avg=roundLogs.length?roundLogs.reduce((s,r)=>s+Number(r.score||0),0)/roundLogs.length:0;const stats=node('div','rb-team-grid');addStat(stats,roundLogs.length,'Rounds registrados');addStat(stats,avg.toFixed(1),'Média de pontos');addStat(stats,roundLogs.length?Math.max(...roundLogs.map(r=>Number(r.score||0))):0,'Melhor pontuação');panel.append(stats);roundLogs.slice(0,10).forEach(r=>panel.append(node('div','rb-team-member-row','Round '+r.round_number+' · '+r.score+' pontos · '+new Date(r.performed_at).toLocaleDateString('pt-BR'))));return panel
+ }
+ function renderNotes(){
+  const panel=node('section','rb-team-panel');panel.append(node('h3','','📝 Anotações salvas'));const fields=node('div','rb-team-fields');const title=input('Título','text','','Decisão ou ideia'),body=input('Anotação','textarea','','Escreva aqui as observações da equipe');title.el.maxLength=120;title.el.id='rbNoteTitle';body.el.maxLength=8000;body.el.id='rbNoteBody';fields.append(title.wrap,body.wrap);panel.append(fields,button('Salvar anotação','rb-team-btn',async()=>{const t=$('rbNoteTitle').value.trim(),b=$('rbNoteBody').value.trim();if(!t||!b)return alert('Preencha título e anotação.');const {error}=await client().from('team_notes').insert({team_id:workspace.team_id,author_user_id:user().id,title:t,body:b});if(error)alert(error.message);else openBoard()}));notes.forEach(n=>{const card=node('article','rb-team-task');card.append(node('h4','',n.title),node('p','',n.body),node('small','rb-team-muted',new Date(n.updated_at).toLocaleString('pt-BR')));panel.append(card)});return panel
+ }
+ function renderChat(){
+  const panel=node('section','rb-team-panel');panel.append(node('h3','','💬 Chat da equipe'),node('p','rb-team-muted','Mensagens de texto para integrantes autenticados da equipe.'));
+  const list=node('div','rb-team-chat');messages.forEach(m=>{const card=node('article','rb-team-chat-msg'),member=members.find(x=>x.user_id===m.author_user_id);card.append(node('strong','',(member?.display_name||'Membro')+' · '+new Date(m.created_at).toLocaleString('pt-BR')),node('p','',m.body));list.append(card)});if(!messages.length)list.append(node('p','rb-team-muted','Nenhuma mensagem ainda.'));panel.append(list);
+  const field=input('Mensagem','textarea','','Escreva uma mensagem…');field.el.maxLength=2000;field.el.id='rbTeamMessage';panel.append(field.wrap,button('Enviar mensagem','rb-team-btn',async()=>{const body=$('rbTeamMessage').value.trim();if(!body)return;const {error}=await client().from('team_messages').insert({team_id:workspace.team_id,author_user_id:user().id,body});if(error)alert(error.message);else openBoard()}));return panel
  }
  function createTaskForm(){
   const panel=node('section','rb-team-panel');panel.append(node('h3','','Nova tarefa'));panel.append(node('p','rb-team-muted','Crie uma tarefa, defina prioridade e, se quiser, atribua a um membro.'));const fields=node('div','rb-team-fields');
