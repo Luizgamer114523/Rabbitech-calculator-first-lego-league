@@ -41,11 +41,12 @@
  function makePage(){let page=$('page-team-workspace');if(!page){const main=document.querySelector('main');if(!main)return null;page=node('section','page');page.id='page-team-workspace';page.hidden=true;page.setAttribute('aria-labelledby','rbTeamTitle');main.appendChild(page)}return page}
  function makeNav(){const nav=document.querySelector('nav button[data-page]')?.closest('nav');if(!nav)return null;let b=nav.querySelector('button[data-page="team-workspace"]');if(!b){b=button('Equipe','',()=>openBoard());b.dataset.page='team-workspace';b.setAttribute('aria-label','Espaço da equipe');b.title='Tarefas e acompanhamento da equipe';const admin=nav.querySelector('#rbAdminNav,button[data-page="admin"]');if(admin)nav.insertBefore(b,admin);else nav.appendChild(b)}return b}
  function removeNav(){const b=document.querySelector('nav button[data-page="team-workspace"]');if(b)b.remove();const page=$('page-team-workspace');if(page){page.hidden=true;page.classList.remove('active')}}
- function goToPage(){const page=makePage();if(!page)return;document.querySelectorAll('main .page').forEach(p=>{p.classList.remove('active');p.hidden=true});page.hidden=false;page.classList.add('active');document.querySelectorAll('nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page==='team-workspace'));page.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})}
- function showJoinCard(){if(!$('rbTeamJoinCard')||!user())return;const card=$('rbTeamJoinCard');card.hidden=false}
+ function goToPage(){const page=makePage();if(!page)return;document.querySelectorAll('main .page').forEach(p=>{p.classList.remove('active');p.hidden=true});page.hidden=false;page.classList.add('active');document.querySelectorAll('nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page==='team-workspace'));if(!page.dataset.rbInitialNavigationDone){page.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});page.dataset.rbInitialNavigationDone='true'}}
+ function showJoinCard(){if(!$('rbTeamJoinCard')||!user())return;const card=$('rbTeamJoinCard');card.hidden=false;setEntryMode('join')}
+ function setEntryMode(mode){const join=$('rbTeamJoinCard'),create=$('rbTeamCreateCard');if(join){const fields=join.querySelector('.rb-team-fields:not(#rbTeamEntryTabs)');const status=$('rbTeamJoinStatus');if(fields)fields.hidden=mode!=='join';if(status)status.hidden=mode!=='join'}if(create)create.hidden=mode!=='create';const jt=$('rbTeamJoinTab'),ct=$('rbTeamCreateTab');if(jt)jt.setAttribute('aria-pressed',String(mode==='join'));if(ct)ct.setAttribute('aria-pressed',String(mode==='create'));}
  function hideJoinCard(){const card=$('rbTeamJoinCard');if(card)card.remove()}
  function ensureJoinCard(){
-  if(!$('rbTeamJoinCard')){const host=$('page-score')||document.querySelector('main');if(!host)return;const card=node('section','rb-team-panel');card.id='rbTeamJoinCard';card.hidden=true;card.append(node('h3','','Entrar no espaço da equipe'));card.append(node('p','rb-team-muted','Entre com sua conta Google no Rabbitech e use o código de convite fornecido pela liderança da equipe. O código vincula sua conta à equipe correta.'));const fields=node('div','rb-team-fields');const name=input('Nome que aparecerá para a equipe','text','','Seu nome');name.el.maxLength=80;name.el.autocomplete='name';name.el.id='rbTeamJoinName';const code=input('Código de convite','text','','Cole o código da liderança');code.el.maxLength=100;code.el.autocomplete='off';code.el.id='rbTeamJoinCode';fields.append(name.wrap,code.wrap);card.append(fields);const status=node('p','rb-team-muted','');status.id='rbTeamJoinStatus';card.append(status,button('Entrar na equipe','rb-team-btn',joinTeam));host.appendChild(card)}
+  if(!$('rbTeamJoinCard')){const host=$('page-score')||document.querySelector('main');if(!host)return;const card=node('section','rb-team-panel');card.id='rbTeamJoinCard';card.hidden=true;card.append(node('h3','','Entrar no espaço da equipe'));card.append(node('p','rb-team-muted','Entre com sua conta Google no Rabbitech. Crie uma equipe como responsável ou use o código de convite para entrar em uma equipe existente.'));const tabs=node('div','rb-team-fields');tabs.id='rbTeamEntryTabs';const createTab=button('Criar equipe','rb-team-btn',()=>setEntryMode('create'));createTab.id='rbTeamCreateTab';const joinTab=button('Entrar em equipe existente','rb-team-btn',()=>setEntryMode('join'));joinTab.id='rbTeamJoinTab';tabs.append(createTab,joinTab);card.append(tabs);const fields=node('div','rb-team-fields');const name=input('Nome que aparecerá para a equipe','text','','Seu nome');name.el.maxLength=80;name.el.autocomplete='name';name.el.id='rbTeamJoinName';const code=input('Código de convite','text','','Cole o código da liderança');code.el.maxLength=100;code.el.autocomplete='off';code.el.id='rbTeamJoinCode';fields.append(name.wrap,code.wrap);card.append(fields);const status=node('p','rb-team-muted','');status.id='rbTeamJoinStatus';card.append(status,button('Entrar na equipe','rb-team-btn',joinTeam));host.appendChild(card)}
   showJoinCard()
  }
  async function loadWorkspace(){
@@ -58,7 +59,7 @@
  }
  function ensureCreateTeamCard(){
   if($('rbTeamCreateCard'))return;const host=$('rbTeamJoinCard');if(!host)return;
-  const card=node('section','rb-team-panel');card.id='rbTeamCreateCard';card.append(node('h3','','Criar equipe como mentor/responsável'),node('p','rb-team-muted','Crie o espaço da sua equipe e depois gere convites para os alunos entrarem com suas próprias contas.'));
+  const card=node('section','rb-team-panel');card.id='rbTeamCreateCard';card.hidden=true;card.append(node('h3','','Criar equipe como mentor/responsável'),node('p','rb-team-muted','Crie o espaço da sua equipe e depois gere convites para os alunos entrarem com suas próprias contas.'));
   const fields=node('div','rb-team-fields'),name=input('Nome da equipe','text','','Ex.: Techscorpions'),display=input('Seu nome','text','','Nome do mentor');name.el.maxLength=80;display.el.maxLength=80;name.el.id='rbTeamCreateName';display.el.id='rbTeamCreateDisplayName';fields.append(name.wrap,display.wrap);card.append(fields);
   const status=node('p','rb-team-muted','');status.id='rbTeamCreateStatus';card.append(status,button('Criar equipe','rb-team-btn',createTeamWorkspace));host.append(card)
  }
@@ -239,7 +240,9 @@
  async function openBoard(){
   if(loading)return;
   if($('page-team-workspace')?.dataset.rbBoardRendered==='true'&&workspace?.member){
-   goToPage();
+   const page=$('page-team-workspace');
+   const alreadyVisible=page&&!page.hidden&&page.classList.contains('active');
+   if(!alreadyVisible)goToPage();
    await refreshBoardInBackground();
    return;
   }
