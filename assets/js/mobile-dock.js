@@ -820,7 +820,7 @@
  function initFirstVisitTour(){
   const KEY='rabbitech_tour_completed_v1';
   const $tour=id=>document.getElementById(id);
-  let overlay=null,activeTarget=null,steps=[],index=0,resizeHandler=null;
+  let overlay=null,activeTarget=null,steps=[],index=0,resizeHandler=null,gateObserver=null,targetStyleBackup=null;
   const visible=el=>!!el&&!el.hidden&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden'&&el.getClientRects().length>0;
   function findCloudTarget(){
    const buttons=[...document.querySelectorAll('button')];
@@ -868,7 +868,7 @@
     '#rbFirstVisitTour .rb-tour-progress{height:4px;background:#253c2a;border-radius:9px;overflow:hidden;margin-top:14px}'+
     '#rbFirstVisitTour .rb-tour-progress span{display:block;height:100%;background:#d0f477;transition:width .2s}'+
     '#rbFirstVisitTour .rb-tour-arrow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2147483002;overflow:visible}'+
-    '#rbFirstVisitTour .rb-tour-arrow path{fill:none;stroke:#d0f477;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(208,244,119,.8))}'+
+    '#rbFirstVisitTour .rb-tour-arrow path{fill:none;stroke:#d0f477;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(208,244,119,.8))}'+\n    '#rbFirstVisitTour .rb-tour-arrow defs path{fill:#d0f477;stroke:none;filter:none}'+
     '#rbTourReplay{margin:5px 0 8px 8px;padding:5px 9px;border-radius:9px;border:1px solid #49684b;background:rgba(8,24,14,.72);color:inherit;font:inherit;font-size:12px;cursor:pointer}'+
     '@media(min-width:700px){#rbFirstVisitTour .rb-tour-card{left:50%;right:auto;width:min(560px,calc(100vw - 32px));transform:translateX(-50%)}}'+
     '@media(prefers-reduced-motion:reduce){#rbFirstVisitTour *{transition:none!important;scroll-behavior:auto!important}}';
@@ -976,12 +976,15 @@
   let attempts=0;
   const maybeStart=()=>{
    addReplayButton();
-   if(overlay||!gatesClosed())return;
+   if(overlay)return;
    let done=false;try{done=localStorage.getItem(KEY)==='1'}catch(_){}
-   if(done)return;
+   if(done){if(gateObserver){gateObserver.disconnect();gateObserver=null}return}
+   if(!gatesClosed())return;
    if(buildSteps().length){start(false);return}
    if(++attempts<20)setTimeout(maybeStart,500);
   };
+  gateObserver=new MutationObserver(()=>{if(!overlay)maybeStart()});
+  gateObserver.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
   setTimeout(maybeStart,1100);
  }
  function init(){
