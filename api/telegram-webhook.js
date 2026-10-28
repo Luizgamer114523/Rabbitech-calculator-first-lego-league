@@ -128,6 +128,8 @@ async function handleCommand(message) {
       '/tasks · ver tarefas pendentes\n' +
       '/rounds · ver desempenho recente\n' +
       '/notice · consultar aviso global\n' +
+      '/robotica · ferramentas de robótica\n' +
+      '/fll · recursos da FIRST LEGO League\n' +
       '/support · ajuda e suporte\n' +
       '/unlink · desvincular esta conta do Telegram');
     return;
