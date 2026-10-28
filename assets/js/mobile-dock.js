@@ -204,7 +204,7 @@
   refs.page.hidden=false;
   refs.page.style.removeProperty('display');
   refs.page.classList.add('active');
-  document.querySelectorAll('main .page').forEach(p=>p.setAttribute('aria-hidden',String(p!==refs.page)));
+  refs.page.setAttribute('aria-hidden','false');
   document.querySelectorAll('nav button[data-page]').forEach(btn=>{
    const active=btn.dataset.page==='team-workspace';
    btn.classList.toggle('active',active);
