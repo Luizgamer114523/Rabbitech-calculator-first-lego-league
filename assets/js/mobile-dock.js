@@ -775,10 +775,49 @@
   setInterval(()=>{if(!document.hidden&&!teamState.realtimeReady&&$('page-team-workspace')?.classList.contains('active')){setupTeamChatRealtime(teamState.team?.team_id);refreshTeamBackground()}},30000);
  }
  
+ function ensurePrivacyDisclosure(){
+  if($('rbPrivacyDataNotice'))return;
+  const navButton=document.querySelector('nav button[data-page="privacy"]');
+  const page=$('page-privacy')||(navButton?$('page-'+navButton.dataset.page):null);
+  if(!page)return;
+  const section=document.createElement('section');
+  section.id='rbPrivacyDataNotice';
+  section.className='privacy-card';
+  section.style.cssText='margin:14px 0;padding:18px;border:1px solid #34543a;border-radius:16px;background:rgba(12,29,18,.94);color:var(--text,#eef7eb);line-height:1.6;overflow-wrap:anywhere';
+  section.innerHTML=`
+   <h2>Privacidade e proteção de dados</h2>
+   <p><strong>Transparência:</strong> o Rabbitech é uma plataforma de apoio às atividades da equipe de robótica/FLL. Os dados são usados para permitir o login, organizar equipes, tarefas, metas, anotações, mensagens e registros de rounds, além de manter a segurança e o funcionamento do site. Não vendemos dados pessoais.</p>
+   <h3>Quais dados podem ser tratados?</h3>
+   <ul>
+    <li>Dados da conta fornecidos pelo serviço de login, como identificador da conta e e-mail;</li>
+    <li>Nome de exibição, equipe e participação em convites;</li>
+    <li>Tarefas, metas, status, anotações, mensagens do chat e registros de rounds inseridos pelos membros;</li>
+    <li>Informações técnicas necessárias para funcionamento, segurança, diagnóstico e prevenção de abuso.</li>
+   </ul>
+   <h3>Para que e com quem?</h3>
+   <p>Os dados são usados para fornecer os recursos solicitados, sincronizar a equipe entre dispositivos, proteger contas e corrigir falhas. O site utiliza serviços de terceiros para autenticação, hospedagem e banco de dados, incluindo Google (login, quando escolhido), Vercel (hospedagem) e Supabase (autenticação/banco de dados). Esses fornecedores processam informações conforme seus próprios termos e políticas. Dados também poderão ser tratados quando necessário para cumprir obrigações legais ou responder a solicitações legítimas de autoridades.</p>
+   <h3>Armazenamento e segurança</h3>
+   <p>Os dados de equipe são armazenados no serviço de banco de dados para que os membros autorizados possam acessá-los em seus dispositivos. Algumas funções podem guardar informações localmente no navegador. Aplicamos controles de acesso e medidas técnicas disponíveis, mas nenhum serviço conectado à internet pode prometer risco zero. Compartilhe códigos de convite apenas com pessoas que devem entrar na equipe e não registre informações sensíveis desnecessárias no chat ou nas anotações.</p>
+   <h3>Crianças e adolescentes</h3>
+   <p>Como o Rabbitech pode ser usado em atividades educacionais por menores de idade, o tratamento deve respeitar o melhor interesse da criança ou do adolescente. Quando aplicável, o uso deve ocorrer com conhecimento e orientação dos pais ou responsáveis e das regras da escola/equipe. Não publique dados pessoais de terceiros sem autorização.</p>
+   <h3>Seus direitos</h3>
+   <p>Nos termos da Lei Geral de Proteção de Dados Pessoais (Lei nº 13.709/2018, LGPD), você pode solicitar confirmação do tratamento, acesso, correção, informações sobre o uso e, quando aplicável, anonimização, bloqueio ou eliminação de dados. A eliminação pode ter limites quando a manutenção for necessária por obrigação legal, segurança ou defesa de direitos. Para fazer uma solicitação, entre em contato com o responsável pela manutenção do Rabbitech pelos canais oficiais do projeto e informe o pedido sem enviar senhas ou códigos de acesso.</p>
+   <h3>Base legal e legislação</h3>
+   <p>O tratamento deve se apoiar na base legal adequada a cada finalidade prevista na LGPD; esta política não presume que todo tratamento dependa de consentimento. Aplicam-se também as regras pertinentes de proteção de crianças e adolescentes e as orientações da Autoridade Nacional de Proteção de Dados (ANPD).</p>
+   <h3>Referências oficiais</h3>
+   <ul>
+    <li><a href="https://www.presidencia.gov.br/ccivil_03/_ato2015-2018/2018/lei/l13709compilado.htm" target="_blank" rel="noopener noreferrer">Lei nº 13.709/2018 (LGPD)</a></li>
+    <li><a href="https://www.gov.br/anpd/pt-br/assuntos/titular-de-dados" target="_blank" rel="noopener noreferrer">ANPD: direitos do titular de dados</a></li>
+    <li><a href="https://www.gov.br/anpd/pt-br/centrais-de-conteudo/materiais-educativos-e-publicacoes/guia-orientativo-sobre-seguranca-da-informacao-para-agentes-de-tratamento-de-pequeno-porte" target="_blank" rel="noopener noreferrer">ANPD: guia de segurança da informação</a></li>
+   </ul>
+   <p class="tw-muted"><strong>Importante:</strong> este texto é uma explicação inicial de transparência, não uma certificação de conformidade nem aconselhamento jurídico. O responsável pelo projeto deve confirmar o contato oficial, os prazos reais de retenção, as bases legais aplicáveis e as configurações efetivas dos fornecedores antes de considerar a política final.</p>
+  `;
+  page.appendChild(section);
+ }
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();
+  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();
   const observer=new MutationObserver(()=>{
-   setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();
+   setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
