@@ -3,7 +3,7 @@ name: Telegram bot checks
 on:
   pull_request:
     paths:
-      - 'api/telegram-webhook.js'
+      - 'api/telegram-webhook.js'\n      - 'api/telegram-broadcast.js'\n      - 'tests/telegram-broadcast.test.js'
       - 'tests/telegram-webhook.test.js'
       - 'assets/js/mobile-dock.js'
       - 'supabase/migrations/*telegram*'
@@ -27,6 +27,6 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 20
-      - run: node --check api/telegram-webhook.js
+      - run: node --check api/telegram-webhook.js\n      - run: node --check api/telegram-broadcast.js
       - run: node --check assets/js/mobile-dock.js
-      - run: node --test tests/telegram-webhook.test.js
+      - run: node --test tests/telegram-webhook.test.js tests/telegram-broadcast.test.js
