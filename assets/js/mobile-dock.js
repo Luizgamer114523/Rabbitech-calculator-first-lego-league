@@ -140,7 +140,7 @@
  // Team workspace: leader/member portal backed by Supabase RLS and RPCs.
  const TEAM_STATES=['todo','in_progress','done'];
  const TEAM_LABELS={todo:'A fazer',in_progress:'Em andamento',done:'Concluído'};
- let teamState={profile:null,team:null,loading:false,refreshing:false,inviteCode:'',timer:null,realtimeChannel:null,realtimeTeamId:null,realtimeReady:false,messageSignature:'',backgroundRefreshInFlight:false};
+ let teamState={profile:null,team:null,loading:false,refreshing:false,inviteCode:'',timer:null,realtimeChannel:null,realtimeTeamId:null,realtimeReady:false,messageSignature:'',notesSignature:'',backgroundRefreshInFlight:false,backgroundRefreshQueued:false};
  const teamEsc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const teamClient=()=>getSupabaseClient();
  function ensureTeamPage(){
@@ -272,7 +272,7 @@
   if(result?.error){teamShell('<div class="tw-card"><h2>Espaço da equipe</h2><p>O Supabase recusou a consulta. Verifique sua sessão e as permissões do projeto.</p><p class="tw-muted">'+teamEsc(result.error.message)+'</p><button class="tw-btn" id="twRetry">Tentar novamente</button></div>');$('twRetry')?.addEventListener('click',renderTeamWorkspace);return}
   const profile=Array.isArray(result.data)?result.data[0]:result.data;
   teamState.profile=profile||null;teamState.team=profile?.member?profile:null;
-  if(!profile?.member){
+  if(!profile?.member&&!profile?.team_id){
    teamShell('<div class="tw-card"><h2>Monte o espaço da sua equipe</h2><p>O mentor cria a equipe; depois compartilha o convite com os alunos. Cada pessoa entra usando a própria conta do Rabbitech.</p><div class="tw-grid"><section><h3>Criar equipe</h3>'+teamFormField('twTeamName','Nome da equipe','Ex.: Techscorpions')+teamFormField('twLeaderName','Seu nome','Nome do mentor')+'<button class="tw-btn" id="twCreate">Criar equipe</button></section><section><h3>Aceitar convite</h3>'+teamFormField('twInviteInput','Código de convite','Cole o código recebido')+teamFormField('twMemberName','Seu nome na equipe','Nome para os colegas')+'<button class="tw-btn" id="twJoin">Entrar na equipe</button></section></div><p class="tw-muted">Uma conta só pode pertencer a uma equipe por vez. O acesso aos dados é protegido no banco, não apenas por esconder botões.</p><div id="twMessage" aria-live="polite"></div></div>');
    $('twCreate')?.addEventListener('click',createTeamWorkspace);$('twJoin')?.addEventListener('click',joinTeamWorkspace);return;
   }
@@ -326,7 +326,7 @@
   $('twAddRound')?.addEventListener('click',createTeamRound);
   $('twAddNote')?.addEventListener('click',createTeamNote);
   $('twSendMessage')?.addEventListener('click',sendTeamMessage);
-  document.querySelectorAll('#rbTeamWorkspaceRoot [data-task-status]').forEach(sel=>sel.addEventListener('change',()=>changeTeamTaskStatus(sel.dataset.taskStatus,sel.value)));
+  document.querySelectorAll('#rbTeamWorkspaceRoot [data-task-status]').forEach(sel=>{if(sel.dataset.rbStatusHandler==='true')return;sel.dataset.rbStatusHandler='true';sel.addEventListener('change',()=>changeTeamTaskStatus(sel.dataset.taskStatus,sel.value))});
  }
  function teamFeedback(message,error=false){
   const el=$('twFeedback')||$('twMessage');if(el)el.innerHTML='<p style="color:'+(error?'#ffb4a9':'#d0f477')+'">'+teamEsc(message)+'</p>';
@@ -409,8 +409,26 @@
   await teamWrite(c=>c.from('team_round_logs').insert({team_id:t.team_id,created_by:p.user_id,round_number:roundNumber,score,start_position:$('twRoundStart')?.value||'',missions:[...document.querySelectorAll('#rbTeamWorkspaceRoot input[name="twRoundMission"]:checked')].map(el=>el.value).join(', '),notes:$('twRoundNotes')?.value.trim()||''}));
  }
  async function createTeamNote(){
-  const t=teamState.team,p=teamState.profile,title=$('twNoteTitle')?.value.trim(),body=$('twNoteBody')?.value.trim();if(!title||!body){teamFeedback('Preencha o título e o conteúdo da anotação.',true);return}
-  await teamWrite(c=>c.from('team_notes').insert({team_id:t.team_id,author_user_id:p.user_id,title,body}));
+  const t=teamState.team,p=teamState.profile,titleInput=$('twNoteTitle'),bodyInput=$('twNoteBody'),title=titleInput?.value.trim(),body=bodyInput?.value.trim();
+  if(!title||!body){teamFeedback('Preencha o título e o conteúdo da anotação.',true);return}
+  const button=$('twAddNote');if(button)button.disabled=true;
+  try{
+   const result=await teamClient().from('team_notes').insert({team_id:t.team_id,author_user_id:p.user_id,title,body}).select('id,team_id,author_user_id,title,body,created_at').single();
+   if(result.error)throw result.error;
+   const note=result.data,box=$('twNotesList');
+   if(box){
+    const empty=box.querySelector('.tw-muted');if(empty&&empty.textContent.includes('Nenhuma anotação'))empty.remove();
+    const article=document.createElement('article');article.className='tw-task';
+    const heading=document.createElement('strong');heading.textContent=note.title;
+    const content=document.createElement('p');content.style.whiteSpace='pre-wrap';content.textContent=note.body;
+    const meta=document.createElement('small');meta.className='tw-muted';meta.textContent=new Date(note.created_at).toLocaleString()+' · '+(p.display_name||'Membro');
+    article.append(heading,content,meta);box.prepend(article);
+   }
+   if(titleInput)titleInput.value='';if(bodyInput)bodyInput.value='';
+   teamState.notesSignature='';teamFeedback('Anotação salva e exibida.');
+   refreshTeamBackground();
+  }catch(e){teamFeedback(e?.message||'Não foi possível salvar a anotação.',true)}
+  finally{if(button)button.disabled=false}
  }
  function appendTeamMessage(message,pending=false){
   const box=$('twMessages');if(!box)return;
@@ -497,7 +515,7 @@
   }
  }
  async function refreshTeamBackground(){
-  if(teamState.backgroundRefreshInFlight)return;
+  if(teamState.backgroundRefreshInFlight){teamState.backgroundRefreshQueued=true;return;}
   const root=$('rbTeamWorkspaceRoot');
   if(!root||!$('page-team-workspace')?.classList.contains('active'))return;
   const client=teamClient(),team=teamState.team;
@@ -571,7 +589,13 @@
    }
    teamState.backgroundData={taskCount:tasks.length,done,progress,avg,roundCount:rounds.length};
   }catch(error){console.warn('Atualização em segundo plano da equipe falhou',error)}
-  finally{teamState.backgroundRefreshInFlight=false}
+  finally{
+   teamState.backgroundRefreshInFlight=false;
+   if(teamState.backgroundRefreshQueued){
+    teamState.backgroundRefreshQueued=false;
+    if(!$('page-team-workspace')?.hidden&&$('page-team-workspace')?.classList.contains('active'))queueMicrotask(()=>refreshTeamBackground());
+   }
+  }
  }
  function initTeamWorkspace(){
   syncTeamWorkspace();
