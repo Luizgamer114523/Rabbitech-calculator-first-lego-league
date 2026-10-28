@@ -84,6 +84,18 @@
   }catch(error){console.warn('Rabbitech feature flags could not be refreshed',error)}
  }
  let settingsRealtimeChannel=null,settingsRealtimeStatus='CLOSED';
+ async function broadcastTelegramNotice(){
+  if(!adminAllowed())return;
+  const client=getSupabaseClient();
+  if(!client?.auth?.getSession)return;
+  try{
+   const sessionResult=await client.auth.getSession();
+   const token=sessionResult?.data?.session?.access_token;
+   if(!token)return;
+   const response=await fetch('/api/telegram-broadcast',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}',cache:'no-store'});
+   if(!response.ok&&response.status!==503)console.warn('Não foi possível entregar o aviso global pelo Telegram.');
+  }catch(_){console.warn('Entrega do aviso global pelo Telegram indisponível.')}
+ }
  function setupSiteSettingsRealtime(){
   const client=getSupabaseClient();
   if(!client?.channel)return;
@@ -93,7 +105,7 @@
   // Public channel carries only an invalidation signal, never the settings payload.
   // The client then reads the public RPC, so table RLS and private columns stay protected.
   settingsRealtimeChannel=client.channel('public:site-settings')
-   .on('broadcast',{event:'site_settings_updated'},()=>loadPublicSettings())
+   .on('broadcast',{event:'site_settings_updated'},()=>{loadPublicSettings();if(adminAllowed())broadcastTelegramNotice()})
    .subscribe(status=>{
     settingsRealtimeStatus=status;
     if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED')console.warn('Atualização em tempo real dos avisos indisponível; será tentada novamente.');
