@@ -250,7 +250,7 @@
   const trendText=trend===null?'Ainda sem dados suficientes':trend>0?'Melhorando +' + Math.round(trend)+' pts':trend<0?'Caindo '+Math.round(trend)+' pts':'Estável';
   const manager=profile.is_manager===true||profile.role==='leader';
   const statusTasks=state=>tasks.filter(t=>t.status===state);
-  const taskCard=t=>'<article class="tw-task" data-team-task-card="'+teamEsc(t.id)+'"><strong>'+teamEsc(t.title)+'</strong><p>'+teamEsc(t.description||'')+'</p><p class="tw-muted">Prioridade: '+teamEsc(t.priority)+' · '+(t.due_date?'Prazo '+teamEsc(t.due_date):'Sem prazo')+'</p><p class="tw-muted">Responsável: '+teamEsc(members.find(m=>m.user_id===t.assigned_to)?.display_name||'Equipe toda')+'</p><label class="tw-muted">Status <select class="tw-field" data-task-status="'+teamEsc(t.id)+'">'+TEAM_STATES.map(s=>'<option value="'+s+'" '+(t.status===s?'selected':'')+'>'+TEAM_LABELS[s]+'</option>').join('')+'</select></label></article>';
+  const taskCard=t=>'<article class="tw-task" data-team-task-card="'+teamEsc(t.id)+'"><strong>'+teamEsc(t.title)+'</strong><p>'+teamEsc(t.description||'')+'</p><p class="tw-muted">Prioridade: '+teamEsc(t.priority)+' · '+(t.due_date?'Prazo '+teamEsc(t.due_date):'Sem prazo')+'</p><p class="tw-muted">Responsável: '+teamEsc(members.find(m=>m.user_id===t.assigned_to)?.display_name||'Equipe toda')+'</p><label class="tw-muted">Status <select class="tw-field" data-current-status="'+teamEsc(t.status||'todo')+'" data-task-status="'+teamEsc(t.id)+'">'+TEAM_STATES.map(s=>'<option value="'+s+'" '+(t.status===s?'selected':'')+'>'+TEAM_LABELS[s]+'</option>').join('')+'</select></label></article>';
   const taskColumns=TEAM_STATES.map(s=>'<section class="tw-card"><h3>'+TEAM_LABELS[s]+' ('+statusTasks(s).length+')</h3>'+statusTasks(s).map(taskCard).join('')+'</section>').join('');
   const memberOptions='<option value="">Equipe toda</option>'+members.map(m=>'<option value="'+teamEsc(m.user_id)+'">'+teamEsc(m.display_name)+(m.role==='leader'?' · mentor':'')+'</option>').join('');
   const goalHtml=goals.map(g=>{const taskPct=g.target_tasks?Math.min(100,Math.round(done/g.target_tasks*100)):0;const roundPct=g.target_rounds?Math.min(100,Math.round(rounds.length/g.target_rounds*100)):0;return '<div class="tw-task"><strong>'+teamEsc(g.title)+'</strong><p>'+teamEsc(g.description||'')+'</p><p>Tarefas: '+done+'/'+g.target_tasks+' ('+taskPct+'%)</p><progress max="100" value="'+taskPct+'" style="width:100%"></progress><p>Rounds registrados: '+rounds.length+'/'+g.target_rounds+' ('+roundPct+'%)</p><progress max="100" value="'+roundPct+'" style="width:100%"></progress><p>Meta de média: '+Number(g.target_average_score||0)+' pts · '+teamEsc(g.due_date||'Sem prazo')+'</p></div>'}).join('');
@@ -305,7 +305,7 @@
  async function changeTeamTaskStatus(id,status){
   if(!TEAM_STATES.includes(status))return;
   const select=document.querySelector('[data-task-status="'+CSS.escape(id)+'"]');
-  const oldStatus=select?.value||'todo';
+  const oldStatus=select?.dataset.currentStatus||'todo';
   if(oldStatus===status)return;
   if(select)select.disabled=true;
   const c=teamClient();
@@ -313,24 +313,22 @@
    const r=await c.rpc('set_team_task_status',{p_task_id:id,p_status:status,p_note:''});
    if(r.error)throw r.error;
    const card=select?.closest('.tw-task');
-   if(card){
-    const target=[...document.querySelectorAll('#rbTeamWorkspaceRoot .tw-card')].find(section=>section.querySelector('h3')?.textContent?.startsWith(TEAM_LABELS[status]+' ('));
-    if(target&&card.parentElement!==target)target.append(card);
-    const currentSelect=card.querySelector('[data-task-status]');
-    if(currentSelect){currentSelect.value=status;currentSelect.disabled=false;currentSelect.onchange=()=>changeTeamTaskStatus(id,currentSelect.value)}
-    document.querySelectorAll('#rbTeamWorkspaceRoot .tw-card > h3').forEach(h=>{
-     const key=Object.entries(TEAM_LABELS).find(([,v])=>h.textContent.startsWith(v+' ('))?.[0];
-     if(!key)return;
-     const match=h.textContent.match(/\((\d+)\)/),count=Number(match?.[1]||0);
-     const delta=key===oldStatus?-1:(key===status?1:0);
-     if(delta)h.textContent=TEAM_LABELS[key]+' ('+Math.max(0,count+delta)+')';
-    });
-   }
+   const columns=[...document.querySelectorAll('#rbTeamWorkspaceRoot .tw-board > .tw-card')];
+   const target=columns.find(section=>section.querySelector('h3')?.textContent?.startsWith(TEAM_LABELS[status]+' ('));
+   if(card&&target&&card.parentElement!==target)target.append(card);
+   if(select){select.value=status;select.dataset.currentStatus=status;select.disabled=false}
+   columns.forEach(section=>{
+    const heading=section.querySelector('h3');if(!heading)return;
+    const key=Object.keys(TEAM_LABELS).find(s=>heading.textContent.startsWith(TEAM_LABELS[s]+' ('));
+    if(!key)return;
+    const count=section.querySelectorAll('[data-task-status]').length;
+    heading.textContent=TEAM_LABELS[key]+' ('+count+')';
+   });
    teamFeedback('Tarefa atualizada.');
    refreshTeamBackground();
   }catch(e){
    teamFeedback(e.message||'Não foi possível atualizar a tarefa.',true);
-   if(select)select.disabled=false;
+   if(select){select.value=oldStatus;select.disabled=false}
   }
  }
  async function createTeamGoal(){
@@ -436,7 +434,7 @@
   try{
    const teamId=team.team_id;
    const [taskResult,roundResult,messageResult]=await Promise.all([
-    client.from('team_tasks').select('id,status').eq('team_id',teamId).limit(250),
+    client.from('team_tasks').select('*').eq('team_id',teamId).order('created_at',{ascending:true}).limit(250),
     client.from('team_round_logs').select('id,score,round_number,performed_at').eq('team_id',teamId).order('performed_at',{ascending:true}).limit(250),
     client.from('team_messages').select('id,author_user_id,body,created_at').eq('team_id',teamId).order('created_at',{ascending:true}).limit(60)
    ]);
@@ -452,10 +450,36 @@
     const values=[tasks.length,done,progress+'%',avg];
     values.forEach((value,i)=>{if(stats[i].textContent!==String(value))stats[i].textContent=String(value)});
    }
-   tasks.forEach(task=>{
-    const select=root.querySelector('[data-task-status="'+task.id+'"]');
-    if(select&&select.value!==task.status)select.value=task.status;
-   });
+   // Reconcile Kanban cards in place. Never rebuild the whole workspace during background refresh.
+   const board=root.querySelector('.tw-board');
+   if(board){
+    const columns=[...board.querySelectorAll(':scope > .tw-card')];
+    const memberName=id=>teamState.members?.find(m=>m.user_id===id)?.display_name||'Equipe toda';
+    const existing=new Map([...board.querySelectorAll('[data-team-task-card]')].map(card=>[card.dataset.teamTaskCard,card]));
+    tasks.forEach(task=>{
+     let card=existing.get(String(task.id));
+     if(!card){
+      card=document.createElement('article');card.className='tw-task';card.dataset.teamTaskCard=task.id;
+      card.innerHTML='<strong></strong><p></p><p class="tw-muted"></p><p class="tw-muted"></p><label class="tw-muted">Status <select class="tw-field" data-task-status="'+teamEsc(task.id)+'"></select></label>';
+      const select=card.querySelector('select');
+      TEAM_STATES.forEach(state=>{const option=document.createElement('option');option.value=state;option.textContent=TEAM_LABELS[state];select.append(option)});
+      select.addEventListener('change',()=>changeTeamTaskStatus(task.id,select.value));
+     }
+     card.querySelector('strong').textContent=task.title||'Tarefa';
+     card.querySelector('p').textContent=task.description||'';
+     const ps=card.querySelectorAll('p');
+     if(ps[1])ps[1].textContent='Prioridade: '+(task.priority||'normal')+' · '+(task.due_date?'Prazo '+task.due_date:'Sem prazo');
+     if(ps[2])ps[2].textContent='Responsável: '+memberName(task.assigned_to);
+     const select=card.querySelector('[data-task-status]');
+     if(select){select.value=task.status||'todo';select.dataset.currentStatus=task.status||'todo';select.disabled=false}
+     const key=TEAM_STATES.includes(task.status)?task.status:'todo';
+     const target=columns.find(col=>col.querySelector('h3')?.textContent?.startsWith(TEAM_LABELS[key]+' ('));
+     if(target&&card.parentElement!==target)target.append(card);
+     existing.delete(String(task.id));
+    });
+    existing.forEach(card=>card.remove());
+    columns.forEach(col=>{const heading=col.querySelector('h3');if(!heading)return;const state=Object.keys(TEAM_LABELS).find(s=>heading.textContent.startsWith(TEAM_LABELS[s]+' ('));if(state)heading.textContent=TEAM_LABELS[state]+' ('+col.querySelectorAll('[data-task-status]').length+')'});
+   }
    const statLabels=root.querySelectorAll('.tw-stat + div');
    if(statLabels.length>=4&&statLabels[3].textContent!==('Média dos rounds · '+rounds.length+' registros'))statLabels[3].textContent='Média dos rounds · '+rounds.length+' registros';
    const messageBox=$('twMessages');
