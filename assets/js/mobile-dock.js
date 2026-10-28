@@ -90,11 +90,13 @@
   if(settingsRealtimeChannel&&settingsRealtimeStatus==='SUBSCRIBED')return;
   if(settingsRealtimeChannel){try{client.removeChannel(settingsRealtimeChannel)}catch(_){}settingsRealtimeChannel=null}
   settingsRealtimeStatus='CONNECTING';
-  settingsRealtimeChannel=client.channel('rabbitech-public-site-settings')
-   .on('postgres_changes',{event:'UPDATE',schema:'public',table:'rabbitech_site_settings',filter:'id=eq.true'},()=>loadPublicSettings())
+  // Public channel carries only an invalidation signal, never the settings payload.
+  // The client then reads the public RPC, so table RLS and private columns stay protected.
+  settingsRealtimeChannel=client.channel('public:site-settings')
+   .on('broadcast',{event:'site_settings_updated'},()=>loadPublicSettings())
    .subscribe(status=>{
     settingsRealtimeStatus=status;
-    if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED')console.warn('Atualização em tempo real das configurações indisponível; será tentada novamente.');
+    if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED')console.warn('Atualização em tempo real dos avisos indisponível; será tentada novamente.');
    });
  }
  function applyFeatureFlags(flags,noticeActive,notice={}){
