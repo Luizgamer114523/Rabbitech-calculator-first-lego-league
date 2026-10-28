@@ -820,7 +820,7 @@
  function initFirstVisitTour(){
   const KEY='rabbitech_tour_completed_v1';
   const $tour=id=>document.getElementById(id);
-  let overlay=null,activeTarget=null,steps=[],index=0,resizeHandler=null,gateObserver=null,targetStyleBackup=null,ancestorBackup=[];
+  let overlay=null,activeTarget=null,steps=[],index=0,resizeHandler=null,gateObserver=null,targetStyleBackup=null,ancestorBackup=[],blockTargetClick=null;
   const visible=el=>!!el&&!el.hidden&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden'&&el.getClientRects().length>0;
   function findCloudTarget(){
    const buttons=[...document.querySelectorAll('button')];
@@ -917,6 +917,8 @@
     else activeTarget.style.removeProperty(name);
    });
    activeTarget.removeAttribute('data-rb-tour-highlight');
+   if(blockTargetClick)activeTarget.removeEventListener('click',blockTargetClick,true);
+   blockTargetClick=null;
    ancestorBackup.forEach(item=>{
     if(item.value) item.el.style.setProperty('z-index',item.value,item.priority||'');
     else item.el.style.removeProperty('z-index');
@@ -959,6 +961,7 @@
    activeTarget.style.setProperty('border-radius','12px');
    activeTarget.style.setProperty('box-shadow','0 0 0 3px #d0f477, 0 0 0 100vmax rgba(0,0,0,.68)');
    activeTarget.setAttribute('data-rb-tour-highlight','true');
+   if(activeTarget.matches('button,a,select,input')){blockTargetClick=event=>{if(overlay&&!overlay.hidden){event.preventDefault();event.stopImmediatePropagation()}};activeTarget.addEventListener('click',blockTargetClick,true)}
    overlay.hidden=false;
    overlay.querySelector('#rbTourCounter').textContent='GUIA RABBITECH · '+(index+1)+' DE '+steps.length;
    overlay.querySelector('#rbTourTitle').textContent=steps[index].title;
