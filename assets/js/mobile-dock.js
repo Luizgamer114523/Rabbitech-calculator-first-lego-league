@@ -24,22 +24,9 @@
   nav.classList.add('rb-samsung-dock');
   const adminButtons=nav.querySelectorAll('button[data-page="admin"]');
   adminButtons.forEach((button,index)=>{if(index===0)button.id='rbAdminNav';else button.remove()});
-  const existing=nav.querySelector('#rbDockExpandOne');
-  if(nav.dataset.rbDockController==='v4'&&existing)return nav;
   nav.querySelectorAll('#rbDockMore,#rbDockExpand,#rbDockExpandOne,#rbFinalDockMore').forEach(button=>button.remove());
-  const more=document.createElement('button');
-  more.id='rbDockExpandOne';more.type='button';more.textContent='−';
-  more.title='Recolher abas';more.setAttribute('aria-label','Recolher abas');more.setAttribute('aria-expanded','true');
-  more.addEventListener('click',event=>{
-   event.preventDefault();event.stopImmediatePropagation();
-   const collapsed=nav.classList.toggle('rb-dock-collapsed');
-   more.textContent=collapsed?'+':'−';
-   more.title=collapsed?'Mostrar todas as abas':'Recolher abas';
-   more.setAttribute('aria-label',more.title);more.setAttribute('aria-expanded',String(!collapsed));
-  });
-  nav.appendChild(more);
-  nav.dataset.rbDockController='v4';
   nav.classList.remove('rb-dock-collapsed');
+  delete nav.dataset.rbDockController;
   return nav;
  }
  function placeLanguageButton(){
@@ -157,18 +144,33 @@
  const teamEsc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const teamClient=()=>getSupabaseClient();
  function ensureTeamPage(){
-  let nav=document.querySelector('nav button[data-page]')?.closest('nav');
+  const nav=document.querySelector('nav.rb-samsung-dock')||document.querySelector('nav button[data-page]')?.closest('nav');
   if(!nav)return null;
+  nav.classList.add('rb-samsung-dock');
   let button=nav.querySelector('button[data-page="team-workspace"]');
   if(!button){
-   button=document.createElement('button');button.type='button';button.dataset.page='team-workspace';button.textContent='Equipe';button.setAttribute('aria-label','Área da equipe');nav.append(button);
-   button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();openTeamPage()});
+   button=document.createElement('button');
+   button.type='button';
+   button.dataset.page='team-workspace';
+   nav.append(button);
+  }
+  if(!button.querySelector('.dock-label')){
+   button.innerHTML='<span class="dock-icon" aria-hidden="true">👥</span><span class="dock-label">Equipe</span>';
+  }
+  button.title='Espaço da equipe';
+  button.setAttribute('aria-label','Área da equipe');
+  if(button.dataset.rbTeamHandler!=='true'){
+   button.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();openTeamPage()});
+   button.dataset.rbTeamHandler='true';
   }
   let page=$('page-team-workspace');
   if(!page){
    const main=document.querySelector('main')||document.body;
-   page=document.createElement('section');page.id='page-team-workspace';page.className='page';page.hidden=true;
-   page.style.cssText='display:none!important;max-width:1100px;margin:0 auto;padding:18px 14px 110px;color:var(--text,#eef7eb)';
+   page=document.createElement('section');
+   page.id='page-team-workspace';
+   page.className='page';
+   page.hidden=true;
+   page.style.cssText='max-width:1100px;margin:0 auto;padding:18px 14px 110px;color:var(--text,#eef7eb)';
    page.innerHTML='<div id="rbTeamWorkspaceRoot"></div>';
    main.append(page);
   }
@@ -186,13 +188,27 @@
  }
  async function openTeamPage(){
   const refs=ensureTeamPage();if(!refs)return;
-  document.querySelectorAll('main .page').forEach(p=>{p.classList.remove('active');p.hidden=true;p.style.setProperty('display','none','important')});
-  refs.page.hidden=false;refs.page.style.setProperty('display','block','important');refs.page.classList.add('active');
-  document.querySelectorAll('nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page==='team-workspace'));
+  document.querySelectorAll('main .page').forEach(p=>{
+   p.classList.remove('active');
+   p.hidden=true;
+   p.style.removeProperty('display');
+  });
+  refs.page.hidden=false;
+  refs.page.style.removeProperty('display');
+  refs.page.classList.add('active');
+  document.querySelectorAll('nav button[data-page]').forEach(btn=>btn.classList.toggle('active',btn.dataset.page==='team-workspace'));
+  const root=$('rbTeamWorkspaceRoot');
+  if(root?.dataset.initialized==='true'){
+   if(teamState.team?.team_id)refreshTeamBackground();
+   return;
+  }
   await renderTeamWorkspace();
+  if(root)root.dataset.initialized='true';
  }
  function teamShell(body){
   const root=$('rbTeamWorkspaceRoot');if(!root)return;
+  const preserveScroll=root.dataset.initialized==='true'&&$('page-team-workspace')?.classList.contains('active');
+  const scrollY=window.scrollY;
   const active=document.activeElement;
   const activeId=active&&root.contains(active)?active.id:'';
   const activeValue=activeId&&'value' in active?active.value:null;
@@ -210,6 +226,7 @@
    '@media(max-width:650px){#rbTeamWorkspaceRoot .tw-board{grid-template-columns:repeat(3,minmax(205px,1fr))}}'+
    '</style>'+body;
   if(activeId){const restored=$(activeId);if(restored&&document.activeElement!==restored){restored.focus({preventScroll:true});if(activeValue!==null&&'value' in restored)restored.value=activeValue}}
+  if(preserveScroll&&scrollY>0)requestAnimationFrame(()=>{if($('page-team-workspace')?.classList.contains('active'))window.scrollTo({top:scrollY,behavior:'auto'})});
  }
  function teamMissionPicker(){const labels=[];document.querySelectorAll('#page-score [data-mission-id],#page-score [data-mission],#page-score .mission-card,#page-score .mission-item').forEach(el=>{const text=(el.querySelector('h2,h3,h4,label,strong,.mission-title')?.textContent||el.getAttribute('data-mission-name')||el.textContent||'').trim().replace(/\\s+/g,' ');if(/M(?:iss[aã]o)?\\s*0?\\d{1,2}/i.test(text)&&!labels.includes(text))labels.push(text.slice(0,100))});if(!labels.length)for(let i=1;i<=15;i++)labels.push('M'+String(i).padStart(2,'0'));return '<fieldset style="border:1px solid #49684b;border-radius:10px;padding:10px;margin:7px 0"><legend>Missões tentadas</legend>'+labels.map(name=>'<label style="display:block;margin:5px 0"><input type="checkbox" name="twRoundMission" value="'+teamEsc(name)+'"> '+teamEsc(name)+'</label>').join('')+'</fieldset>'}
   function teamFormField(id,label,placeholder,type='text',attrs=''){
@@ -221,6 +238,7 @@
   if(!c||!user){
    teamShell('<div class="tw-card"><h2>👥 Espaço da equipe</h2><p>Entre na sua conta do Rabbitech para criar uma equipe ou aceitar um convite.</p></div>');return;
   }
+  if(root.dataset.initialized!=='true')
   teamShell('<div class="tw-card"><h2>👥 Espaço da equipe</h2><p>Carregando sua equipe com segurança…</p></div>');
   let result;
   try{result=await c.rpc('get_my_team_workspace')}catch(e){teamShell('<div class="tw-card"><h2>Espaço da equipe</h2><p>Não foi possível consultar sua equipe: '+teamEsc(e.message||e)+'</p><button class="tw-btn" id="twRetry">Tentar novamente</button></div>');$('twRetry')?.addEventListener('click',renderTeamWorkspace);return}
@@ -427,11 +445,9 @@
   teamState.realtimeChannel=channel;
  }
  let teamAuthCheckInFlight=false;
- async function syncTeamWorkspace(){
-  const refs=ensureTeamPage();if(!refs||teamAuthCheckInFlight)return;
-  teamAuthCheckInFlight=true;
-  try{const user=await teamAuthUser();refs.button.hidden=!user;}
-  finally{teamAuthCheckInFlight=false;}
+ function syncTeamWorkspace(){
+  const refs=ensureTeamPage();
+  if(refs)refs.button.hidden=false;
  }
  async function refreshTeamBackground(){
   if(teamState.backgroundRefreshInFlight)return;
@@ -512,12 +528,26 @@
  }
  function initTeamWorkspace(){
   syncTeamWorkspace();
-  window.addEventListener('rb-auth-state-changed',()=>{syncTeamWorkspace();if($('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()});
+  window.addEventListener('rb-auth-state-changed',async()=>{
+   const user=await teamAuthUser();
+   if(!user||user.id!==teamState.profile?.user_id){
+    teamState.profile=null;teamState.team=null;
+    teamState.messageSignature='';teamState.notesSignature='';
+    const root=$('rbTeamWorkspaceRoot');
+    if(root)root.dataset.initialized='false';
+    syncTeamWorkspace();
+    if($('page-team-workspace')?.classList.contains('active')){
+     await renderTeamWorkspace();
+     if(root)root.dataset.initialized='true';
+    }
+   }else if($('page-team-workspace')?.classList.contains('active')){
+    refreshTeamBackground();
+   }
+  });
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()});
-  // Realtime é o caminho principal. O polling de reserva é lento e atualiza somente os dados, sem reconstruir a tela.
   setInterval(()=>{if(!document.hidden&&!teamState.realtimeReady&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()},30000);
  }
-
+ 
  function init(){
   setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();
   const observer=new MutationObserver(()=>{
