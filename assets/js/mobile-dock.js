@@ -928,10 +928,20 @@
   page.appendChild(section);
  }
 
+ function removeRetiredAds(){
+  // Anúncios foram descontinuados. Limpa também elementos antigos que possam
+  // permanecer no DOM por cache ou por scripts de versões anteriores.
+  document.querySelectorAll('#rbAdsConsentDialog,#rbAdsConsentBanner,#rbOptionalAdSlot,#rbAdsPreferenceButton,[data-ads-preference],[data-ads-consent],[data-optional-ad]').forEach(el=>el.remove());
+  document.querySelectorAll('button,a,[role="button"],label').forEach(el=>{
+   const text=String(el.textContent||'').replace(/\\s+/g,' ').trim();
+   if(/^(anúncios? opcionais|preferências de anúncios|aceitar anúncios|não quero anúncios|gerenciar anúncios)$/i.test(text))el.remove();
+  });
+ }
+
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initFirstVisitTour();
+  removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initFirstVisitTour();
   const observer=new MutationObserver(()=>{
-   setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();
+   removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
