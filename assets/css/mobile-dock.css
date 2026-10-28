@@ -100,3 +100,26 @@ body:has(#rbPrivacyGate.rb-gate-open) nav.rb-samsung-dock,
 body:has(#rbLanguageConsent:not([hidden])) nav.rb-samsung-dock{
  display:none!important;visibility:hidden!important;pointer-events:none!important;
 }
+
+
+/* Team is a primary dock shortcut: keep it beside Strategy and never bury it in overflow. */
+nav.rb-samsung-dock>button[data-page="team-workspace"]{
+ display:flex!important;
+ visibility:visible!important;
+ pointer-events:auto!important;
+}
+#page-team-workspace[hidden]{display:none!important}
+@media(max-width:650px){
+ nav.rb-samsung-dock>button[data-page="team-workspace"]{
+  flex:0 0 calc((100% - 18px)/7)!important;
+  width:calc((100% - 18px)/7)!important;
+  max-width:calc((100% - 18px)/7)!important;
+  min-width:0!important;
+  min-height:52px!important;
+  height:52px!important;
+ }
+ /* Even if a compact/collapsed dock is enabled elsewhere, keep the Team shortcut visible. */
+ nav.rb-samsung-dock.rb-dock-collapsed>button[data-page="team-workspace"]:nth-of-type(n+7){
+  display:flex!important;
+ }
+}
