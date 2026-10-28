@@ -43,6 +43,7 @@
  function removeNav(){const b=document.querySelector('nav button[data-page="team-workspace"]');if(b)b.remove();const page=$('page-team-workspace');if(page){page.hidden=true;page.classList.remove('active')}}
  function goToPage(){const page=makePage();if(!page)return;document.querySelectorAll('main .page').forEach(p=>{p.classList.remove('active');p.hidden=true});page.hidden=false;page.classList.add('active');document.querySelectorAll('nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page==='team-workspace'));if(!page.dataset.rbInitialNavigationDone){page.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});page.dataset.rbInitialNavigationDone='true'}}
  function showJoinCard(){if(!$('rbTeamJoinCard')||!user())return;const card=$('rbTeamJoinCard');card.hidden=false;setEntryMode('join')}
+ function showEntryMessage(message){const status=$('rbTeamJoinStatus');if(status)status.textContent=message;const card=$('rbTeamJoinCard');if(card)card.hidden=false;const join=$('rbTeamJoinName'),code=$('rbTeamJoinCode'),createName=$('rbTeamCreateName'),display=$('rbTeamCreateDisplayName');const signedIn=!!user();[join,code,createName,display].forEach(el=>{if(el){el.disabled=!signedIn;const label=el.closest('label');if(label)label.style.opacity=signedIn?'1':'.55'}});const joinButton=$('rbTeamJoinCard')?.querySelector('button[data-action="join-team"]');if(joinButton)joinButton.disabled=!signedIn;const createButton=$('rbTeamCreateCard')?.querySelector('button[data-action="create-team"]');if(createButton)createButton.disabled=!signedIn;}
  function setEntryMode(mode){const join=$('rbTeamJoinCard'),create=$('rbTeamCreateCard');if(join){const fields=join.querySelector('.rb-team-fields:not(#rbTeamEntryTabs)');const status=$('rbTeamJoinStatus');if(fields)fields.hidden=mode!=='join';if(status)status.hidden=mode!=='join'}if(create)create.hidden=mode!=='create';const jt=$('rbTeamJoinTab'),ct=$('rbTeamCreateTab');if(jt)jt.setAttribute('aria-pressed',String(mode==='join'));if(ct)ct.setAttribute('aria-pressed',String(mode==='create'));}
  function hideJoinCard(){const card=$('rbTeamJoinCard');if(card)card.remove()}
  function ensureJoinCard(){
@@ -51,17 +52,18 @@
  }
  async function loadWorkspace(){
   const sb=client(),u=user();
-  if(!sb||!u||typeof sb.rpc!=='function'){workspace=null;removeNav();hideJoinCard();return}
+  if(!sb||typeof sb.rpc!=='function'){workspace=null;makeNav();ensureJoinCard();ensureCreateTeamCard();showEntryMessage('Conecte sua conta Google para criar uma equipe ou aceitar um convite.');return}
+  if(!u){workspace=null;makeNav();ensureJoinCard();ensureCreateTeamCard();showEntryMessage('Entre com sua conta Google para criar uma equipe ou aceitar um convite.');return}
   try{const {data,error}=await sb.rpc('get_my_team_workspace');if(error)throw error;workspace=data||null;
    if(workspace?.member&&workspace?.team_id){hideJoinCard();makeNav();makePage();return}
-   removeNav();ensureJoinCard();ensureCreateTeamCard();
-  }catch(e){console.warn('Rabbitech team workspace could not load',e);removeNav();hideJoinCard()}
+   makeNav();ensureJoinCard();ensureCreateTeamCard();
+  }catch(e){console.warn('Rabbitech team workspace could not load',e);makeNav();ensureJoinCard();showEntryMessage(e?.message||'Não foi possível carregar os dados da equipe.')}
  }
  function ensureCreateTeamCard(){
   if($('rbTeamCreateCard'))return;const host=$('rbTeamJoinCard');if(!host)return;
   const card=node('section','rb-team-panel');card.id='rbTeamCreateCard';card.hidden=true;card.append(node('h3','','Criar equipe como mentor/responsável'),node('p','rb-team-muted','Crie o espaço da sua equipe e depois gere convites para os alunos entrarem com suas próprias contas.'));
   const fields=node('div','rb-team-fields'),name=input('Nome da equipe','text','','Ex.: Techscorpions'),display=input('Seu nome','text','','Nome do mentor');name.el.maxLength=80;display.el.maxLength=80;name.el.id='rbTeamCreateName';display.el.id='rbTeamCreateDisplayName';fields.append(name.wrap,display.wrap);card.append(fields);
-  const status=node('p','rb-team-muted','');status.id='rbTeamCreateStatus';card.append(status,button('Criar equipe','rb-team-btn',createTeamWorkspace));host.append(card)
+  const status=node('p','rb-team-muted','');status.id='rbTeamCreateStatus';const createBtn=button('Criar equipe','rb-team-btn',createTeamWorkspace);createBtn.dataset.action='create-team';card.append(status,createBtn);host.append(card)
  }
  async function createTeamWorkspace(){
   const name=$('rbTeamCreateName')?.value.trim(),display=$('rbTeamCreateDisplayName')?.value.trim(),status=$('rbTeamCreateStatus'),b=$('rbTeamCreateCard')?.querySelector('button');
@@ -239,6 +241,7 @@
  }
  async function openBoard(){
   if(loading)return;
+  if(!user()){makeNav();ensureJoinCard();ensureCreateTeamCard();showEntryMessage('Entre com sua conta Google para criar uma equipe ou aceitar um convite.');goToPage();return}
   if($('page-team-workspace')?.dataset.rbBoardRendered==='true'&&workspace?.member){
    const page=$('page-team-workspace');
    const alreadyVisible=page&&!page.hidden&&page.classList.contains('active');
