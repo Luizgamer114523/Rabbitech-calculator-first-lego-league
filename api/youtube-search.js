@@ -5,6 +5,7 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   if (req.method !== 'GET') return res.status(405).json({ error: 'Método não permitido.' });
   const q = String(req.query?.q || '').trim().slice(0, 160);
+  const pageToken = String(req.query?.pageToken || '').trim().slice(0, 500);
   if (q.length < 1) return res.status(400).json({ error: 'Informe o que deseja pesquisar.' });
   const supabaseUrl = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -23,6 +24,7 @@ export default async function handler(req, res) {
     yt.searchParams.set('part', 'snippet');
     yt.searchParams.set('type', 'video');
     yt.searchParams.set('maxResults', '12');
+    if (pageToken) yt.searchParams.set('pageToken', pageToken);
     yt.searchParams.set('safeSearch', 'moderate');
     yt.searchParams.set('q', q);
     yt.searchParams.set('key', apiKey);
@@ -35,7 +37,7 @@ export default async function handler(req, res) {
       channelTitle: v.snippet?.channelTitle || '',
       thumbnail: v.snippet?.thumbnails?.medium?.url || v.snippet?.thumbnails?.default?.url || ''
     })).filter(v => v.id);
-    return res.status(200).json({ items });
+    return res.status(200).json({ items, nextPageToken: data.nextPageToken || null });
   } catch (e) {
     return res.status(500).json({ error: e?.message || 'Erro interno ao pesquisar vídeos.' });
   }
