@@ -971,7 +971,12 @@
    });
    updateAdPreferenceStatus();
   }
+  // This controller is also called by the site's DOM observer. Install listeners once.
+  if(window.rbOptionalAdsConsent?.initialized){
+   ensurePreferenceSettings();updateAdPreferenceStatus();return;
+  }
   window.rbOptionalAdsConsent={
+   initialized:true,
    get:read,
    isAllowed:()=>read()==='accepted',
    set:save
