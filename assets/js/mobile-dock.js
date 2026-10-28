@@ -316,8 +316,8 @@
    (manager?'<div class="tw-card"><h3>Metas da equipe</h3>'+teamFormField('twGoalTitle','Meta','Ex.: 10 rounds confiáveis')+teamFormField('twGoalDue','Prazo','', 'date')+'<div class="tw-grid"><label>Meta de tarefas<input class="tw-field" id="twGoalTasks" type="number" min="0" max="10000" value="0"></label><label>Meta de rounds<input class="tw-field" id="twGoalRounds" type="number" min="0" max="10000" value="0"></label><label>Média de pontos alvo<input class="tw-field" id="twGoalAverage" type="number" min="0" max="10000" value="0"></label></div><textarea class="tw-field" id="twGoalDescription" rows="2" maxlength="1000" placeholder="Descrição da meta"></textarea><button class="tw-btn" id="twAddGoal">Salvar meta</button></div>':'')+
    '<div class="tw-card"><h3>Metas e progresso</h3>'+(goalHtml||'<p class="tw-muted">O mentor ainda não cadastrou metas.</p>')+'</div>'+
    '<div class="tw-grid"><section class="tw-card"><h3>Registrar round de treino</h3>'+teamFormField('twRoundNumber','Número do round','1','number','min="1" max="10000"')+teamFormField('twRoundScore','Pontuação','0','number','min="0" max="10000"')+'<label style="display:block;margin:7px 0">Onde começou<select class="tw-field" id="twRoundStart"><option value="Base esquerda">Base esquerda</option><option value="Base direita">Base direita</option></select></label>'+teamMissionPicker()+'<textarea class="tw-field" id="twRoundNotes" rows="2" maxlength="2000" placeholder="Observações do round"></textarea><button class="tw-btn" id="twAddRound">Salvar round</button></section><section class="tw-card"><h3>Desempenho dos rounds</h3><p>Média atual: <strong>'+avg+' pontos</strong></p>'+chart+'<p class="tw-muted">'+rounds.length+' rounds de treino registrados.</p></section></div>'+
-   '<div class="tw-grid"><section class="tw-card"><h3>Notas compartilhadas</h3>'+teamFormField('twNoteTitle','Título da nota','Ideias da reunião')+'<textarea class="tw-field" id="twNoteBody" rows="4" maxlength="8000" placeholder="Planejamento, decisões, o que testar..."></textarea><button class="tw-btn" id="twAddNote">Salvar anotação</button><div id="twNotesList">'+(notes.slice().reverse().map(n=>'<article class="tw-task"><strong>'+teamEsc(n.title)+'</strong><p style="white-space:pre-wrap">'+teamEsc(n.body)+'</p><small class="tw-muted">'+teamEsc(new Date(n.created_at).toLocaleString())+' · '+teamEsc(members.find(m=>m.user_id===n.author_user_id)?.display_name||'Membro')+'</small></article>').join('')||'<p class="tw-muted">Nenhuma anotação ainda.</p>')+'</div></section>'+
-   '<section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Mensagens de texto compartilhadas entre membros. Sem chamadas.</p><div id="twMessages" style="max-height:300px;overflow:auto">'+messages.slice(-60).map(m=>'<div class="tw-bubble"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong><p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p><small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small></div>').join('')+'</div><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage">Enviar mensagem</button></section></div>'+
+   '<div class="tw-grid"><section class="tw-card"><h3>Notas compartilhadas</h3>'+teamFormField('twNoteTitle','Título da nota','Ideias da reunião')+'<textarea class="tw-field" id="twNoteBody" rows="4" maxlength="8000" placeholder="Planejamento, decisões, o que testar..."></textarea><button class="tw-btn" id="twAddNote">Salvar anotação</button><div id="twNotesList">'+(notes.slice().reverse().map(n=>'<article class="tw-task" data-team-note-id="'+teamEsc(n.id)+'"><strong>'+teamEsc(n.title)+'</strong><p style="white-space:pre-wrap">'+teamEsc(n.body)+'</p><small class="tw-muted">'+teamEsc(new Date(n.created_at).toLocaleString())+' · '+teamEsc(members.find(m=>m.user_id===n.author_user_id)?.display_name||'Membro')+'</small></article>').join('')||'<p class="tw-muted">Nenhuma anotação ainda.</p>')+'</div></section>'+
+   '<section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Mensagens de texto compartilhadas entre membros. Sem chamadas.</p><div id="twMessages" style="max-height:300px;overflow:auto">'+messages.slice(-60).map(m=>'<div class="tw-bubble" data-message-id="'+teamEsc(m.id)+'" data-created-at="'+teamEsc(m.created_at)+'"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong><p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p><small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small></div>').join('')+'</div><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage">Enviar mensagem</button></section></div>'+
    '<div id="twFeedback" aria-live="polite"></div>');
   $('twRefresh')?.addEventListener('click',()=>{refreshTeamBackground();teamFeedback('Atualizando os dados em segundo plano…')});
   $('twMakeInvite')?.addEventListener('click',createTeamInvite);
@@ -418,14 +418,14 @@
    const note=result.data,box=$('twNotesList');
    if(box){
     const empty=box.querySelector('.tw-muted');if(empty&&empty.textContent.includes('Nenhuma anotação'))empty.remove();
-    const article=document.createElement('article');article.className='tw-task';
+    const article=document.createElement('article');article.className='tw-task';article.dataset.teamNoteId=note.id;
     const heading=document.createElement('strong');heading.textContent=note.title;
     const content=document.createElement('p');content.style.whiteSpace='pre-wrap';content.textContent=note.body;
     const meta=document.createElement('small');meta.className='tw-muted';meta.textContent=new Date(note.created_at).toLocaleString()+' · '+(p.display_name||'Membro');
     article.append(heading,content,meta);box.prepend(article);
    }
    if(titleInput)titleInput.value='';if(bodyInput)bodyInput.value='';
-   teamState.notesSignature='';teamFeedback('Anotação salva e exibida.');
+   teamFeedback('Anotação salva e exibida.');
    refreshTeamBackground();
   }catch(e){teamFeedback(e?.message||'Não foi possível salvar a anotação.',true)}
   finally{if(button)button.disabled=false}
@@ -574,18 +574,36 @@
    const statLabels=root.querySelectorAll('.tw-stat + div');
    if(statLabels.length>=4&&statLabels[3].textContent!==('Média dos rounds · '+rounds.length+' registros'))statLabels[3].textContent='Média dos rounds · '+rounds.length+' registros';
    const notesBox=$('twNotesList');
-   if(notesBox){const notesHtml=notes.map(n=>'<article class="tw-task"><strong>'+teamEsc(n.title)+'</strong><p style="white-space:pre-wrap">'+teamEsc(n.body)+'</p><small class="tw-muted">'+teamEsc(new Date(n.created_at).toLocaleString())+' · '+teamEsc(teamState.members?.find(m=>m.user_id===n.author_user_id)?.display_name||'Membro')+'</small></article>').join('');const notesSignature=notes.map(n=>n.id+':'+n.created_at+':'+n.body).join('|');if(notesSignature!==teamState.notesSignature){notesBox.innerHTML=notesHtml||'<p class="tw-muted">Nenhuma anotação ainda.</p>';teamState.notesSignature=notesSignature;}}
+   if(notesBox){
+    const existingNotes=new Map([...notesBox.querySelectorAll('[data-team-note-id]')].map(el=>[el.dataset.teamNoteId,el]));
+    notes.forEach(note=>{
+     const id=String(note.id);let article=existingNotes.get(id);
+     if(!article){article=document.createElement('article');article.className='tw-task';article.dataset.teamNoteId=id;const h=document.createElement('strong'),p=document.createElement('p'),meta=document.createElement('small');p.style.whiteSpace='pre-wrap';meta.className='tw-muted';article.append(h,p,meta);const empty=notesBox.querySelector('.tw-muted');if(empty&&empty.textContent.includes('Nenhuma anotação'))empty.remove();notesBox.prepend(article)}
+     const h=article.querySelector('strong'),p=article.querySelector('p'),meta=article.querySelector('small');
+     if(h&&h.textContent!==String(note.title||''))h.textContent=note.title||'';
+     if(p&&p.textContent!==String(note.body||''))p.textContent=note.body||'';
+     const metaText=new Date(note.created_at).toLocaleString()+' · '+(teamState.members?.find(m=>m.user_id===note.author_user_id)?.display_name||'Membro');if(meta&&meta.textContent!==metaText)meta.textContent=metaText;
+     existingNotes.delete(id);
+    });
+    existingNotes.forEach(el=>el.remove());
+    if(!notes.length&&!notesBox.querySelector('[data-team-note-id]')&&!notesBox.querySelector('.tw-muted')){const empty=document.createElement('p');empty.className='tw-muted';empty.textContent='Nenhuma anotação ainda.';notesBox.appendChild(empty)}
+   }
    const messageBox=$('twMessages');
    if(messageBox){
-    const previousLast=messageBox.querySelector('.tw-bubble:last-child')?.textContent||'';
-    const html=messages.map(m=>'<div class="tw-bubble"><strong>'+teamEsc(teamState.members?.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong><p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p><small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small></div>').join('');
-    const signature=messages.map(m=>m.id+':'+m.created_at).join('|');
-    if(signature!==teamState.messageSignature){
-     const wasNearBottom=messageBox.scrollHeight-messageBox.scrollTop-messageBox.clientHeight<48;
-     messageBox.innerHTML=html||'<p class="tw-muted">Nenhuma mensagem ainda.</p>';
-     if(wasNearBottom)messageBox.scrollTop=messageBox.scrollHeight;
-     teamState.messageSignature=signature;
-    }
+    const wasNearBottom=messageBox.scrollHeight-messageBox.scrollTop-messageBox.clientHeight<48;
+    const existingMessages=new Map([...messageBox.querySelectorAll('[data-message-id]')].map(el=>[el.dataset.messageId,el]));
+    messages.forEach(message=>{
+     const id=String(message.id);let bubble=existingMessages.get(id);
+     if(!bubble){const pending=messageBox.querySelector('[data-pending-message="true"]');if(pending&&message.author_user_id===teamState.profile?.user_id){bubble=pending;pending.removeAttribute('data-pending-message');bubble.dataset.messageId=id;bubble.dataset.createdAt=message.created_at}else{bubble=document.createElement('div');bubble.className='tw-bubble';bubble.dataset.messageId=id;bubble.dataset.createdAt=message.created_at;const h=document.createElement('strong'),p=document.createElement('p'),meta=document.createElement('small');p.style.cssText='white-space:pre-wrap;margin:4px 0';meta.className='tw-muted';bubble.append(h,p,meta);messageBox.appendChild(bubble)}}
+     const h=bubble.querySelector('strong'),p=bubble.querySelector('p'),meta=bubble.querySelector('small');
+     if(h)h.textContent=teamState.members?.find(m=>m.user_id===message.author_user_id)?.display_name||'Membro';
+     if(p&&p.textContent!==String(message.body||''))p.textContent=message.body||'';
+     const time=new Date(message.created_at).toLocaleString();if(meta&&meta.textContent!==time)meta.textContent=time;
+     existingMessages.delete(id);
+    });
+    existingMessages.forEach(el=>el.remove());
+    if(!messages.length&&!messageBox.querySelector('[data-message-id]')&&!messageBox.querySelector('[data-pending-message]'))messageBox.textContent='Nenhuma mensagem ainda.';
+    if(wasNearBottom)messageBox.scrollTop=messageBox.scrollHeight;
    }
    teamState.backgroundData={taskCount:tasks.length,done,progress,avg,roundCount:rounds.length};
   }catch(error){console.warn('Atualização em segundo plano da equipe falhou',error)}
