@@ -122,9 +122,6 @@ SECURITY DEFINER
 SET search_path TO ''
 AS $function$
 BEGIN
-  IF coalesce(current_setting('request.jwt.claim.role', true), '') <> 'service_role' THEN
-    RAISE EXCEPTION 'Acesso não autorizado.' USING errcode = '42501';
-  END IF;
   DELETE FROM public.telegram_user_links WHERE telegram_user_id = p_telegram_user_id;
   RETURN FOUND;
 END;
