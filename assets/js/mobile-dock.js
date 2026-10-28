@@ -1,5 +1,8 @@
 /* Rabbitech mobile dock + admin visibility. Single controller, idempotent setup. */
 (()=>{'use strict';
+ // Prevent duplicate event handlers and Supabase subscriptions if the bundle is included twice.
+ if(window.__rbMobileDockSingleton)return;
+ window.__rbMobileDockSingleton=true;
  const OWNER_ID='7e799691-ba7e-42ea-ab6f-71ad11ca32ff';
  const $=id=>document.getElementById(id);
  function currentUser(){
@@ -148,7 +151,7 @@
  // Team workspace: leader/member portal backed by Supabase RLS and RPCs.
  const TEAM_STATES=['todo','in_progress','done'];
  const TEAM_LABELS={todo:'A fazer',in_progress:'Em andamento',done:'Concluído'};
- let teamState={profile:null,team:null,authUserId:null,loading:false,refreshing:false,inviteCode:'',timer:null,realtimeChannel:null,realtimeTeamId:null,realtimeReady:false,messageSignature:'',notesSignature:'',backgroundRefreshInFlight:false,backgroundRefreshQueued:false};
+ let teamState={profile:null,team:null,authUserId:null,loading:false,refreshing:false,inviteCode:'',timer:null,realtimeChannel:null,realtimeTeamId:null,realtimeReady:false,messageSignature:'',notesSignature:'',backgroundRefreshInFlight:false,backgroundRefreshQueued:false,sendingMessage:false};
  const teamEsc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const teamClient=()=>getSupabaseClient();
  function ensureTeamPage(){
@@ -538,7 +541,9 @@
  }
  async function sendTeamMessage(){
   const t=teamState.team,p=teamState.profile,input=$('twMessageBody'),button=$('twSendMessage'),body=input?.value.trim();
-  if(!body||!t?.team_id||!p?.user_id)return;
+  // Guard against double taps and duplicate listeners on mobile while the insert is pending.
+  if(teamState.sendingMessage||!body||!t?.team_id||!p?.user_id)return;
+  teamState.sendingMessage=true;
   const c=teamClient();if(!c)return;
   const localId='pending-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
   const box=$('twMessages');const oldScroll=box?.scrollTop||0;
@@ -563,7 +568,7 @@
    input.value=body;
    teamFeedback('Não foi possível enviar a mensagem: '+(e?.message||'verifique a conexão.'),true);
    if(box)box.scrollTop=oldScroll;
-  }finally{if(button)button.disabled=false;input?.focus()}
+  }finally{teamState.sendingMessage=false;if(button)button.disabled=false;input?.focus()}
  }
  function setupTeamChatRealtime(teamId){
   const client=teamClient();if(!client?.channel||!teamId)return;
@@ -573,15 +578,15 @@
   const channel=client.channel('rabbitech-team-chat-'+teamId)
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'team_messages',filter:'team_id=eq.'+teamId},payload=>{
     const message=payload?.new;if(!message||message.team_id!==teamId)return;
-    notifyTeamMessage(message);
     const box=$('twMessages');
     if(message.author_user_id===teamState.profile?.user_id){
      const duplicate=[...(box?.querySelectorAll('.tw-bubble')||[])].some(el=>el.dataset.messageId===message.id);
      if(duplicate)return;
     }
     const messageBox=$('twMessages');
-    const alreadyShown=[...(messageBox?.querySelectorAll('.tw-bubble')||[])].some(el=>el.dataset.messageId===message.id);
+    const alreadyShown=[...(messageBox?.querySelectorAll('.tw-bubble')||[])].some(el=>el.dataset.messageId===String(message.id));
     if(alreadyShown)return;
+    notifyTeamMessage(message);
     const pending=messageBox?.querySelector('[data-pending-message="true"]');
     if(pending&&message.author_user_id===teamState.profile?.user_id){
      pending.removeAttribute('data-pending-message');pending.dataset.messageId=message.id;
