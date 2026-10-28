@@ -928,6 +928,22 @@
   page.appendChild(section);
  }
 
+ function repositionHelpButton(){
+  // Move o botão de ajuda que aparece no topo para uma posição livre acima do dock.
+  document.querySelectorAll('button,[role="button"],a').forEach(el=>{
+   if(el.id==='rbFirstVisitTourHelp')return;
+   const label=String(el.getAttribute('aria-label')||el.getAttribute('title')||el.textContent||'').replace(/\\s+/g,' ').trim();
+   if(label!=='?')return;
+   const rect=el.getBoundingClientRect();
+   if(rect.top>260&&rect.bottom>0)return;
+   el.style.setProperty('position','fixed','important');
+   el.style.setProperty('left','12px','important');
+   el.style.setProperty('right','auto','important');
+   el.style.setProperty('top','auto','important');
+   el.style.setProperty('bottom','calc(env(safe-area-inset-bottom, 0px) + 184px)','important');
+   el.style.setProperty('z-index','2147482998','important');
+  });
+ }
  function removeRetiredAds(){
   // Anúncios foram descontinuados. Limpa também elementos antigos que possam
   // permanecer no DOM por cache ou por scripts de versões anteriores.
@@ -939,9 +955,9 @@
  }
 
  function init(){
-  removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initFirstVisitTour();
+  removeRetiredAds();repositionHelpButton();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initFirstVisitTour();
   const observer=new MutationObserver(()=>{
-   removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();
+   removeRetiredAds();repositionHelpButton();setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
