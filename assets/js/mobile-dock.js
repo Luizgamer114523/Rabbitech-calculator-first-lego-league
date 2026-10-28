@@ -816,8 +816,196 @@
   `;
   page.appendChild(section);
  }
+
+ function initFirstVisitTour(){
+  const KEY='rabbitech_tour_completed_v1';
+  const $tour=id=>document.getElementById(id);
+  let overlay=null,activeTarget=null,steps=[],index=0,resizeHandler=null,gateObserver=null,targetStyleBackup=null,ancestorBackup=[],blockTargetClick=null;
+  const visible=el=>!!el&&!el.hidden&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden'&&el.getClientRects().length>0;
+  function findCloudTarget(){
+   const buttons=[...document.querySelectorAll('button')];
+   const match=buttons.find(b=>/mostrar opções da nuvem|sincronizar histórico e atualizar nuvem|trocar conta google/i.test((b.innerText||b.textContent||'').trim()));
+   return match?.closest('.card,section,article,.cloud-panel')||match||document.querySelector('[id*="cloud" i]');
+  }
+  function buildSteps(){
+   const candidates=[
+    {selector:'#rbLanguageQuick, #rbLanguageHeader',title:'Idioma do site',text:'Troque o idioma do Rabbitech por aqui. O tutorial não altera sua preferência.'},
+    {selector:'nav button[data-page="score"]',title:'Placar de treino',text:'Registre as missões do round e acompanhe a pontuação durante os treinos.'},
+    {selector:'nav button[data-page="history"]',title:'Histórico',text:'Consulte os rounds salvos e compare os resultados anteriores.'},
+    {selector:'nav button[data-page="strategy"]',title:'Estratégia',text:'Planeje as missões, a ordem de execução e as decisões da equipe.'},
+    {selector:'nav button[data-page="routes"]',title:'Rotas e testes',text:'Organize os movimentos do robô e registre observações dos testes.'},
+    {selector:'nav button[data-page="leaderboard"]',title:'Ranking',text:'Veja a classificação pública quando houver dados suficientes para aparecer nela.'},
+    {selector:'#rbTeamWorkspaceNav',title:'Espaço da equipe',text:'O mentor pode criar a equipe e gerar convites. Os alunos entram com a própria conta e o código de convite.'},
+    {selector:'nav button[data-page="rules"]',title:'Regras',text:'Consulte as regras e informações de referência antes de preparar as missões.'},
+    {selector:'nav button[data-page="youtube"]',title:'Rabbitech TV',text:'Acesse a área de vídeos e conteúdos de apoio, quando estiver disponível.'},
+    {selector:'nav button[data-page="music"]',title:'Música',text:'Abra os controles de música do site, se quiser usar áudio durante os treinos.'},
+    {selector:'#rbAdminNav, nav button[data-page="admin"]',title:'Painel administrativo',text:'Esta opção aparece somente para contas autorizadas. Administradores podem gerenciar as configurações do site.'}
+   ];
+   const result=[];
+   for(const item of candidates){
+    let target=null;try{target=document.querySelector(item.selector)}catch(_){}
+    if(visible(target))result.push({...item,target});
+   }
+   const cloud=findCloudTarget();
+   if(visible(cloud))result.unshift({target:cloud,title:'Conta e sincronização',text:'Entre com sua conta para sincronizar os dados. Recursos de equipe dependem de uma sessão autenticada.'});
+   return result;
+  }
+  function injectStyles(){
+   if($tour('rbFirstVisitTourStyles'))return;
+   const style=document.createElement('style');style.id='rbFirstVisitTourStyles';
+   style.textContent=
+    '#rbFirstVisitTour{position:fixed;inset:0;z-index:auto;background:transparent;pointer-events:none;color:#f3ffed}'+
+    '#rbFirstVisitTour:before{content:"";position:fixed;inset:0;z-index:2147483000;background:rgba(1,8,4,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:auto}'+
+    '#rbFirstVisitTour[hidden]{display:none!important}'+
+    '#rbFirstVisitTour .rb-tour-card{position:fixed;left:16px;right:16px;max-width:560px;margin:auto;z-index:2147483004;pointer-events:auto;box-sizing:border-box;padding:19px;border:1px solid rgba(208,244,119,.7);border-radius:20px;background:rgba(8,25,14,.97);box-shadow:0 18px 65px rgba(0,0,0,.55);font:inherit}'+
+    '#rbFirstVisitTour .rb-tour-kicker{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#d0f477;font-weight:800}'+
+    '#rbFirstVisitTour h2{font-size:clamp(21px,5vw,28px);line-height:1.15;margin:9px 0}'+
+    '#rbFirstVisitTour p{font-size:15px;line-height:1.55;margin:9px 0 17px;color:#e2eee0}'+
+    '#rbFirstVisitTour .rb-tour-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}'+
+    '#rbFirstVisitTour button{font:inherit;font-weight:750;border:1px solid #58794b;border-radius:12px;padding:10px 13px;cursor:pointer}'+
+    '#rbFirstVisitTour .rb-tour-next{background:#d0f477;color:#10200e;border-color:#d0f477}'+
+    '#rbFirstVisitTour .rb-tour-back,#rbFirstVisitTour .rb-tour-skip{background:#172c1d;color:#f3ffed}'+
+    '#rbFirstVisitTour .rb-tour-skip{margin-left:auto}'+
+    '#rbFirstVisitTour .rb-tour-progress{height:4px;background:#253c2a;border-radius:9px;overflow:hidden;margin-top:14px}'+
+    '#rbFirstVisitTour .rb-tour-progress span{display:block;height:100%;background:#d0f477;transition:width .2s}'+
+    '#rbFirstVisitTour .rb-tour-arrow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2147483002;overflow:visible}'+
+    '#rbFirstVisitTour .rb-tour-arrow path{fill:none;stroke:#d0f477;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(208,244,119,.8))}'+
+    '#rbFirstVisitTour .rb-tour-arrow defs path{fill:#d0f477;stroke:none;filter:none}'+
+    '#rbTourReplay{margin:5px 0 8px 8px;padding:5px 9px;border-radius:9px;border:1px solid #49684b;background:rgba(8,24,14,.72);color:inherit;font:inherit;font-size:12px;cursor:pointer}'+
+    '@media(min-width:700px){#rbFirstVisitTour .rb-tour-card{left:50%;right:auto;width:min(560px,calc(100vw - 32px));transform:translateX(-50%)}}'+
+    '@media(prefers-reduced-motion:reduce){#rbFirstVisitTour *{transition:none!important;scroll-behavior:auto!important}}';
+   document.head.appendChild(style);
+  }
+  function addReplayButton(){
+   const host=document.querySelector('body>header .season')||document.querySelector('body>header');
+   if(!host||$tour('rbTourReplay'))return;
+   const button=document.createElement('button');button.id='rbTourReplay';button.type='button';button.textContent='❔ Tutorial';button.title='Ver tutorial do Rabbitech novamente';
+   button.addEventListener('click',()=>start(true));
+   host.appendChild(button);
+  }
+  function gatesClosed(){
+   const privacy=$tour('rbPrivacyGate'),language=$tour('rbLanguageConsent');
+   return !document.body.classList.contains('rb-privacy-gate-open')&&!visible(privacy)&&!visible(language);
+  }
+  function makeOverlay(){
+   injectStyles();
+   overlay=document.createElement('div');overlay.id='rbFirstVisitTour';overlay.hidden=true;
+   overlay.innerHTML='<svg class="rb-tour-arrow" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><defs><marker id="rbTourArrowHead" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#d0f477"></path></marker></defs><path id="rbTourArrowPath" marker-end="url(#rbTourArrowHead)"></path></svg><section class="rb-tour-card" role="dialog" aria-modal="true" aria-labelledby="rbTourTitle" aria-describedby="rbTourText"><div class="rb-tour-kicker" id="rbTourCounter"></div><h2 id="rbTourTitle"></h2><p id="rbTourText"></p><div class="rb-tour-actions"><button class="rb-tour-back" type="button" data-tour-action="back">Voltar</button><button class="rb-tour-next" type="button" data-tour-action="next">Avançar</button><button class="rb-tour-skip" type="button" data-tour-action="skip">Pular tutorial</button></div><div class="rb-tour-progress"><span></span></div></section>';
+   document.body.appendChild(overlay);
+   overlay.addEventListener('click',event=>{
+    const action=event.target.closest('[data-tour-action]')?.dataset.tourAction;
+    if(action==='back')show(index-1);
+    if(action==='next')show(index+1);
+    if(action==='skip')finish();
+   });
+   resizeHandler=()=>position();
+   window.addEventListener('resize',resizeHandler,{passive:true});
+   window.addEventListener('scroll',resizeHandler,{passive:true,capture:true});
+   document.addEventListener('keydown',onKey);
+  }
+  function onKey(event){
+   if(!overlay||overlay.hidden)return;
+   if(event.key==='Escape'){event.preventDefault();finish()}
+   if(event.key==='ArrowRight')show(index+1);
+   if(event.key==='ArrowLeft')show(index-1);
+  }
+  function restoreTarget(){
+   if(!activeTarget)return;
+   ['position','z-index','border-radius','box-shadow'].forEach(name=>{
+    const old=targetStyleBackup&&targetStyleBackup[name];
+    if(old&&old.value)activeTarget.style.setProperty(name,old.value,old.priority||'');
+    else activeTarget.style.removeProperty(name);
+   });
+   activeTarget.removeAttribute('data-rb-tour-highlight');
+   if(blockTargetClick)activeTarget.removeEventListener('click',blockTargetClick,true);
+   blockTargetClick=null;
+   ancestorBackup.forEach(item=>{
+    if(item.value) item.el.style.setProperty('z-index',item.value,item.priority||'');
+    else item.el.style.removeProperty('z-index');
+   });
+   ancestorBackup=[];activeTarget=null;targetStyleBackup=null;
+  }
+  function position(){
+   if(!overlay||overlay.hidden||!activeTarget)return;
+   const rect=activeTarget.getBoundingClientRect(),card=overlay.querySelector('.rb-tour-card');
+   if(!card)return;
+   const targetIsUpper=rect.top+rect.height/2<window.innerHeight/2;
+   card.style.top=targetIsUpper?'auto':'16px';
+   card.style.bottom=targetIsUpper?'16px':'auto';
+   const cardRect=card.getBoundingClientRect();
+   const sx=Math.max(16,Math.min(window.innerWidth-16,cardRect.left+cardRect.width/2));
+   const sy=targetIsUpper?cardRect.top:cardRect.bottom;
+   const ex=Math.max(8,Math.min(window.innerWidth-8,rect.left+rect.width/2));
+   const ey=Math.max(8,Math.min(window.innerHeight-8,rect.top+rect.height/2));
+   const path=overlay.querySelector('#rbTourArrowPath');
+   path.setAttribute('d','M '+sx+' '+sy+' Q '+((sx+ex)/2+30)+' '+((sy+ey)/2)+' '+ex+' '+ey);
+   overlay.querySelector('.rb-tour-arrow').setAttribute('viewBox','0 0 '+window.innerWidth+' '+window.innerHeight);
+  }
+  function show(nextIndex){
+   if(!steps.length){finish();return}
+   if(nextIndex>=steps.length){finish();return}
+   if(nextIndex<0)nextIndex=0;
+   restoreTarget();
+   while(nextIndex<steps.length&&!visible(steps[nextIndex].target))nextIndex++;
+   if(nextIndex>=steps.length){finish();return}
+   index=nextIndex;activeTarget=steps[index].target;
+   targetStyleBackup={};
+   ['position','z-index','border-radius','box-shadow'].forEach(name=>targetStyleBackup[name]={value:activeTarget.style.getPropertyValue(name),priority:activeTarget.style.getPropertyPriority(name)});
+   const stackingParent=activeTarget.closest('nav,header');
+   if(stackingParent){
+    ancestorBackup=[{el:stackingParent,value:stackingParent.style.getPropertyValue('z-index'),priority:stackingParent.style.getPropertyPriority('z-index')}];
+    stackingParent.style.setProperty('z-index','2147483001');
+   }
+   activeTarget.style.setProperty('position','relative');
+   activeTarget.style.setProperty('z-index','2147483003');
+   activeTarget.style.setProperty('border-radius','12px');
+   activeTarget.style.setProperty('box-shadow','0 0 0 3px #d0f477, 0 0 0 100vmax rgba(0,0,0,.68)');
+   activeTarget.setAttribute('data-rb-tour-highlight','true');
+   if(activeTarget.matches('button,a,select,input')){blockTargetClick=event=>{if(overlay&&!overlay.hidden){event.preventDefault();event.stopImmediatePropagation()}};activeTarget.addEventListener('click',blockTargetClick,true)}
+   overlay.hidden=false;
+   overlay.querySelector('#rbTourCounter').textContent='GUIA RABBITECH · '+(index+1)+' DE '+steps.length;
+   overlay.querySelector('#rbTourTitle').textContent=steps[index].title;
+   overlay.querySelector('#rbTourText').textContent=steps[index].text;
+   overlay.querySelector('.rb-tour-back').disabled=index===0;
+   overlay.querySelector('.rb-tour-next').textContent=index===steps.length-1?'Concluir':'Avançar';
+   overlay.querySelector('.rb-tour-progress span').style.width=((index+1)/steps.length*100)+'%';
+   position();
+   overlay.querySelector('.rb-tour-next')?.focus({preventScroll:true});
+  }
+  function finish(){
+   try{localStorage.setItem(KEY,'1')}catch(_){}
+   restoreTarget();
+   if(overlay){overlay.remove();overlay=null}
+   window.removeEventListener('resize',resizeHandler);
+   window.removeEventListener('scroll',resizeHandler,true);
+   document.removeEventListener('keydown',onKey);
+   resizeHandler=null;
+  }
+  function start(force=false){
+   if(overlay){overlay.remove();overlay=null}
+   if(!force){try{if(localStorage.getItem(KEY)==='1')return}catch(_){}}
+   if(!gatesClosed())return;
+   steps=buildSteps();
+   if(!steps.length)return;
+   index=0;makeOverlay();show(0);
+  }
+  addReplayButton();
+  let attempts=0;
+  const maybeStart=()=>{
+   addReplayButton();
+   if(overlay)return;
+   let done=false;try{done=localStorage.getItem(KEY)==='1'}catch(_){}
+   if(done){if(gateObserver){gateObserver.disconnect();gateObserver=null}return}
+   if(!gatesClosed())return;
+   if(buildSteps().length){start(false);return}
+   if(++attempts<20)setTimeout(maybeStart,500);
+  };
+  gateObserver=new MutationObserver(()=>{if(!overlay)maybeStart()});
+  gateObserver.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','hidden']});
+  setTimeout(maybeStart,1100);
+ }
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();
+  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initFirstVisitTour();
   const observer=new MutationObserver(()=>{
    setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();
   });
