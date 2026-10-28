@@ -928,80 +928,8 @@
   page.appendChild(section);
  }
 
- // Optional ads: first-visit consent is independent of privacy/account consent.
- // No ad provider is loaded unless the user opts in and a provider is configured.
- function initOptionalAdsConsent(){
-  const KEY='rabbitech_optional_ads_consent_v1';
-  const read=()=>{try{const v=localStorage.getItem(KEY);return v==='yes'||v==='no'?v:null}catch(_){return null}};
-  const write=value=>{try{localStorage.setItem(KEY,value);return true}catch(_){return false}};
-  const styleOnce=()=>{
-   if($('rbAdsConsentStyles'))return;
-   const style=document.createElement('style');style.id='rbAdsConsentStyles';
-   style.textContent=`
-    #rbAdsConsentDialog{position:fixed;left:12px;right:12px;bottom:calc(136px + env(safe-area-inset-bottom));z-index:100000;display:flex;justify-content:center;padding:0;background:transparent;pointer-events:none}
-    #rbAdsConsentDialog[hidden],#rbOptionalAdSlot[hidden]{display:none!important}
-    #rbAdsConsentDialog .rb-ads-card{pointer-events:auto;width:min(100%,440px);padding:16px;border:1px solid #49684b;border-radius:18px;background:#0c1d12;color:#eff8ed;box-shadow:0 8px 28px #0008;line-height:1.45;max-height:45vh;overflow:auto}
-    #rbAdsConsentDialog h2{margin:0 0 8px;font-size:19px}
-    #rbAdsConsentDialog p{margin:8px 0 12px;font-size:14px}
-    #rbAdsConsentDialog .rb-ads-actions{display:flex;flex-wrap:wrap;gap:10px}
-    #rbAdsConsentDialog button,#rbAdsPreferenceButton{border:1px solid #49684b;border-radius:999px;padding:10px 14px;font-weight:700;cursor:pointer}
-    #rbAdsAccept{background:#d0f477;color:#102015}#rbAdsReject{background:#17271c;color:#eff8ed}
-    #rbAdsPreferenceButton{position:fixed;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:9990;background:#102318ed;color:#eff8ed;font-size:12px;box-shadow:0 5px 18px #0005}
-    #rbOptionalAdSlot{position:fixed;right:12px;bottom:calc(132px + env(safe-area-inset-bottom));z-index:9980;width:min(190px,44vw);min-height:54px;padding:10px;border:1px solid #49684b;border-radius:14px;background:#0c1d12ed;color:#dcebd9;font:12px/1.4 system-ui;box-shadow:0 5px 18px #0004}
-    #rbOptionalAdSlot strong{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.75;margin-bottom:4px}
-    @media(max-width:480px){#rbAdsConsentDialog .rb-ads-card{padding:18px}#rbOptionalAdSlot{bottom:calc(124px + env(safe-area-inset-bottom))}}
-    @media(prefers-reduced-motion:reduce){#rbAdsConsentDialog{backdrop-filter:none}}
-   `;
-   document.head.append(style);
-  };
-  styleOnce();
-  let dialog=$('rbAdsConsentDialog');
-  if(!dialog){
-   dialog=document.createElement('div');dialog.id='rbAdsConsentDialog';dialog.hidden=true;
-   dialog.setAttribute('role','region');dialog.setAttribute('aria-labelledby','rbAdsConsentTitle');
-   dialog.innerHTML='<section class="rb-ads-card"><h2 id="rbAdsConsentTitle">Anúncios opcionais</h2><p>O Rabbitech pode exibir anúncios discretos para ajudar a manter o site. Eles não são necessários para usar as funções do site. Se aceitar, um pequeno espaço de anúncio aparecerá no canto da tela. Se recusar, nenhum espaço de anúncio será exibido. Você pode mudar essa escolha depois.</p><div class="rb-ads-actions"><button id="rbAdsAccept" type="button">Aceitar anúncios</button><button id="rbAdsReject" type="button">Não quero anúncios</button></div></section>';
-   document.body.append(dialog);
-  }
-  let slot=$('rbOptionalAdSlot');
-  if(!slot){
-   slot=document.createElement('aside');slot.id='rbOptionalAdSlot';slot.hidden=true;slot.setAttribute('aria-label','Espaço de anúncio opcional');
-   slot.innerHTML='<strong>Anúncio opcional</strong><span id="rbOptionalAdContent">Espaço reservado para anúncios. Nenhum provedor de anúncios está configurado ainda.</span>';
-   document.body.append(slot);
-  }
-  let pref=$('rbAdsPreferenceButton');
-  if(!pref){
-   pref=document.createElement('button');pref.id='rbAdsPreferenceButton';pref.type='button';pref.textContent='Preferências de anúncios';
-   pref.addEventListener('click',()=>{dialog.hidden=false;});
-   document.body.append(pref);
-  }
-  const apply=value=>{
-   slot.hidden=value!=='yes';
-   if(value==='yes'){
-    // Provider integration is deliberately opt-in. Never render arbitrary HTML from config.
-    const configured=window.RABBITECH_AD_CONTENT;
-    const target=$('rbOptionalAdContent');
-    if(target&&configured&&typeof configured.text==='string'&&configured.text.trim()){
-     target.textContent=configured.text.trim().slice(0,180);
-     if(configured.href&&typeof configured.href==='string'){
-      let url;try{url=new URL(configured.href,location.href)}catch(_){}
-      if(url&&url.protocol==='https:'){
-       let link=slot.querySelector('a');if(!link){link=document.createElement('a');link.style.cssText='display:block;margin-top:5px;color:#d0f477';slot.append(link)}
-       link.href=url.href;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Saiba mais';
-      }
-     }
-    }
-   }
-   dialog.hidden=value!==null;
-  };
-  const choose=value=>{if(!write(value)){alert('Não foi possível salvar sua preferência neste navegador. Verifique as configurações de armazenamento.');return}apply(value)};
-  $('rbAdsAccept').addEventListener('click',()=>choose('yes'));
-  $('rbAdsReject').addEventListener('click',()=>choose('no'));
-  const current=read();
-  if(current===null){slot.hidden=true;dialog.hidden=false}
-  else apply(current);
- }
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initFirstVisitTour();initOptionalAdsConsent();
+  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initFirstVisitTour();
   const observer=new MutationObserver(()=>{
    setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();
   });
