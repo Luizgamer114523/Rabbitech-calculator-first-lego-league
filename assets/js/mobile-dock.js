@@ -154,6 +154,9 @@
    button.dataset.page='team-workspace';
    nav.append(button);
   }
+  // Keep "Equipe" among the normal workspace tabs, not after Admin/off-screen.
+  const anchor=nav.querySelector('button[data-page="strategy"]')||nav.querySelector('button[data-page="leaderboard"]');
+  if(anchor&&anchor.nextElementSibling!==button)anchor.insertAdjacentElement('afterend',button);
   if(!button.querySelector('.dock-label')){
    button.innerHTML='<span class="dock-icon" aria-hidden="true">👥</span><span class="dock-label">Equipe</span>';
   }
