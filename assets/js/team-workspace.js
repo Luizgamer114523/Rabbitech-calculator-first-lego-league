@@ -241,7 +241,7 @@
  }
  async function openBoard(){
   if(loading)return;
-  if(!user()){makeNav();ensureJoinCard();ensureCreateTeamCard();showEntryMessage('Entre com sua conta Google para criar uma equipe ou aceitar um convite.');goToPage();return}
+  if(!user()){makeNav();ensureJoinCard();ensureCreateTeamCard();showEntryMessage('Entre com sua conta Google para criar uma equipe ou aceitar um convite.');const entry=$('rbTeamJoinCard');entry?.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});return}
   if($('page-team-workspace')?.dataset.rbBoardRendered==='true'&&workspace?.member){
    const page=$('page-team-workspace');
    const alreadyVisible=page&&!page.hidden&&page.classList.contains('active');
