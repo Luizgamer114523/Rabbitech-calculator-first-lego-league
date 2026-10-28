@@ -23,7 +23,7 @@ All commands except `/start`, `/help`, and `/link` require an account link. The 
    - `TELEGRAM_WEBHOOK_SECRET` (random secret, 32+ characters)
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
-3. Apply migration `supabase/migrations/20261028170000_telegram_bot_linking.sql and `supabase/migrations/20261028162000_telegram_notice_broadcasts.sql`` to the **active** Supabase project `ieijssfqonoucqheedac`. Review it first; do not apply it to the inactive project.
+3. Apply migration `supabase/migrations/20261028161500_telegram_bot_linking.sql and `supabase/migrations/20261028162000_telegram_notice_broadcasts.sql`` to the **active** Supabase project `ieijssfqonoucqheedac`. Review it first; do not apply it to the inactive project.
 4. Configure Telegram's webhook using the bot token and the secret header:
    `https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://rabbitech-fllc.vercel.app/api/telegram-webhook&secret_token=<URL_ENCODED_SECRET>`
    Call the URL from a secure environment; never commit it or post it in chat.
