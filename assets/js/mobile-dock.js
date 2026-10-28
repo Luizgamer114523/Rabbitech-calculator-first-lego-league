@@ -84,6 +84,18 @@
   }catch(error){console.warn('Rabbitech feature flags could not be refreshed',error)}
  }
  let settingsRealtimeChannel=null,settingsRealtimeStatus='CLOSED';
+ async function broadcastTelegramNotice(){
+  if(!adminAllowed())return;
+  const client=getSupabaseClient();
+  if(!client?.auth?.getSession)return;
+  try{
+   const sessionResult=await client.auth.getSession();
+   const token=sessionResult?.data?.session?.access_token;
+   if(!token)return;
+   const response=await fetch('/api/telegram-broadcast',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:'{}',cache:'no-store'});
+   if(!response.ok&&response.status!==503)console.warn('Não foi possível entregar o aviso global pelo Telegram.');
+  }catch(_){console.warn('Entrega do aviso global pelo Telegram indisponível.')}
+ }
  function setupSiteSettingsRealtime(){
   const client=getSupabaseClient();
   if(!client?.channel)return;
@@ -93,7 +105,7 @@
   // Public channel carries only an invalidation signal, never the settings payload.
   // The client then reads the public RPC, so table RLS and private columns stay protected.
   settingsRealtimeChannel=client.channel('public:site-settings')
-   .on('broadcast',{event:'site_settings_updated'},()=>loadPublicSettings())
+   .on('broadcast',{event:'site_settings_updated'},()=>{loadPublicSettings();if(adminAllowed())broadcastTelegramNotice()})
    .subscribe(status=>{
     settingsRealtimeStatus=status;
     if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED')console.warn('Atualização em tempo real dos avisos indisponível; será tentada novamente.');
@@ -607,6 +619,36 @@
   teamState.realtimeChannel=channel;
  }
  let teamAuthCheckInFlight=false;
+ function ensureTelegramLinkCard(){
+  const root=$('rbTeamWorkspaceRoot');
+  const user=currentUser();
+  if(!root||!user?.id)return;
+  if($('rbTelegramLinkCard'))return;
+  const card=document.createElement('section');
+  card.id='rbTelegramLinkCard';
+  card.className='tw-card';
+  card.style.cssText='margin-top:14px;padding:16px;border:1px solid #49684b;border-radius:16px;background:rgba(9,25,15,.96);color:#edf7ed';
+  card.innerHTML='<h3>🤖 Conectar ao Telegram</h3><p class="tw-muted">Vincule sua conta para consultar tarefas, rounds, equipe e avisos pelo bot. O código é de uso único e expira em 10 minutos.</p><button type="button" class="tw-btn" id="rbTelegramCreateLink">Gerar código de vínculo</button><div id="rbTelegramLinkResult" aria-live="polite" style="margin-top:10px"></div>';
+  root.append(card);
+  card.querySelector('#rbTelegramCreateLink').addEventListener('click',async()=>{
+   const button=card.querySelector('#rbTelegramCreateLink'),out=card.querySelector('#rbTelegramLinkResult'),client=teamClient();
+   if(!client||typeof client.rpc!=='function'){out.textContent='Conexão com o Rabbitech indisponível. Entre novamente e tente outra vez.';return}
+   button.disabled=true;button.textContent='Gerando código…';out.textContent='';
+   try{
+    const result=await client.rpc('create_telegram_link_code');
+    if(result?.error)throw result.error;
+    const code=String(result?.data||'').trim().toLowerCase();
+    if(!/^[a-f0-9]{48}$/.test(code))throw new Error('O servidor não retornou um código válido.');
+    const label=document.createElement('p');label.textContent='No Telegram, abra o bot Rabbitech e envie este comando:';
+    const codeBox=document.createElement('code');codeBox.textContent='/link '+code;codeBox.style.cssText='display:block;overflow-wrap:anywhere;padding:12px;margin:8px 0;border:1px solid #49684b;border-radius:10px;background:#06110a;color:#d0f477;user-select:all';
+    const hint=document.createElement('p');hint.className='tw-muted';hint.textContent='Não compartilhe o código. Ele expira em 10 minutos e só pode ser usado uma vez.';
+    const copy=document.createElement('button');copy.type='button';copy.className='tw-btn';copy.textContent='Copiar comando';
+    copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText('/link '+code);copy.textContent='Comando copiado'}catch(_){copy.textContent='Selecione e copie o comando acima'}});
+    out.replaceChildren(label,codeBox,hint,copy);
+   }catch(error){out.textContent=String(error?.message||'Não foi possível gerar o código.').slice(0,240)}
+   finally{button.disabled=false;button.textContent='Gerar novo código'}
+  });
+ }
  function syncTeamWorkspace(){
   const refs=ensureTeamPage();
   if(refs){
@@ -615,6 +657,7 @@
    refs.button.removeAttribute('aria-hidden');
    refs.button.style.removeProperty('display');
   }
+  ensureTelegramLinkCard();
  }
  async function refreshTeamBackground(){
   if(teamState.backgroundRefreshInFlight){teamState.backgroundRefreshQueued=true;return;}
