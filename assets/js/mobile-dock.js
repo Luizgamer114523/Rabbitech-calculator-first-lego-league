@@ -160,6 +160,11 @@
   if(!button.querySelector('.dock-label')){
    button.innerHTML='<span class="dock-icon" aria-hidden="true">👥</span><span class="dock-label">Equipe</span>';
   }
+  button.id='rbTeamWorkspaceNav';
+  button.hidden=false;
+  button.removeAttribute('hidden');
+  button.removeAttribute('aria-hidden');
+  button.style.removeProperty('display');
   button.title='Espaço da equipe';
   button.setAttribute('aria-label','Área da equipe');
   if(button.dataset.rbTeamHandler!=='true'){
@@ -199,7 +204,14 @@
   refs.page.hidden=false;
   refs.page.style.removeProperty('display');
   refs.page.classList.add('active');
-  document.querySelectorAll('nav button[data-page]').forEach(btn=>btn.classList.toggle('active',btn.dataset.page==='team-workspace'));
+  document.querySelectorAll('main .page').forEach(p=>p.setAttribute('aria-hidden',String(p!==refs.page)));
+  document.querySelectorAll('nav button[data-page]').forEach(btn=>{
+   const active=btn.dataset.page==='team-workspace';
+   btn.classList.toggle('active',active);
+   if(active)btn.setAttribute('aria-current','page');else btn.removeAttribute('aria-current');
+  });
+  const scrollToTeam=()=>{if(!refs.page.hidden&&refs.page.classList.contains('active')){const top=Math.max(0,window.scrollY+refs.page.getBoundingClientRect().top-12);window.scrollTo({top,behavior:'auto'})}};
+  scrollToTeam();
   const root=$('rbTeamWorkspaceRoot');
   if(root?.dataset.initialized==='true'){
    if(teamState.team?.team_id)refreshTeamBackground();
@@ -207,6 +219,7 @@
   }
   await renderTeamWorkspace();
   if(root)root.dataset.initialized='true';
+  requestAnimationFrame(scrollToTeam);
  }
  function teamShell(body){
   const root=$('rbTeamWorkspaceRoot');if(!root)return;
@@ -450,7 +463,12 @@
  let teamAuthCheckInFlight=false;
  function syncTeamWorkspace(){
   const refs=ensureTeamPage();
-  if(refs)refs.button.hidden=false;
+  if(refs){
+   refs.button.hidden=false;
+   refs.button.removeAttribute('hidden');
+   refs.button.removeAttribute('aria-hidden');
+   refs.button.style.removeProperty('display');
+  }
  }
  async function refreshTeamBackground(){
   if(teamState.backgroundRefreshInFlight)return;
@@ -554,7 +572,7 @@
  function init(){
   setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();
   const observer=new MutationObserver(()=>{
-   setupDock();placeLanguageButton();syncAdmin();
+   setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
