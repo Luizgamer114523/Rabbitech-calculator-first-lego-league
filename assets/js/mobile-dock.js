@@ -83,13 +83,19 @@
    applyFeatureFlags(flags,noticeActive,{text:noticeText,type:noticeType});
   }catch(error){console.warn('Rabbitech feature flags could not be refreshed',error)}
  }
- let settingsRealtimeChannel=null;
+ let settingsRealtimeChannel=null,settingsRealtimeStatus='CLOSED';
  function setupSiteSettingsRealtime(){
   const client=getSupabaseClient();
-  if(!client?.channel||settingsRealtimeChannel)return;
+  if(!client?.channel)return;
+  if(settingsRealtimeChannel&&settingsRealtimeStatus==='SUBSCRIBED')return;
+  if(settingsRealtimeChannel){try{client.removeChannel(settingsRealtimeChannel)}catch(_){}settingsRealtimeChannel=null}
+  settingsRealtimeStatus='CONNECTING';
   settingsRealtimeChannel=client.channel('rabbitech-public-site-settings')
    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'rabbitech_site_settings',filter:'id=eq.true'},()=>loadPublicSettings())
-   .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Atualização em tempo real das configurações indisponível; usando fallback.')});
+   .subscribe(status=>{
+    settingsRealtimeStatus=status;
+    if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED')console.warn('Atualização em tempo real das configurações indisponível; será tentada novamente.');
+   });
  }
  function applyFeatureFlags(flags,noticeActive,notice={}){
   Object.entries(FEATURE_TARGETS).forEach(([key,target])=>{
@@ -334,18 +340,18 @@
   const trendText=trend===null?'Ainda sem dados suficientes':trend>0?'Melhorando +' + Math.round(trend)+' pts':trend<0?'Caindo '+Math.round(trend)+' pts':'Estável';
   const manager=profile.is_manager===true||profile.role==='leader';
   const statusTasks=state=>tasks.filter(t=>t.status===state);
-  const taskCard=t=>'<article class="tw-task" data-team-task-card="'+teamEsc(t.id)+'"><strong>'+teamEsc(t.title)+'</strong><p>'+teamEsc(t.description||'')+'</p><p class="tw-muted">Prioridade: '+teamEsc(t.priority)+' · '+(t.due_date?'Prazo '+teamEsc(t.due_date):'Sem prazo')+'</p><p class="tw-muted">Responsável: '+teamEsc(members.find(m=>m.user_id===t.assigned_to)?.display_name||'Equipe toda')+'</p><label class="tw-muted">Status <select class="tw-field" data-current-status="'+teamEsc(t.status||'todo')+'" data-task-status="'+teamEsc(t.id)+'">'+TEAM_STATES.map(s=>'<option value="'+s+'" '+(t.status===s?'selected':'')+'>'+TEAM_LABELS[s]+'</option>').join('')+'</select></label>'+(manager?'<button class="tw-btn" data-team-delete="team_tasks" data-record-id="'+teamEsc(t.id)+'">Excluir tarefa</button>':'')+'</article>';
+  const taskCard=t=>'<article class="tw-task" data-team-task-card="'+teamEsc(t.id)+'"><strong>'+teamEsc(t.title)+'</strong><p>'+teamEsc(t.description||'')+'</p><p class="tw-muted">Prioridade: '+teamEsc(t.priority)+' · '+(t.due_date?'Prazo '+teamEsc(t.due_date):'Sem prazo')+'</p><p class="tw-muted">Responsável: '+teamEsc(members.find(m=>m.user_id===t.assigned_to)?.display_name||'Equipe toda')+'</p><label class="tw-muted">Status <select class="tw-field" '+((manager||!t.assigned_to||t.assigned_to===profile.user_id)?'':'disabled')+' data-current-status="'+teamEsc(t.status||'todo')+'" data-task-status="'+teamEsc(t.id)+'">'+TEAM_STATES.map(s=>'<option value="'+s+'" '+(t.status===s?'selected':'')+'>'+TEAM_LABELS[s]+'</option>').join('')+'</select></label>'+(manager?'<button class="tw-btn" data-team-delete="team_tasks" data-record-id="'+teamEsc(t.id)+'">Excluir tarefa</button>':'')+'</article>';
   const taskColumns=TEAM_STATES.map(s=>'<section class="tw-card"><h3>'+TEAM_LABELS[s]+' ('+statusTasks(s).length+')</h3>'+statusTasks(s).map(taskCard).join('')+'</section>').join('');
   const memberOptions='<option value="">Equipe toda</option>'+members.map(m=>'<option value="'+teamEsc(m.user_id)+'">'+teamEsc(m.display_name)+(m.role==='leader'?' · mentor':'')+'</option>').join('');
-  const goalHtml=goals.map(g=>{const taskPct=g.target_tasks?Math.min(100,Math.round(done/g.target_tasks*100)):0;const roundPct=g.target_rounds?Math.min(100,Math.round(rounds.length/g.target_rounds*100)):0;return '<div class="tw-task"><strong>'+teamEsc(g.title)+'</strong><p>'+teamEsc(g.description||'')+'</p><p>Tarefas: '+done+'/'+g.target_tasks+' ('+taskPct+'%)</p><progress max="100" value="'+taskPct+'" style="width:100%"></progress><p>Rounds registrados: '+rounds.length+'/'+g.target_rounds+' ('+roundPct+'%)</p><progress max="100" value="'+roundPct+'" style="width:100%"></progress><p>Meta de média: '+Number(g.target_average_score||0)+' pts · '+teamEsc(g.due_date||'Sem prazo')+'</p>'+(manager?'<button class="tw-btn" data-team-delete="team_goals" data-record-id="'+teamEsc(g.id)+'">Excluir meta</button>':'')+'</div>'}).join('');
+  const goalHtml=goals.map(g=>{const taskPct=g.target_tasks?Math.min(100,Math.round(done/g.target_tasks*100)):0;const roundPct=g.target_rounds?Math.min(100,Math.round(rounds.length/g.target_rounds*100)):0;return '<div class="tw-task" data-goal-id="'+teamEsc(g.id)+'"><strong>'+teamEsc(g.title)+'</strong><p>'+teamEsc(g.description||'')+'</p><p>Tarefas: '+done+'/'+g.target_tasks+' ('+taskPct+'%)</p><progress max="100" value="'+taskPct+'" style="width:100%"></progress><p>Rounds registrados: '+rounds.length+'/'+g.target_rounds+' ('+roundPct+'%)</p><progress max="100" value="'+roundPct+'" style="width:100%"></progress><p>Meta de média: '+Number(g.target_average_score||0)+' pts · '+teamEsc(g.due_date||'Sem prazo')+'</p>'+(manager?'<button class="tw-btn" data-team-delete="team_goals" data-record-id="'+teamEsc(g.id)+'">Excluir meta</button>':'')+'</div>'}).join('');
   const chart=recent.length?'<div style="display:flex;align-items:end;gap:8px;height:140px;padding:8px 0">'+recent.map((r,i)=>'<div style="flex:1;min-width:24px;text-align:center"><div title="'+Number(r.score||0)+' pontos" style="height:'+Math.max(5,Math.round(Number(r.score||0)/Math.max(1,...recent.map(x=>Number(x.score||0)))*105))+'px;background:#9dcc65;border-radius:6px 6px 0 0"></div><small>'+teamEsc('R'+r.round_number)+'</small><br><strong>'+Number(r.score||0)+'</strong></div>').join('')+'</div>':'<p class="tw-muted">Registre os rounds abaixo para começar o gráfico de desempenho.</p>';
   teamShell('<div class="tw-card"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><p class="tw-muted">ESPAÇO DA EQUIPE</p><h2>'+teamEsc(profile.team_name)+'</h2><p>Olá, '+teamEsc(profile.display_name)+' · '+(manager?'Mentor / responsável':'Membro')+'</p></div><div><button class="tw-btn" id="twRefresh">Atualizar</button><button class="tw-btn" id="twEnableNotifications">Ativar notificações</button></div></div><div class="tw-grid"><div class="tw-card"><div class="tw-stat">'+tasks.length+'</div><div>Tarefas criadas</div></div><div class="tw-card"><div class="tw-stat">'+done+'</div><div>Tarefas concluídas</div></div><div class="tw-card"><div class="tw-stat">'+progress+'%</div><div>Progresso das tarefas</div></div><div class="tw-card"><div class="tw-stat">'+avg+'</div><div>Média dos rounds · '+rounds.length+' registros</div></div></div><p><strong>Tendência:</strong> '+teamEsc(trendText)+'</p></div>'+
    (manager?'<div class="tw-card"><h3>Convidar membros</h3><p>Gere um código para compartilhar com os alunos. O código expira em 7 dias.</p><button class="tw-btn" id="twMakeInvite">Gerar convite</button><div id="twInviteResult" aria-live="polite"></div></div>':'')+
    (manager?'<div class="tw-card"><h3>Nova tarefa</h3><div class="tw-grid">'+teamFormField('twTaskTitle','Tarefa','Ex.: testar missão')+teamFormField('twTaskDue','Prazo','', 'date')+'</div><textarea class="tw-field" id="twTaskDescription" rows="2" maxlength="2000" placeholder="O que precisa ser feito?"></textarea><div class="tw-grid"><label>Prioridade<select class="tw-field" id="twTaskPriority"><option value="normal">Normal</option><option value="high">Alta</option><option value="low">Baixa</option></select></label><label>Atribuir a<select class="tw-field" id="twTaskAssignee">'+memberOptions+'</select></label></div><button class="tw-btn" id="twAddTask">Adicionar tarefa</button></div>':'')+
    '<div class="tw-card"><h3>Quadro Kanban</h3><p class="tw-muted">Mova tarefas entre A fazer, Em andamento e Concluído. O histórico de alterações fica salvo.</p><div class="tw-board">'+taskColumns+'</div></div>'+
    (manager?'<div class="tw-card"><h3>Metas da equipe</h3>'+teamFormField('twGoalTitle','Meta','Ex.: 10 rounds confiáveis')+teamFormField('twGoalDue','Prazo','', 'date')+'<div class="tw-grid"><label>Meta de tarefas<input class="tw-field" id="twGoalTasks" type="number" min="0" max="10000" value="0"></label><label>Meta de rounds<input class="tw-field" id="twGoalRounds" type="number" min="0" max="10000" value="0"></label><label>Média de pontos alvo<input class="tw-field" id="twGoalAverage" type="number" min="0" max="10000" value="0"></label></div><textarea class="tw-field" id="twGoalDescription" rows="2" maxlength="1000" placeholder="Descrição da meta"></textarea><button class="tw-btn" id="twAddGoal">Salvar meta</button></div>':'')+
-   '<div class="tw-card"><h3>Metas e progresso</h3>'+(goalHtml||'<p class="tw-muted">O mentor ainda não cadastrou metas.</p>')+'</div>'+
-   '<div class="tw-grid"><section class="tw-card"><h3>Registrar round de treino</h3>'+teamFormField('twRoundNumber','Número do round','1','number','min="1" max="10000"')+teamFormField('twRoundScore','Pontuação','0','number','min="0" max="10000"')+'<label style="display:block;margin:7px 0">Onde começou<select class="tw-field" id="twRoundStart"><option value="Base esquerda">Base esquerda</option><option value="Base direita">Base direita</option></select></label>'+teamMissionPicker()+'<textarea class="tw-field" id="twRoundNotes" rows="2" maxlength="2000" placeholder="Observações do round"></textarea><button class="tw-btn" id="twAddRound">Salvar round</button></section><section class="tw-card"><h3>Desempenho dos rounds</h3><p>Média atual: <strong>'+avg+' pontos</strong></p>'+chart+'<div style="margin-top:10px"><h4>Histórico de rounds</h4>'+(rounds.slice().reverse().map(r=>'<article class="tw-task" data-round-id="'+teamEsc(r.id)+'"><strong>Round '+teamEsc(r.round_number)+'</strong><p>'+Number(r.score||0)+' pontos · '+teamEsc(r.start_position||'Início não informado')+'</p><p class="tw-muted">'+teamEsc(r.notes||'')+'</p>'+((manager||r.created_by===profile.user_id)?'<button class="tw-btn" data-team-delete="team_round_logs" data-record-id="'+teamEsc(r.id)+'">Excluir round</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhum round registrado.</p>')+'</div><p class="tw-muted">'+rounds.length+' rounds de treino registrados.</p></section></div>'+
+   '<div class="tw-card"><h3>Metas e progresso</h3><div id="twGoalsList">'+(goalHtml||'<p class="tw-muted">O mentor ainda não cadastrou metas.</p>')+'</div></div>'+
+   '<div class="tw-grid"><section class="tw-card"><h3>Registrar round de treino</h3>'+teamFormField('twRoundNumber','Número do round','1','number','min="1" max="10000"')+teamFormField('twRoundScore','Pontuação','0','number','min="0" max="10000"')+'<label style="display:block;margin:7px 0">Onde começou<select class="tw-field" id="twRoundStart"><option value="Base esquerda">Base esquerda</option><option value="Base direita">Base direita</option></select></label>'+teamMissionPicker()+'<textarea class="tw-field" id="twRoundNotes" rows="2" maxlength="2000" placeholder="Observações do round"></textarea><button class="tw-btn" id="twAddRound">Salvar round</button></section><section class="tw-card"><h3>Desempenho dos rounds</h3><p>Média atual: <strong id="twRoundsAverage">'+avg+' pontos</strong></p><div id="twRoundChart">'+chart+'</div><div style="margin-top:10px"><h4>Histórico de rounds</h4><div id="twRoundList">'+(rounds.slice().reverse().map(r=>'<article class="tw-task" data-round-id="'+teamEsc(r.id)+'"><strong>Round '+teamEsc(r.round_number)+'</strong><p>'+Number(r.score||0)+' pontos · '+teamEsc(r.start_position||'Início não informado')+'</p><p class="tw-muted">'+teamEsc(r.notes||'')+'</p>'+((manager||r.created_by===profile.user_id)?'<button class="tw-btn" data-team-delete="team_round_logs" data-record-id="'+teamEsc(r.id)+'">Excluir round</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhum round registrado.</p>')+'</div></div><p id="twRoundCountFooter" class="tw-muted">'+rounds.length+' rounds de treino registrados.</p></section></div>'+
    '<div class="tw-grid"><section class="tw-card"><h3>Notas compartilhadas</h3>'+teamFormField('twNoteTitle','Título da nota','Ideias da reunião')+'<textarea class="tw-field" id="twNoteBody" rows="4" maxlength="8000" placeholder="Planejamento, decisões, o que testar..."></textarea><button class="tw-btn" id="twAddNote">Salvar anotação</button><div id="twNotesList">'+(notes.slice().reverse().map(n=>'<article class="tw-task" data-team-note-id="'+teamEsc(n.id)+'"><strong>'+teamEsc(n.title)+'</strong><p style="white-space:pre-wrap">'+teamEsc(n.body)+'</p><small class="tw-muted">'+teamEsc(new Date(n.created_at).toLocaleString())+' · '+teamEsc(members.find(m=>m.user_id===n.author_user_id)?.display_name||'Membro')+'</small>'+((manager||n.author_user_id===profile.user_id)?'<button class="tw-btn" data-team-delete="team_notes" data-record-id="'+teamEsc(n.id)+'">Excluir anotação</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhuma anotação ainda.</p>')+'</div></section>'+
    '<section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Mensagens de texto compartilhadas entre membros. Sem chamadas.</p><div id="twMessages" style="max-height:300px;overflow:auto">'+messages.slice(-60).map(m=>'<div class="tw-bubble" data-message-id="'+teamEsc(m.id)+'" data-created-at="'+teamEsc(m.created_at)+'"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong><p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p><small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small>'+((manager||m.author_user_id===profile.user_id)?'<button class="tw-btn" data-team-delete="team_messages" data-record-id="'+teamEsc(m.id)+'">Apagar mensagem</button>':'')+'</div>').join('')+'</div><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage">Enviar mensagem</button></section></div>'+
    '<div id="twFeedback" aria-live="polite"></div>');
@@ -375,11 +381,32 @@
   }catch(e){teamFeedback('Não foi possível apagar: '+(e?.message||'verifique as permissões.'),true);if(button)button.disabled=false}
  }
  async function requestTeamNotifications(){
-  if(!('Notification' in window)){teamFeedback('Este navegador não oferece notificações do site.',true);return}
+  if(!('Notification' in window)||!window.isSecureContext){
+   teamFeedback('Este navegador não permite notificações do sistema nesta janela. O chat e o quadro continuam atualizando em tempo real enquanto o site estiver aberto. Para alertas fora do site, abra o Rabbitech em um navegador compatível por HTTPS e permita notificações nas configurações do site.',true);
+   return;
+  }
   try{
    const permission=Notification.permission==='default'?await Notification.requestPermission():Notification.permission;
-   teamFeedback(permission==='granted'?'Notificações ativadas enquanto o Rabbitech estiver aberto.':'Permissão de notificação não concedida.',permission!=='granted');
-  }catch(_){teamFeedback('Não foi possível ativar notificações neste navegador.',true)}
+   if(permission==='granted'){
+    teamFeedback('Notificações do navegador ativadas neste dispositivo enquanto o navegador permitir alertas.');
+    try{new Notification('Rabbitech',{body:'As notificações da equipe estão ativadas.'})}catch(_){}
+   }else if(permission==='denied'){
+    teamFeedback('O navegador bloqueou as notificações. Abra as configurações do site neste celular e permita notificações.',true);
+   }else{
+    teamFeedback('A permissão não foi concedida. O chat continua atualizando em tempo real com o site aberto.',true);
+   }
+  }catch(_){teamFeedback('Não foi possível ativar notificações do sistema neste navegador. O chat continua atualizando em tempo real com o site aberto.',true)}
+ }
+ function notifyTeamMessage(message){
+  const userId=teamState.profile?.user_id;
+  if(!message||!userId||message.author_user_id===userId)return;
+  const pageActive=!document.hidden&&$('page-team-workspace')?.classList.contains('active');
+  if(pageActive)return;
+  if(!('Notification' in window)||Notification.permission!=='granted')return;
+  try{
+   const notice=new Notification('Nova mensagem na equipe',{body:String(message.body||'Você recebeu uma mensagem').slice(0,180),tag:'rabbitech-message-'+message.id});
+   notice.onclick=()=>{window.focus();openTeamPage();notice.close()};
+  }catch(_){}
  }
  function notifyAssignedTeamTask(task){
   const user=teamState.profile?.user_id;
@@ -438,6 +465,7 @@
   if(!TEAM_STATES.includes(status))return;
   const select=document.querySelector('[data-task-status="'+CSS.escape(id)+'"]');
   const oldStatus=select?.dataset.currentStatus||'todo';
+  if(select?.disabled){teamFeedback('Só a pessoa responsável ou a liderança da equipe pode alterar o status desta tarefa.',true);return}
   if(oldStatus===status)return;
   if(select)select.disabled=true;
   const c=teamClient();
@@ -537,12 +565,13 @@
  }
  function setupTeamChatRealtime(teamId){
   const client=teamClient();if(!client?.channel||!teamId)return;
-  if(teamState.realtimeTeamId===teamId&&teamState.realtimeChannel)return;
+  if(teamState.realtimeTeamId===teamId&&teamState.realtimeChannel&&teamState.realtimeReady)return;
   if(teamState.realtimeChannel){try{client.removeChannel(teamState.realtimeChannel)}catch(_){}}
   teamState.realtimeTeamId=teamId;teamState.realtimeReady=false;
   const channel=client.channel('rabbitech-team-chat-'+teamId)
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'team_messages',filter:'team_id=eq.'+teamId},payload=>{
     const message=payload?.new;if(!message||message.team_id!==teamId)return;
+    notifyTeamMessage(message);
     const box=$('twMessages');
     if(message.author_user_id===teamState.profile?.user_id){
      const duplicate=[...(box?.querySelectorAll('.tw-bubble')||[])].some(el=>el.dataset.messageId===message.id);
@@ -594,16 +623,17 @@
   teamState.backgroundRefreshInFlight=true;
   try{
    const teamId=team.team_id;
-   const [taskResult,roundResult,messageResult,noteResult]=await Promise.all([
+   const [taskResult,roundResult,goalResult,messageResult,noteResult]=await Promise.all([
     client.from('team_tasks').select('*').eq('team_id',teamId).order('created_at',{ascending:true}).limit(250),
-    client.from('team_round_logs').select('id,score,round_number,performed_at').eq('team_id',teamId).order('performed_at',{ascending:true}).limit(250),
+    client.from('team_round_logs').select('*').eq('team_id',teamId).order('performed_at',{ascending:true}).limit(250),
+    client.from('team_goals').select('*').eq('team_id',teamId).order('created_at',{ascending:true}).limit(250),
     client.from('team_messages').select('id,author_user_id,body,created_at').eq('team_id',teamId).order('created_at',{ascending:true}).limit(60),
     client.from('team_notes').select('id,author_user_id,title,body,created_at').eq('team_id',teamId).order('created_at',{ascending:false}).limit(100)
    ]);
-   if(taskResult.error||roundResult.error||messageResult.error||noteResult.error)return;
+   if(taskResult.error||roundResult.error||goalResult.error||messageResult.error||noteResult.error)return;
    // If the user navigated away while the queries were running, do not touch the page.
    if(!$('page-team-workspace')?.classList.contains('active'))return;
-   const tasks=taskResult.data||[],rounds=roundResult.data||[],messages=messageResult.data||[],notes=noteResult.data||[];
+   const tasks=taskResult.data||[],rounds=roundResult.data||[],goals=goalResult.data||[],messages=messageResult.data||[],notes=noteResult.data||[];
    const done=tasks.filter(t=>t.status==='done').length;
    const progress=tasks.length?Math.round(done/tasks.length*100):0;
    const avg=rounds.length?Math.round(rounds.reduce((sum,r)=>sum+Number(r.score||0),0)/rounds.length):0;
@@ -634,7 +664,7 @@
      if(ps[1])ps[1].textContent='Prioridade: '+(task.priority||'normal')+' · '+(task.due_date?'Prazo '+task.due_date:'Sem prazo');
      if(ps[2])ps[2].textContent='Responsável: '+memberName(task.assigned_to);
      const select=card.querySelector('[data-task-status]');
-     if(select){select.value=task.status||'todo';select.dataset.currentStatus=task.status||'todo';select.disabled=false}
+     if(select){select.value=task.status||'todo';select.dataset.currentStatus=task.status||'todo';select.disabled=!(teamState.profile?.is_manager===true||teamState.profile?.role==='leader'||!task.assigned_to||task.assigned_to===teamState.profile?.user_id)}
      const key=TEAM_STATES.includes(task.status)?task.status:'todo';
      const target=columns.find(col=>col.querySelector('h3')?.textContent?.startsWith(TEAM_LABELS[key]+' ('));
      if(target&&card.parentElement!==target)target.append(card);
@@ -643,6 +673,30 @@
     existing.forEach(card=>card.remove());
     columns.forEach(col=>{const heading=col.querySelector('h3');if(!heading)return;const state=Object.keys(TEAM_LABELS).find(s=>heading.textContent.startsWith(TEAM_LABELS[s]+' ('));if(state)heading.textContent=TEAM_LABELS[state]+' ('+col.querySelectorAll('[data-task-status]').length+')'});
    }
+   const currentManager=teamState.profile?.is_manager===true||teamState.profile?.role==='leader';
+   const currentUserId=teamState.profile?.user_id;
+   const goalsBox=$('twGoalsList');
+   if(goalsBox){
+    const goalHtml=goals.map(g=>{
+     const taskPct=g.target_tasks?Math.min(100,Math.round(done/g.target_tasks*100)):0;
+     const roundPct=g.target_rounds?Math.min(100,Math.round(rounds.length/g.target_rounds*100)):0;
+     return '<div class="tw-task" data-goal-id="'+teamEsc(g.id)+'"><strong>'+teamEsc(g.title)+'</strong><p>'+teamEsc(g.description||'')+'</p><p>Tarefas: '+done+'/'+g.target_tasks+' ('+taskPct+'%)</p><progress max="100" value="'+taskPct+'" style="width:100%"></progress><p>Rounds registrados: '+rounds.length+'/'+g.target_rounds+' ('+roundPct+'%)</p><progress max="100" value="'+roundPct+'" style="width:100%"></progress><p>Meta de média: '+Number(g.target_average_score||0)+' pts · '+teamEsc(g.due_date||'Sem prazo')+'</p>'+(currentManager?'<button class="tw-btn" data-team-delete="team_goals" data-record-id="'+teamEsc(g.id)+'">Excluir meta</button>':'')+'</div>';
+    }).join('')||'<p class="tw-muted">O mentor ainda não cadastrou metas.</p>';
+    if(goalsBox.innerHTML!==goalHtml)goalsBox.innerHTML=goalHtml;
+   }
+   const roundList=$('twRoundList');
+   if(roundList){
+    const roundHtml=rounds.slice().reverse().map(r=>'<article class="tw-task" data-round-id="'+teamEsc(r.id)+'"><strong>Round '+teamEsc(r.round_number)+'</strong><p>'+Number(r.score||0)+' pontos · '+teamEsc(r.start_position||'Início não informado')+'</p><p class="tw-muted">'+teamEsc(r.notes||'')+'</p>'+((currentManager||r.created_by===currentUserId)?'<button class="tw-btn" data-team-delete="team_round_logs" data-record-id="'+teamEsc(r.id)+'">Excluir round</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhum round registrado.</p>';
+    if(roundList.innerHTML!==roundHtml)roundList.innerHTML=roundHtml;
+   }
+   const roundChart=$('twRoundChart');
+   if(roundChart){
+    const recentRounds=rounds.slice(-5);
+    const chartHtml=recentRounds.length?'<div style="display:flex;align-items:end;gap:8px;height:140px;padding:8px 0">'+recentRounds.map(r=>'<div style="flex:1;min-width:24px;text-align:center"><div title="'+Number(r.score||0)+' pontos" style="height:'+Math.max(5,Math.round(Number(r.score||0)/Math.max(1,...recentRounds.map(x=>Number(x.score||0)))*105))+'px;background:#9dcc65;border-radius:6px 6px 0 0"></div><small>'+teamEsc('R'+r.round_number)+'</small><br><strong>'+Number(r.score||0)+'</strong></div>').join('')+'</div>':'<p class="tw-muted">Registre os rounds abaixo para começar o gráfico de desempenho.</p>';
+    if(roundChart.innerHTML!==chartHtml)roundChart.innerHTML=chartHtml;
+   }
+   const roundsAverage=$('twRoundsAverage');if(roundsAverage)roundsAverage.textContent=avg+' pontos';
+   const roundsFooter=$('twRoundCountFooter');if(roundsFooter)roundsFooter.textContent=rounds.length+' rounds de treino registrados.';
    const statLabels=root.querySelectorAll('.tw-stat + div');
    if(statLabels.length>=4&&statLabels[3].textContent!==('Média dos rounds · '+rounds.length+' registros'))statLabels[3].textContent='Média dos rounds · '+rounds.length+' registros';
    const notesBox=$('twNotesList');
@@ -709,7 +763,7 @@
    }
   });
   document.addEventListener('visibilitychange',()=>{if(!document.hidden&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()});
-  setInterval(()=>{if(!document.hidden&&!teamState.realtimeReady&&$('page-team-workspace')?.classList.contains('active'))refreshTeamBackground()},30000);
+  setInterval(()=>{if(!document.hidden&&!teamState.realtimeReady&&$('page-team-workspace')?.classList.contains('active')){setupTeamChatRealtime(teamState.team?.team_id);refreshTeamBackground()}},30000);
  }
  
  function init(){
