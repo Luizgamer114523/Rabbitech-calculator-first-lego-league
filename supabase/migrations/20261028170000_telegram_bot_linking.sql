@@ -77,9 +77,6 @@ AS $function$
 DECLARE
   v_link public.telegram_link_codes%ROWTYPE;
 BEGIN
-  IF coalesce(current_setting('request.jwt.claim.role', true), '') <> 'service_role' THEN
-    RAISE EXCEPTION 'Acesso não autorizado.' USING errcode = '42501';
-  END IF;
   IF p_code_hash IS NULL OR length(p_code_hash) <> 64
      OR p_telegram_user_id IS NULL OR p_chat_id IS NULL THEN
     RAISE EXCEPTION 'Dados de vínculo inválidos.' USING errcode = '22023';
