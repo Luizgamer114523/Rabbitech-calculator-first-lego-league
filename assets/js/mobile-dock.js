@@ -543,8 +543,8 @@
   const t=teamState.team,p=teamState.profile,input=$('twMessageBody'),button=$('twSendMessage'),body=input?.value.trim();
   // Guard against double taps and duplicate listeners on mobile while the insert is pending.
   if(teamState.sendingMessage||!body||!t?.team_id||!p?.user_id)return;
-  teamState.sendingMessage=true;
   const c=teamClient();if(!c)return;
+  teamState.sendingMessage=true;
   const localId='pending-'+Date.now()+'-'+Math.random().toString(36).slice(2,8);
   const box=$('twMessages');const oldScroll=box?.scrollTop||0;
   if(button)button.disabled=true;
