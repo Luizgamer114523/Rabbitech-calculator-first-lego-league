@@ -211,9 +211,15 @@
    btn.classList.toggle('active',active);
    if(active)btn.setAttribute('aria-current','page');else btn.removeAttribute('aria-current');
   });
+  const root=$('rbTeamWorkspaceRoot');
+  // If the team workspace is already open and loaded, keep the DOM, focus and
+  // scroll position exactly as they are. Refresh data in place instead.
+  if(refs.page.classList.contains('active')&&root?.dataset.initialized==='true'&&teamState.team?.team_id){
+   refreshTeamBackground();
+   return;
+  }
   const scrollToTeam=()=>{if(!refs.page.hidden&&refs.page.classList.contains('active')){const top=Math.max(0,window.scrollY+refs.page.getBoundingClientRect().top-12);window.scrollTo({top,behavior:'auto'})}};
   scrollToTeam();
-  const root=$('rbTeamWorkspaceRoot');
   // The page may have been opened before Google sign-in finished. Do not keep
   // the anonymous/loading screen cached after the auth state changes.
   const signedIn=!!teamClientUser();
@@ -304,7 +310,6 @@
   const goalHtml=goals.map(g=>{const taskPct=g.target_tasks?Math.min(100,Math.round(done/g.target_tasks*100)):0;const roundPct=g.target_rounds?Math.min(100,Math.round(rounds.length/g.target_rounds*100)):0;return '<div class="tw-task"><strong>'+teamEsc(g.title)+'</strong><p>'+teamEsc(g.description||'')+'</p><p>Tarefas: '+done+'/'+g.target_tasks+' ('+taskPct+'%)</p><progress max="100" value="'+taskPct+'" style="width:100%"></progress><p>Rounds registrados: '+rounds.length+'/'+g.target_rounds+' ('+roundPct+'%)</p><progress max="100" value="'+roundPct+'" style="width:100%"></progress><p>Meta de média: '+Number(g.target_average_score||0)+' pts · '+teamEsc(g.due_date||'Sem prazo')+'</p></div>'}).join('');
   const chart=recent.length?'<div style="display:flex;align-items:end;gap:8px;height:140px;padding:8px 0">'+recent.map((r,i)=>'<div style="flex:1;min-width:24px;text-align:center"><div title="'+Number(r.score||0)+' pontos" style="height:'+Math.max(5,Math.round(Number(r.score||0)/Math.max(1,...recent.map(x=>Number(x.score||0)))*105))+'px;background:#9dcc65;border-radius:6px 6px 0 0"></div><small>'+teamEsc('R'+r.round_number)+'</small><br><strong>'+Number(r.score||0)+'</strong></div>').join('')+'</div>':'<p class="tw-muted">Registre os rounds abaixo para começar o gráfico de desempenho.</p>';
   teamShell('<div class="tw-card"><div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><p class="tw-muted">ESPAÇO DA EQUIPE</p><h2>'+teamEsc(profile.team_name)+'</h2><p>Olá, '+teamEsc(profile.display_name)+' · '+(manager?'Mentor / responsável':'Membro')+'</p></div><button class="tw-btn" id="twRefresh">Atualizar</button></div><div class="tw-grid"><div class="tw-card"><div class="tw-stat">'+tasks.length+'</div><div>Tarefas criadas</div></div><div class="tw-card"><div class="tw-stat">'+done+'</div><div>Tarefas concluídas</div></div><div class="tw-card"><div class="tw-stat">'+progress+'%</div><div>Progresso das tarefas</div></div><div class="tw-card"><div class="tw-stat">'+avg+'</div><div>Média dos rounds · '+rounds.length+' registros</div></div></div><p><strong>Tendência:</strong> '+teamEsc(trendText)+'</p></div>'+
-   '<div class="tw-card"><h3>Entrar em equipe existente</h3><p>Recebeu um código de convite? Coloque o código e o nome que seus colegas devem ver. Se esta conta já estiver vinculada a outra equipe, o site avisará sem trocar sua equipe automaticamente.</p>'+teamFormField('twJoinCodeMember','Código de convite','Cole aqui o código recebido')+teamFormField('twJoinNameMember','Seu nome na equipe','Nome para os colegas')+'<button class="tw-btn" id="twJoinMemberView">Aceitar convite</button><div id="twJoinMemberFeedback" aria-live="polite"></div></div>'+
    (manager?'<div class="tw-card"><h3>Convidar membros</h3><p>Gere um código para compartilhar com os alunos. O código expira em 7 dias.</p><button class="tw-btn" id="twMakeInvite">Gerar convite</button><div id="twInviteResult" aria-live="polite"></div></div>':'')+
    (manager?'<div class="tw-card"><h3>Nova tarefa</h3><div class="tw-grid">'+teamFormField('twTaskTitle','Tarefa','Ex.: testar missão')+teamFormField('twTaskDue','Prazo','', 'date')+'</div><textarea class="tw-field" id="twTaskDescription" rows="2" maxlength="2000" placeholder="O que precisa ser feito?"></textarea><div class="tw-grid"><label>Prioridade<select class="tw-field" id="twTaskPriority"><option value="normal">Normal</option><option value="high">Alta</option><option value="low">Baixa</option></select></label><label>Atribuir a<select class="tw-field" id="twTaskAssignee">'+memberOptions+'</select></label></div><button class="tw-btn" id="twAddTask">Adicionar tarefa</button></div>':'')+
    '<div class="tw-card"><h3>Quadro Kanban</h3><p class="tw-muted">Mova tarefas entre A fazer, Em andamento e Concluído. O histórico de alterações fica salvo.</p><div class="tw-board">'+taskColumns+'</div></div>'+
@@ -315,7 +320,6 @@
    '<section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Mensagens de texto compartilhadas entre membros. Sem chamadas.</p><div id="twMessages" style="max-height:300px;overflow:auto">'+messages.slice(-60).map(m=>'<div class="tw-bubble"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong><p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p><small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small></div>').join('')+'</div><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage">Enviar mensagem</button></section></div>'+
    '<div id="twFeedback" aria-live="polite"></div>');
   $('twRefresh')?.addEventListener('click',()=>{refreshTeamBackground();teamFeedback('Atualizando os dados em segundo plano…')});
-  $('twJoinMemberView')?.addEventListener('click',()=>joinTeamWorkspace('twJoinCodeMember','twJoinNameMember','twJoinMemberFeedback'));
   $('twMakeInvite')?.addEventListener('click',createTeamInvite);
   $('twAddTask')?.addEventListener('click',createTeamTask);
   $('twAddGoal')?.addEventListener('click',createTeamGoal);
