@@ -475,7 +475,11 @@
   const strong=document.createElement('strong');strong.textContent=name;
   const body=document.createElement('p');body.style.cssText='white-space:pre-wrap;margin:4px 0';body.textContent=message.body;
   const time=document.createElement('small');time.className='tw-muted';time.textContent=pending?'Enviando…':new Date(message.created_at).toLocaleString();
-  bubble.append(strong,body,time);box.appendChild(bubble);box.scrollTop=box.scrollHeight;
+  bubble.append(strong,body,time);
+  if(!pending&&(teamState.profile?.is_manager===true||teamState.profile?.role==='leader'||message.author_user_id===teamState.profile?.user_id)){
+   const del=document.createElement('button');del.type='button';del.className='tw-btn';del.dataset.teamDelete='team_messages';del.dataset.recordId=String(message.id);del.textContent='Apagar mensagem';bubble.append(del);
+  }
+  box.appendChild(bubble);box.scrollTop=box.scrollHeight;
  }
  async function sendTeamMessage(){
   const t=teamState.team,p=teamState.profile,input=$('twMessageBody'),button=$('twSendMessage'),body=input?.value.trim();
@@ -593,6 +597,7 @@
      if(!card){
       card=document.createElement('article');card.className='tw-task';card.dataset.teamTaskCard=task.id;
       card.innerHTML='<strong></strong><p></p><p class="tw-muted"></p><p class="tw-muted"></p><label class="tw-muted">Status <select class="tw-field" data-task-status="'+teamEsc(task.id)+'"></select></label>';
+      if(teamState.profile?.is_manager===true||teamState.profile?.role==='leader'){const del=document.createElement('button');del.type='button';del.className='tw-btn';del.dataset.teamDelete='team_tasks';del.dataset.recordId=String(task.id);del.textContent='Excluir tarefa';card.append(del)}
       const select=card.querySelector('select');
       TEAM_STATES.forEach(state=>{const option=document.createElement('option');option.value=state;option.textContent=TEAM_LABELS[state];select.append(option)});
       select.addEventListener('change',()=>changeTeamTaskStatus(task.id,select.value));
@@ -619,7 +624,7 @@
     const existingNotes=new Map([...notesBox.querySelectorAll('[data-team-note-id]')].map(el=>[el.dataset.teamNoteId,el]));
     notes.forEach(note=>{
      const id=String(note.id);let article=existingNotes.get(id);
-     if(!article){article=document.createElement('article');article.className='tw-task';article.dataset.teamNoteId=id;const h=document.createElement('strong'),p=document.createElement('p'),meta=document.createElement('small');p.style.whiteSpace='pre-wrap';meta.className='tw-muted';article.append(h,p,meta);const empty=notesBox.querySelector('.tw-muted');if(empty&&empty.textContent.includes('Nenhuma anotação'))empty.remove();notesBox.prepend(article)}
+     if(!article){article=document.createElement('article');article.className='tw-task';article.dataset.teamNoteId=id;const h=document.createElement('strong'),p=document.createElement('p'),meta=document.createElement('small');p.style.whiteSpace='pre-wrap';meta.className='tw-muted';article.append(h,p,meta);if(teamState.profile?.is_manager===true||teamState.profile?.role==='leader'||note.author_user_id===teamState.profile?.user_id){const del=document.createElement('button');del.type='button';del.className='tw-btn';del.dataset.teamDelete='team_notes';del.dataset.recordId=id;del.textContent='Excluir anotação';article.append(del)}const empty=notesBox.querySelector('.tw-muted');if(empty&&empty.textContent.includes('Nenhuma anotação'))empty.remove();notesBox.prepend(article)}
      const h=article.querySelector('strong'),p=article.querySelector('p'),meta=article.querySelector('small');
      if(h&&h.textContent!==String(note.title||''))h.textContent=note.title||'';
      if(p&&p.textContent!==String(note.body||''))p.textContent=note.body||'';
@@ -635,7 +640,7 @@
     const existingMessages=new Map([...messageBox.querySelectorAll('[data-message-id]')].map(el=>[el.dataset.messageId,el]));
     messages.forEach(message=>{
      const id=String(message.id);let bubble=existingMessages.get(id);
-     if(!bubble){const pending=messageBox.querySelector('[data-pending-message="true"]');if(pending&&message.author_user_id===teamState.profile?.user_id){bubble=pending;pending.removeAttribute('data-pending-message');bubble.dataset.messageId=id;bubble.dataset.createdAt=message.created_at}else{bubble=document.createElement('div');bubble.className='tw-bubble';bubble.dataset.messageId=id;bubble.dataset.createdAt=message.created_at;const h=document.createElement('strong'),p=document.createElement('p'),meta=document.createElement('small');p.style.cssText='white-space:pre-wrap;margin:4px 0';meta.className='tw-muted';bubble.append(h,p,meta);messageBox.appendChild(bubble)}}
+     if(!bubble){const pending=messageBox.querySelector('[data-pending-message="true"]');if(pending&&message.author_user_id===teamState.profile?.user_id){bubble=pending;pending.removeAttribute('data-pending-message');bubble.dataset.messageId=id;bubble.dataset.createdAt=message.created_at;const del=document.createElement('button');del.type='button';del.className='tw-btn';del.dataset.teamDelete='team_messages';del.dataset.recordId=id;del.textContent='Apagar mensagem';bubble.append(del)}else{bubble=document.createElement('div');bubble.className='tw-bubble';bubble.dataset.messageId=id;bubble.dataset.createdAt=message.created_at;const h=document.createElement('strong'),p=document.createElement('p'),meta=document.createElement('small');p.style.cssText='white-space:pre-wrap;margin:4px 0';meta.className='tw-muted';bubble.append(h,p,meta);if(teamState.profile?.is_manager===true||teamState.profile?.role==='leader'||message.author_user_id===teamState.profile?.user_id){const del=document.createElement('button');del.type='button';del.className='tw-btn';del.dataset.teamDelete='team_messages';del.dataset.recordId=id;del.textContent='Apagar mensagem';bubble.append(del)}messageBox.appendChild(bubble)}}
      const h=bubble.querySelector('strong'),p=bubble.querySelector('p'),meta=bubble.querySelector('small');
      if(h)h.textContent=teamState.members?.find(m=>m.user_id===message.author_user_id)?.display_name||'Membro';
      if(p&&p.textContent!==String(message.body||''))p.textContent=message.body||'';
