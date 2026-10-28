@@ -888,105 +888,6 @@
  }
 
 
- function initOptionalAdsConsent(){
-  const KEY='rabbitech_optional_ads_consent_v1';
-  const read=()=>{try{const v=localStorage.getItem(KEY);return v==='accepted'||v==='declined'?v:null}catch(_){return null}};
-  const notify=choice=>{
-   try{window.dispatchEvent(new CustomEvent('rb-ads-consent-changed',{detail:{consent:choice,allowed:choice==='accepted'}}))}catch(_){}
-   syncOptionalAdSlot(choice);
-   updateAdPreferenceStatus();
-  };
-  const save=choice=>{
-   if(choice!=='accepted'&&choice!=='declined')return;
-   try{localStorage.setItem(KEY,choice)}catch(_){}
-   notify(choice);
-   const banner=$('rbOptionalAdsConsent');if(banner)banner.remove();
-  };
-  const statusText=choice=>choice==='accepted'
-   ?'Anúncios opcionais permitidos. Eles só serão carregados quando houver um provedor de anúncios configurado.'
-   :choice==='declined'
-    ?'Anúncios opcionais desativados neste navegador. Você pode mudar essa preferência quando quiser.'
-    :'Você ainda não escolheu se deseja permitir anúncios opcionais.';
-  function updateAdPreferenceStatus(){
-   const choice=read(),status=$('rbOptionalAdsPreferenceStatus');
-   if(status)status.textContent=statusText(choice);
-   const allow=$('rbOptionalAdsAllow'),deny=$('rbOptionalAdsDeny');
-   if(allow)allow.setAttribute('aria-pressed',String(choice==='accepted'));
-   if(deny)deny.setAttribute('aria-pressed',String(choice==='declined'));
-  }
-  function syncOptionalAdSlot(choice=read()){
-   const main=document.querySelector('main');
-   if(choice!=='accepted'){
-    $('rbOptionalAdSlot')?.remove();
-    return;
-   }
-   // Never contact an ad network before opt-in. No ad provider is bundled with the site;
-   // a configured provider can render here after consent, without blocking navigation.
-   const provider=window.rbAdsProvider;
-   if(!provider||typeof provider.render!=='function'||!main)return;
-   let slot=$('rbOptionalAdSlot');
-   if(!slot){
-    slot=document.createElement('aside');slot.id='rbOptionalAdSlot';
-    slot.setAttribute('aria-label','Anúncio opcional');
-    slot.style.cssText='box-sizing:border-box;max-width:980px;margin:18px auto 150px;padding:10px 12px;border:1px solid rgba(125,157,105,.22);border-radius:12px;background:rgba(10,24,15,.56);color:#b9c9b8;font-size:12px;line-height:1.4;overflow:hidden';
-    const label=document.createElement('div');label.textContent='Anúncio';label.style.cssText='font-size:10px;text-transform:uppercase;letter-spacing:.08em;opacity:.7;margin-bottom:5px';
-    slot.appendChild(label);main.appendChild(slot);
-   }
-   if(slot.dataset.providerRendered==='true')return;
-   try{
-    const result=provider.render(slot,{consent:'accepted'});
-    slot.dataset.providerRendered='true';
-    if(result&&typeof result.catch==='function')result.catch(error=>{delete slot.dataset.providerRendered;console.warn('Não foi possível carregar o anúncio opcional.',error)});
-   }catch(error){console.warn('Não foi possível carregar o anúncio opcional.',error)}
-  }
-  function showBanner(){
-   if(read()||$('rbOptionalAdsConsent'))return;
-   const banner=document.createElement('section');banner.id='rbOptionalAdsConsent';
-   banner.setAttribute('role','region');banner.setAttribute('aria-label','Preferência de anúncios opcionais');
-   banner.style.cssText='position:fixed;z-index:2147482000;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 148px);max-width:720px;margin-inline:auto;box-sizing:border-box;padding:12px 14px;border:1px solid rgba(208,244,119,.42);border-radius:14px;background:rgba(8,22,13,.97);color:#eef7eb;box-shadow:0 8px 28px #0005;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);font:inherit;font-size:13px;line-height:1.45';
-   banner.innerHTML='<strong style="display:block;margin-bottom:4px">Anúncios opcionais</strong><p style="margin:0 0 9px">Você escolhe. Permitir anúncios pode ajudar a apoiar o Rabbitech. Sua escolha fica salva neste navegador e não impede o uso do site.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="rbOptionalAdsAccept" style="border:1px solid #d0f477;border-radius:999px;padding:8px 12px;background:#d0f477;color:#142014;font:inherit;font-weight:750">Permitir anúncios</button><button type="button" id="rbOptionalAdsDecline" style="border:1px solid #49684b;border-radius:999px;padding:8px 12px;background:#13281a;color:#eef7eb;font:inherit;font-weight:700">Continuar sem anúncios</button><button type="button" id="rbOptionalAdsDetails" style="border:0;padding:8px 6px;background:transparent;color:#c6d9c3;font:inherit;text-decoration:underline">Detalhes</button></div>';
-   document.body.appendChild(banner);
-   $('rbOptionalAdsAccept').addEventListener('click',()=>save('accepted'));
-   $('rbOptionalAdsDecline').addEventListener('click',()=>save('declined'));
-   $('rbOptionalAdsDetails').addEventListener('click',()=>{
-    const page=$('page-privacy'),nav=document.querySelector('nav button[data-page="privacy"]');
-    if(nav)nav.click();
-    else if(page){page.hidden=false;page.classList.add('active');page.scrollIntoView({behavior:'smooth',block:'start'})}
-    $('rbOptionalAdsPreferenceSettings')?.scrollIntoView({behavior:'smooth',block:'center'});
-   });
-  }
-  function ensurePreferenceSettings(){
-   const page=$('page-privacy')||document.querySelector('main .page[data-page="privacy"]');
-   if(!page||$('rbOptionalAdsPreferenceSettings'))return;
-   const card=document.createElement('section');card.id='rbOptionalAdsPreferenceSettings';card.className='privacy-card';
-   card.style.cssText='margin:14px 0;padding:16px;border:1px solid #34543a;border-radius:14px;background:rgba(12,29,18,.94);color:var(--text,#eef7eb);line-height:1.55';
-   card.innerHTML='<h3>Preferência de anúncios opcionais</h3><p>Os anúncios são opcionais. A escolha é guardada neste navegador; recusar não limita as funções do Rabbitech.</p><p id="rbOptionalAdsPreferenceStatus" aria-live="polite"></p><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" class="tw-btn" id="rbOptionalAdsAllow">Permitir anúncios</button><button type="button" class="tw-btn" id="rbOptionalAdsDeny">Desativar anúncios</button><button type="button" class="tw-btn" id="rbOptionalAdsAskAgain">Perguntar novamente</button></div>';
-   page.appendChild(card);
-   $('rbOptionalAdsAllow').addEventListener('click',()=>save('accepted'));
-   $('rbOptionalAdsDeny').addEventListener('click',()=>save('declined'));
-   $('rbOptionalAdsAskAgain').addEventListener('click',()=>{
-    try{localStorage.removeItem(KEY)}catch(_){}
-    updateAdPreferenceStatus();showBanner();
-    $('rbOptionalAdsConsent')?.scrollIntoView({behavior:'smooth',block:'nearest'});
-   });
-   updateAdPreferenceStatus();
-  }
-  // This controller is also called by the site's DOM observer. Install listeners once.
-  if(window.rbOptionalAdsConsent?.initialized){
-   ensurePreferenceSettings();updateAdPreferenceStatus();return;
-  }
-  window.rbOptionalAdsConsent={
-   initialized:true,
-   get:read,
-   isAllowed:()=>read()==='accepted',
-   set:save
-  };
-  window.addEventListener('rb-ads-provider-ready',()=>syncOptionalAdSlot(read()));
-  ensurePreferenceSettings();
-  if(!read())showBanner();else syncOptionalAdSlot(read());
-  updateAdPreferenceStatus();
- }
-
  function ensurePrivacyDisclosure(){
   if($('rbPrivacyDataNotice'))return;
   const navButton=document.querySelector('nav button[data-page="privacy"]');
@@ -1027,9 +928,9 @@
   page.appendChild(section);
  }
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initOptionalAdsConsent();initFirstVisitTour();
+  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initFirstVisitTour();
   const observer=new MutationObserver(()=>{
-   setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();initOptionalAdsConsent();
+   setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
