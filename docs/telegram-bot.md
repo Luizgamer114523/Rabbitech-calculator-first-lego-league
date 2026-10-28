@@ -9,7 +9,10 @@ The webhook is implemented at `/api/telegram-webhook`. It is intentionally not e
 - `/team`: team and member role
 - `/tasks`: up to 10 unfinished team tasks
 - `/rounds`: last 5 rounds and their average
-- `/notice`: active global notice\n- Automatic global-notice delivery: when the admin settings Realtime event arrives in an authenticated admin session, the server verifies admin access and sends the active notice once per unique text/type
+- `/notice`: active global notice
+- `/robotica`: robotics workspace guidance
+- `/fll`: FIRST LEGO League resources
+- Automatic global-notice delivery: when the admin settings Realtime event arrives in an authenticated admin session, the server verifies admin access and sends the active notice once per unique text/type
 - `/support`: Rabbitech help link
 - `/unlink`: remove the Telegram link
 
