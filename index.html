@@ -301,7 +301,7 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 </div>
 <section id="rabbitechCloud" aria-label="Conta e sincronização na nuvem">
   <h2>☁️ Rabbitech Cloud · Founders Edition</h2>
-  <p>Primeiro informe o nome da equipe e depois entre com Google. Cada nome pode pertencer a uma única conta Google. Os rounds privados ficam separados por equipe.</p>
+  <p>Entre com sua conta Google e depois escolha: criar uma equipe como mentor ou entrar em uma equipe existente com o código de convite. O responsável gera e compartilha o código com os membros.</p>
   <div class="cloud-fields">
     <label class="field" for="rbCloudTeam">Nome da equipe (obrigatório)
       <input id="rbCloudTeam" type="text" placeholder="Ex.: Rabbitech" autocomplete="organization" maxlength="100" minlength="2" required aria-required="true">
@@ -315,7 +315,14 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
   </div>
   <div id="rbCloudStatus" class="cloud-status" role="status" aria-live="polite">Digite o nome da equipe para continuar com Google. O nome não dá acesso a uma equipe já registrada.</div>
 </section>
-<div class="rb-public-ranking-callout" aria-label="Ranking público">
+<section id="rbTeamWorkspace" class="rb-team-workspace" aria-label="Criar ou entrar em uma equipe">
+ <div class="rb-team-heading"><div><span class="eyebrow">RABBITECH TEAM</span><h2>Equipe e convites</h2><p>Entre com Google, crie sua equipe ou use um código de convite do mentor.</p></div><span id="rbTeamRolePill" class="rb-team-role">Não conectado</span></div>
+ <div class="rb-team-tabs" role="tablist" aria-label="Ações da equipe"><button type="button" class="primary" id="rbTeamTabCreate" role="tab" aria-selected="true">＋ Criar equipe</button><button type="button" id="rbTeamTabJoin" role="tab" aria-selected="false">↪ Entrar em equipe existente</button></div>
+ <div id="rbTeamCreatePane" class="rb-team-pane"><label class="field" for="rbTeamCreateName">Nome da equipe<input id="rbTeamCreateName" type="text" maxlength="100" minlength="2" placeholder="Ex.: Rabbitech BIOGLOW" autocomplete="organization"></label><button type="button" class="primary" id="rbTeamCreateButton">Criar equipe e virar mentor responsável</button></div>
+ <div id="rbTeamJoinPane" class="rb-team-pane" hidden><label class="field" for="rbTeamInviteCode">Código de convite<input id="rbTeamInviteCode" type="text" maxlength="40" placeholder="Cole o código recebido do mentor" autocomplete="off" autocapitalize="characters"></label><button type="button" class="primary" id="rbTeamJoinButton">Aceitar convite e entrar</button></div>
+ <div id="rbTeamActivePane" class="rb-team-active" hidden><div><small>Equipe atual</small><strong id="rbTeamActiveName">Nenhuma</strong><span id="rbTeamActiveRole">Sem função</span></div><div class="rb-team-actions"><button type="button" id="rbTeamInviteButton">Gerar código de convite</button><button type="button" id="rbTeamMembersButton">Atualizar membros</button></div><div id="rbTeamInviteResult" class="rb-team-invite-result" hidden></div><ul id="rbTeamMembersList" class="rb-team-members"><li>Entre ou crie uma equipe para ver os membros.</li></ul></div>
+ <p id="rbTeamWorkspaceStatus" class="cloud-status" role="status" aria-live="polite">Primeiro entre com Google. Depois crie uma equipe ou aceite um convite.</p><p class="rb-team-footnote">Os convites expiram em 14 dias. O código permite entrar na equipe, não concede acesso de administrador ao site.</p>
+</section><div class="rb-public-ranking-callout" aria-label="Ranking público">
   <div class="rb-public-ranking-inner">
     <div><h2>🏆 Ranking público BIOGLOW</h2><p>Consulte as equipes classificadas, a média de pontuação e a quantidade de rounds registrados. Não é necessário ser administrador.</p></div>
     <button type="button" class="primary" id="rbPublicRankingOpen">Ver ranking público →</button>
@@ -1293,13 +1300,18 @@ async function rbHandleSignedIn(){
  const pending=rbNormalizeTeamName(localStorage.getItem(PENDING_TEAM_KEY)||'');
  try{
   let own=await rbFindOwnTeam();
-  if(own){rbApplyTeam(own);localStorage.removeItem(PENDING_TEAM_KEY);if(pending&&pending.toLocaleLowerCase('pt-BR')!==String(own.name).toLocaleLowerCase('pt-BR'))rbCloudStatus('Esta conta Google já pertence à equipe '+own.name+'. O nome digitado '+pending+' não substituiu a equipe já vinculada.');}
-  else if(pending){rbEl('rbCloudTeam').value=pending;try{await rbClaimTeam(pending);localStorage.removeItem(PENDING_TEAM_KEY);rbCloudStatus('Conta Google vinculada à equipe '+rbCloudTeam.name+'.');}catch(e){localStorage.removeItem(PENDING_TEAM_KEY);rbEl('rbCloudTeam').value=pending;rbCloudStatus('Login Google concluído, mas não foi possível reservar esse nome: '+(e.message||String(e))+' Corrija o nome e use “Vincular este nome à minha conta”.');}}
-  else {rbApplyTeam(null);rbCloudStatus('Conta Google autenticada. Digite um nome exclusivo de equipe e toque em “Vincular este nome à minha conta”.');}
+  if(own){rbApplyTeam(own);localStorage.removeItem(PENDING_TEAM_KEY);}
+  else {
+   const {data:membership,error:membershipError}=await rbClient.rpc('rabbitech_get_my_team');
+   if(!membershipError&&membership?.id&&membership?.name){rbApplyTeam({id:membership.id,name:membership.name,auth_user_id:membership.auth_user_id||null,role:membership.role||'member'});localStorage.removeItem(PENDING_TEAM_KEY);}
+   else if(pending){rbEl('rbCloudTeam').value=pending;try{await rbClaimTeam(pending);localStorage.removeItem(PENDING_TEAM_KEY);rbCloudStatus('Equipe vinculada.');}catch(e){localStorage.removeItem(PENDING_TEAM_KEY);rbEl('rbCloudTeam').value=pending;rbCloudStatus('Login concluído, mas não foi possível vincular a equipe: '+(e.message||String(e))+'. Use o fluxo Criar equipe/Entrar em equipe existente.');}}
+   else {rbApplyTeam(null);rbCloudStatus('Conta autenticada. Escolha “Criar equipe” ou “Entrar em equipe existente” abaixo.');}
+  }
   if(rbCloudTeam)await rbLoadCloudHistory();
  }catch(e){rbCloudStatus('Conta autenticada, mas não foi possível carregar a equipe: '+(e.message||String(e)));}
  await rbAdminCheck();rbSetButtons();
  if(rbCloudUser&&!rbCloudTeam)rbEl('rbCloudTeam').readOnly=false;
+ window.dispatchEvent(new Event('rb-team-state-changed'));
 }
 async function rbInit(){
  await rbLoadSdk();rbClient=window.supabase.createClient(RB_URL,RB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});window.rbClient=rbClient;
@@ -1336,10 +1348,10 @@ async function rbCloudSaveRound(item){
 async function rbGoogleLogin(){
  if(rbCloudUser){rbCloudStatus('Encerrando a sessão atual para abrir o seletor de contas Google…');const {error:signOutError}=await rbClient.auth.signOut();if(signOutError)throw signOutError;localStorage.removeItem(PENDING_TEAM_KEY);rbCloudUser=null;window.rbCloudUser=null;rbCloudTeam=null;rbIsAdmin=false;rbEl('rbCloudTeam').value='';rbApplyTeam(null);rbEl('rbCloudTeam').readOnly=false;rbSetButtons();}
  const teamName=rbNormalizeTeamName(rbEl('rbCloudTeam').value);
- if(teamName.length<2)throw new Error('Digite o nome da equipe (mínimo de 2 caracteres) antes de entrar com Google.');
  if(teamName.length>100)throw new Error('O nome da equipe pode ter no máximo 100 caracteres.');
- if(teamName){rbEl('rbCloudTeam').value=teamName;localStorage.setItem(PENDING_TEAM_KEY,teamName);rbCloudStatus('Abrindo o Google… O nome da equipe será preservado durante o login.');}
- else{localStorage.removeItem(PENDING_TEAM_KEY);rbCloudStatus('Abrindo o Google para você escolher sua conta, inclusive a conta administradora…');}
+ // Sign-in and team membership are separate steps: never create a team just because a name was typed.
+ localStorage.removeItem(PENDING_TEAM_KEY);
+ rbCloudStatus('Abrindo o Google… Depois do login, escolha “Criar equipe” ou “Entrar em equipe existente”.');
  const {error}=await rbClient.auth.signInWithOAuth({provider:'google',options:{redirectTo:window.location.origin+window.location.pathname,queryParams:{prompt:'select_account'}}});if(error){localStorage.removeItem(PENDING_TEAM_KEY);throw error;}
 }
 async function rbLinkCurrentTeam(){if(!rbCloudUser)throw new Error('Entre com Google primeiro.');if(rbCloudTeam)throw new Error('Esta conta já está vinculada à equipe '+rbCloudTeam.name+'.');const name=rbNormalizeTeamName(rbEl('rbCloudTeam').value);if(!name){rbEl('rbCloudTeam').focus();throw new Error('O nome da equipe é obrigatório.');}rbCloudStatus('Verificando se o nome está disponível…');await rbClaimTeam(name);await rbLoadCloudHistory();await rbAdminCheck();rbCloudStatus('Conta vinculada com segurança à equipe '+rbCloudTeam.name+'.');}
@@ -2355,4 +2367,29 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
   <script src="assets/js/mobile-dock.js?v=20261028-team-realtime-stable" defer></script>
 
 
+<style id="rb-team-workspace-style">
+.rb-team-workspace{max-width:1100px;margin:12px auto;padding:16px;background:linear-gradient(145deg,#10251a,#0a1710);border:1px solid #406348;border-radius:18px;color:#f4fff5;box-shadow:0 8px 28px #0003}.rb-team-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.rb-team-heading h2{margin:5px 0;font-size:22px}.rb-team-heading p{margin:0;color:#adc4b2;font-size:13px}.rb-team-role{display:inline-flex;white-space:nowrap;border:1px solid #49684b;border-radius:99px;padding:5px 9px;color:#d0f477;font-size:11px}.rb-team-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 10px}.rb-team-tabs button[aria-selected="true"]{background:#d0f477;color:#14220b}.rb-team-pane{display:grid;gap:10px;padding:13px;border:1px solid #2b4e35;border-radius:13px;background:#09170e}.rb-team-pane[hidden],.rb-team-active[hidden],.rb-team-invite-result[hidden]{display:none!important}.rb-team-pane input{width:100%;min-height:44px;margin-top:5px;padding:10px;border:1px solid #2b4e35;border-radius:10px;background:#07120c;color:#f4fff5}.rb-team-active{margin-top:12px;padding:13px;border:1px solid #406348;border-radius:13px;background:#0b1b11}.rb-team-active small,.rb-team-active span{display:block;color:#adc4b2;font-size:12px}.rb-team-active strong{display:block;color:#d0f477;font-size:19px;overflow-wrap:anywhere}.rb-team-actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.rb-team-invite-result{padding:12px;margin:10px 0;border:1px dashed #8ab56a;border-radius:12px;overflow-wrap:anywhere}.rb-team-invite-result code{display:block;font-size:21px;letter-spacing:.1em;color:#d0f477;margin:5px 0}.rb-team-members{padding-left:20px}.rb-team-members li{padding:5px 0;border-bottom:1px solid #203b29;overflow-wrap:anywhere}.rb-team-footnote{font-size:11px;color:#adc4b2;margin:10px 0 0}@media(max-width:650px){.rb-team-workspace{margin:10px 12px}.rb-team-heading{display:block}.rb-team-role{margin-top:10px}.rb-team-tabs button{flex:1;min-width:145px}.rb-team-actions button{flex:1}}
+</style>
+<script id="rb-team-workspace-controller">
+(function(){'use strict';
+ const el=id=>document.getElementById(id);let busy=false;
+ const status=msg=>{const n=el('rbTeamWorkspaceStatus');if(n)n.textContent=msg;};
+ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const signed=()=>!!(typeof rbCloudUser!=='undefined'&&rbCloudUser&&typeof rbClient!=='undefined'&&rbClient);
+ const activeTeam=()=>typeof rbCloudTeam!=='undefined'?rbCloudTeam:null;
+ const setBusy=v=>{busy=v;['rbTeamCreateButton','rbTeamJoinButton','rbTeamInviteButton','rbTeamMembersButton'].forEach(id=>{if(el(id))el(id).disabled=v;});};
+ function selectTab(which){const create=which==='create';el('rbTeamCreatePane').hidden=!create;el('rbTeamJoinPane').hidden=create;el('rbTeamTabCreate').setAttribute('aria-selected',String(create));el('rbTeamTabJoin').setAttribute('aria-selected',String(!create));el('rbTeamTabCreate').classList.toggle('primary',create);el('rbTeamTabJoin').classList.toggle('primary',!create);}
+ async function refreshMembers(){const team=activeTeam();if(!signed()||!team?.id){status('Entre com Google e crie uma equipe ou aceite um convite.');return;}const {data,error}=await rbClient.rpc('rabbitech_list_team_members',{p_team_id:team.id});if(error)throw error;const members=Array.isArray(data)?data:[];el('rbTeamMembersList').innerHTML=members.map(m=>'<li><strong>'+esc(m.email||'Membro')+'</strong> · '+esc(m.role==='mentor'?'Mentor responsável':'Membro')+'</li>').join('')||'<li>Nenhum membro listado.</li>';}
+ function render(){const team=activeTeam(),logged=signed(),role=team?.role||(team?.auth_user_id&&typeof rbCloudUser!=='undefined'&&team.auth_user_id===rbCloudUser?.id?'mentor':'member');el('rbTeamRolePill').textContent=!logged?'Não conectado':team?(role==='mentor'?'Mentor responsável':'Membro da equipe'):'Conta conectada';el('rbTeamCreatePane').hidden=!!team;el('rbTeamJoinPane').hidden=!!team&&el('rbTeamJoinPane').dataset.selected!=='true';if(!team){el('rbTeamJoinPane').hidden=el('rbTeamJoinPane').dataset.selected!=='true';}el('rbTeamActivePane').hidden=!team;el('rbTeamCreateButton').disabled=!logged||busy;el('rbTeamJoinButton').disabled=!logged||busy;if(team){el('rbTeamActiveName').textContent=team.name||'Equipe';el('rbTeamActiveRole').textContent=role==='mentor'?'Você é o mentor responsável':'Você participa como membro';el('rbTeamInviteButton').hidden=role!=='mentor';}if(!logged)status('Entre com Google no painel acima. Depois crie uma equipe ou aceite um convite.');else if(team)status('Equipe vinculada. Os dados são carregados do Supabase.');}
+ async function createTeam(){if(!signed())throw new Error('Entre com Google antes de criar uma equipe.');if(activeTeam())throw new Error('Esta conta já está vinculada a uma equipe.');const name=String(el('rbTeamCreateName').value||'').trim().replace(/\s+/g,' ');if(name.length<2||name.length>100)throw new Error('O nome deve ter entre 2 e 100 caracteres.');const {data,error}=await rbClient.rpc('rabbitech_create_team',{p_name:name});if(error)throw error;if(!data?.team_id||!data?.team_name)throw new Error('O Supabase não retornou a equipe criada.');rbApplyTeam({id:data.team_id,name:data.team_name,auth_user_id:rbCloudUser.id,role:'mentor'});await rbLoadCloudHistory();render();await refreshMembers();status('Equipe criada. Você é o mentor responsável e pode gerar um código de convite.');}
+ async function joinTeam(){if(!signed())throw new Error('Entre com Google antes de aceitar um convite.');if(activeTeam())throw new Error('Esta conta já está vinculada a uma equipe.');const code=String(el('rbTeamInviteCode').value||'').trim().toUpperCase();if(code.length<6)throw new Error('Digite o código de convite recebido do mentor.');const {data,error}=await rbClient.rpc('rabbitech_accept_team_invite',{p_code:code});if(error)throw error;if(!data?.team_id||!data?.team_name)throw new Error('O Supabase não retornou a equipe.');rbApplyTeam({id:data.team_id,name:data.team_name,auth_user_id:null,role:'member'});el('rbTeamInviteCode').value='';await rbLoadCloudHistory();render();await refreshMembers();status('Convite aceito. Você entrou na equipe '+data.team_name+'.');}
+ async function makeInvite(){const team=activeTeam();if(!signed()||!team?.id)throw new Error('Crie ou abra uma equipe primeiro.');const {data,error}=await rbClient.rpc('rabbitech_create_team_invite',{p_team_id:team.id});if(error)throw error;if(!data?.invite_code)throw new Error('O Supabase não retornou o código.');const box=el('rbTeamInviteResult');box.hidden=false;box.innerHTML='<strong>Código de convite</strong><code>'+esc(data.invite_code)+'</code><small>Expira em '+Number(data.expires_in_days||14)+' dias. Compartilhe somente com os integrantes da equipe.</small><div style="margin-top:8px"><button type="button" id="rbTeamCopyInvite">Copiar código</button></div>';el('rbTeamCopyInvite').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(data.invite_code);status('Código copiado.');}catch(_){status('Copie o código manualmente: '+data.invite_code);}});status('Código gerado com sucesso.');}
+ async function run(fn){if(busy)return;setBusy(true);try{await fn();}catch(e){status('Não foi possível concluir: '+(e?.message||String(e)));}finally{setBusy(false);render();}}
+ el('rbTeamTabCreate').addEventListener('click',()=>{el('rbTeamJoinPane').dataset.selected='false';selectTab('create');});
+ el('rbTeamTabJoin').addEventListener('click',()=>{el('rbTeamJoinPane').dataset.selected='true';selectTab('join');});
+ el('rbTeamCreateButton').addEventListener('click',()=>run(createTeam));el('rbTeamJoinButton').addEventListener('click',()=>run(joinTeam));el('rbTeamInviteButton').addEventListener('click',()=>run(makeInvite));el('rbTeamMembersButton').addEventListener('click',()=>run(refreshMembers));
+ window.addEventListener('rb-team-state-changed',()=>{render();if(activeTeam())refreshMembers().catch(e=>status('Não foi possível listar os membros: '+(e?.message||String(e))));});
+ const waitForCloud=setInterval(()=>{if(signed()){render();clearInterval(waitForCloud);}},400);render();
+})();
+</script>
 </body></html>
