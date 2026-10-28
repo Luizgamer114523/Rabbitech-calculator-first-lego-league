@@ -796,8 +796,8 @@
    #rbFirstVisitTour .rb-tour-progress span{display:block;height:100%;background:#d0f477;transition:width .18s ease}
    #rbFirstVisitTour .rb-tour-arrow{position:fixed;z-index:2147483645;color:#d0f477;font-size:36px;font-weight:900;line-height:1;text-shadow:0 2px 8px #000;pointer-events:none}
    .rb-tour-highlight{position:relative!important;z-index:2147483001!important;outline:3px solid #d0f477!important;outline-offset:4px!important;box-shadow:0 0 0 7px rgba(208,244,119,.2),0 0 28px rgba(208,244,119,.65)!important;border-radius:12px!important}
-   #rbFirstVisitTourHelp{position:fixed;left:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 122px);z-index:2147482999;width:42px;height:42px;border-radius:50%;border:1px solid #789b5b;background:#102719;color:#d0f477;font-size:21px;font-weight:900;box-shadow:0 4px 16px #0006;cursor:pointer}
-   @media(max-width:520px){#rbFirstVisitTour .rb-tour-card{bottom:calc(env(safe-area-inset-bottom,0px) + 16px);padding:15px}#rbFirstVisitTour .rb-tour-copy{font-size:14px}#rbFirstVisitTourHelp{left:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 122px)}}
+   #rbFirstVisitTourHelp{position:fixed;left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 184px);z-index:2147482999;width:40px;height:40px;border-radius:50%;border:1px solid #789b5b;background:#102719;color:#d0f477;font-size:21px;font-weight:900;box-shadow:0 4px 16px #0006;cursor:pointer}
+   @media(max-width:520px){#rbFirstVisitTour .rb-tour-card{bottom:calc(env(safe-area-inset-bottom,0px) + 16px);padding:15px}#rbFirstVisitTour .rb-tour-copy{font-size:14px}#rbFirstVisitTourHelp{left:12px;bottom:calc(env(safe-area-inset-bottom,0px) + 184px)}}
   `;
   if(!$(STYLE_ID)){const style=document.createElement('style');style.id=STYLE_ID;style.textContent=css;document.head.appendChild(style)}
   const help=document.createElement('button');help.id='rbFirstVisitTourHelp';help.type='button';help.textContent='?';help.title='Abrir tutorial do Rabbitech';help.setAttribute('aria-label','Abrir tutorial do Rabbitech');document.body.appendChild(help);
@@ -933,7 +933,7 @@
   // permanecer no DOM por cache ou por scripts de versões anteriores.
   document.querySelectorAll('#rbAdsConsentDialog,#rbAdsConsentBanner,#rbOptionalAdSlot,#rbAdsPreferenceButton,[data-ads-preference],[data-ads-consent],[data-optional-ad]').forEach(el=>el.remove());
   document.querySelectorAll('button,a,[role="button"],label').forEach(el=>{
-   const text=String(el.textContent||'').replace(/\\s+/g,' ').trim();
+   const text=String(el.textContent||'').replace(/\s+/g,' ').trim();
    if(/^(anúncios? opcionais|preferências de anúncios|aceitar anúncios|não quero anúncios|gerenciar anúncios)$/i.test(text))el.remove();
   });
  }
