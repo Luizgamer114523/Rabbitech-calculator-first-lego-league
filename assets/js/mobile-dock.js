@@ -168,7 +168,7 @@
   if(!page){
    const main=document.querySelector('main')||document.body;
    page=document.createElement('section');page.id='page-team-workspace';page.className='page';page.hidden=true;
-   page.style.cssText='max-width:1100px;margin:0 auto;padding:18px 14px 110px;color:var(--text,#eef7eb)';
+   page.style.cssText='display:none!important;max-width:1100px;margin:0 auto;padding:18px 14px 110px;color:var(--text,#eef7eb)';
    page.innerHTML='<div id="rbTeamWorkspaceRoot"></div>';
    main.append(page);
   }
@@ -186,14 +186,14 @@
  }
  async function openTeamPage(){
   const refs=ensureTeamPage();if(!refs)return;
-  document.querySelectorAll('main .page').forEach(p=>{p.classList.remove('active');p.hidden=true});
-  refs.page.hidden=false;refs.page.classList.add('active');
+  document.querySelectorAll('main .page').forEach(p=>{p.classList.remove('active');p.hidden=true;p.style.setProperty('display','none','important')});
+  refs.page.hidden=false;refs.page.style.setProperty('display','block','important');refs.page.classList.add('active');
   document.querySelectorAll('nav button[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page==='team-workspace'));
   await renderTeamWorkspace();
  }
  function teamShell(body){
   const root=$('rbTeamWorkspaceRoot');if(!root)return;
-  const scrollY=window.scrollY,active=document.activeElement;
+  const active=document.activeElement;
   const activeId=active&&root.contains(active)?active.id:'';
   const activeValue=activeId&&'value' in active?active.value:null;
   root.innerHTML='<style>'+
@@ -209,8 +209,7 @@
    '#rbTeamWorkspaceRoot .tw-stat{font-size:1.65rem;font-weight:800;color:#d0f477}'+
    '@media(max-width:650px){#rbTeamWorkspaceRoot .tw-board{grid-template-columns:repeat(3,minmax(205px,1fr))}}'+
    '</style>'+body;
-  if(scrollY>0)requestAnimationFrame(()=>window.scrollTo({top:scrollY,behavior:'auto'}));
-  if(activeId){const restored=$(activeId);if(restored){restored.focus({preventScroll:true});if(activeValue!==null&&'value' in restored)restored.value=activeValue}}
+  if(activeId){const restored=$(activeId);if(restored&&document.activeElement!==restored){restored.focus({preventScroll:true});if(activeValue!==null&&'value' in restored)restored.value=activeValue}}
  }
  function teamMissionPicker(){const labels=[];document.querySelectorAll('#page-score [data-mission-id],#page-score [data-mission],#page-score .mission-card,#page-score .mission-item').forEach(el=>{const text=(el.querySelector('h2,h3,h4,label,strong,.mission-title')?.textContent||el.getAttribute('data-mission-name')||el.textContent||'').trim().replace(/\\s+/g,' ');if(/M(?:iss[aã]o)?\\s*0?\\d{1,2}/i.test(text)&&!labels.includes(text))labels.push(text.slice(0,100))});if(!labels.length)for(let i=1;i<=15;i++)labels.push('M'+String(i).padStart(2,'0'));return '<fieldset style="border:1px solid #49684b;border-radius:10px;padding:10px;margin:7px 0"><legend>Missões tentadas</legend>'+labels.map(name=>'<label style="display:block;margin:5px 0"><input type="checkbox" name="twRoundMission" value="'+teamEsc(name)+'"> '+teamEsc(name)+'</label>').join('')+'</fieldset>'}
   function teamFormField(id,label,placeholder,type='text',attrs=''){
@@ -233,6 +232,15 @@
    $('twCreate')?.addEventListener('click',createTeamWorkspace);$('twJoin')?.addEventListener('click',joinTeamWorkspace);return;
   }
   const teamId=profile.team_id;
+  if(typeof teamId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(teamId)){
+   teamState.team=null;
+   teamShell('<div class="tw-card"><h2>Espaço da equipe</h2><p>O cadastro retornou um identificador de equipe inválido. Nenhuma consulta foi enviada ao banco.</p><p class="tw-muted">Saia e entre novamente na conta. Se continuar, o vínculo da equipe precisa ser reparado no Supabase.</p><button class="tw-btn" id="twRetry">Tentar novamente</button></div>');
+   $('twRetry')?.addEventListener('click',renderTeamWorkspace);return;
+  }
+  if(!profile.team_name){
+   const teamLookup=await c.from('teams').select('id,name').eq('id',teamId).maybeSingle();
+   if(!teamLookup.error&&teamLookup.data?.name)profile.team_name=teamLookup.data.name;
+  }
   let tasks=[],goals=[],notes=[],rounds=[],messages=[],members=[];
   const query=async(table,columns='*',order='created_at')=>{const r=await c.from(table).select(columns).eq('team_id',teamId).order(order,{ascending:true}).limit(250);if(r.error)throw r.error;return r.data||[]};
   try{
