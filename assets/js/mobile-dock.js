@@ -820,7 +820,7 @@
  function initFirstVisitTour(){
   const KEY='rabbitech_tour_completed_v1';
   const $tour=id=>document.getElementById(id);
-  let overlay=null,activeTarget=null,steps=[],index=0,resizeHandler=null,gateObserver=null,targetStyleBackup=null;
+  let overlay=null,activeTarget=null,steps=[],index=0,resizeHandler=null,gateObserver=null,targetStyleBackup=null,ancestorBackup=[];
   const visible=el=>!!el&&!el.hidden&&getComputedStyle(el).display!=='none'&&getComputedStyle(el).visibility!=='hidden'&&el.getClientRects().length>0;
   function findCloudTarget(){
    const buttons=[...document.querySelectorAll('button')];
@@ -915,7 +915,11 @@
     else activeTarget.style.removeProperty(name);
    });
    activeTarget.removeAttribute('data-rb-tour-highlight');
-   activeTarget=null;targetStyleBackup=null;
+   ancestorBackup.forEach(item=>{
+    if(item.value) item.el.style.setProperty('z-index',item.value,item.priority||'');
+    else item.el.style.removeProperty('z-index');
+   });
+   ancestorBackup=[];activeTarget=null;targetStyleBackup=null;
   }
   function position(){
    if(!overlay||overlay.hidden||!activeTarget)return;
@@ -943,6 +947,11 @@
    index=nextIndex;activeTarget=steps[index].target;
    targetStyleBackup={};
    ['position','z-index','border-radius','box-shadow'].forEach(name=>targetStyleBackup[name]={value:activeTarget.style.getPropertyValue(name),priority:activeTarget.style.getPropertyPriority(name)});
+   const stackingParent=activeTarget.closest('nav,header');
+   if(stackingParent){
+    ancestorBackup=[{el:stackingParent,value:stackingParent.style.getPropertyValue('z-index'),priority:stackingParent.style.getPropertyPriority('z-index')}];
+    stackingParent.style.setProperty('z-index','2147483001');
+   }
    activeTarget.style.setProperty('position','relative');
    activeTarget.style.setProperty('z-index','2147483003');
    activeTarget.style.setProperty('border-radius','12px');
