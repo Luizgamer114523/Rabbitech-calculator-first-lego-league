@@ -202,6 +202,16 @@ async function handleCommand(message) {
     return;
   }
 
+  if (command === '/robotica') {
+    await sendMessage(chatId, '🤖 Robótica no Rabbitech\nUse o Espaço da equipe para registrar rounds, pontuações, posição inicial, missões e observações dos testes.\nPlataforma: https://rabbitech-fllc.vercel.app/');
+    return;
+  }
+
+  if (command === '/fll') {
+    await sendMessage(chatId, '🏁 FIRST LEGO League\nNo Rabbitech, organize tarefas, metas, estratégias e resultados dos rounds. Confira as informações oficiais em https://www.firstlegoleague.org/ e as regras do desafio com a organização local.');
+    return;
+  }
+
   if (command === '/support') {
     await sendMessage(chatId, '🛠️ Suporte Rabbitech\nUse a plataforma: https://rabbitech-fllc.vercel.app/\nNão envie senhas, códigos de login ou chaves de API pelo chat.');
     return;
