@@ -250,7 +250,7 @@
   const trendText=trend===null?'Ainda sem dados suficientes':trend>0?'Melhorando +' + Math.round(trend)+' pts':trend<0?'Caindo '+Math.round(trend)+' pts':'Estável';
   const manager=profile.is_manager===true||profile.role==='leader';
   const statusTasks=state=>tasks.filter(t=>t.status===state);
-  const taskCard=t=>'<article class="tw-task"><strong>'+teamEsc(t.title)+'</strong><p>'+teamEsc(t.description||'')+'</p><p class="tw-muted">Prioridade: '+teamEsc(t.priority)+' · '+(t.due_date?'Prazo '+teamEsc(t.due_date):'Sem prazo')+'</p><p class="tw-muted">Responsável: '+teamEsc(members.find(m=>m.user_id===t.assigned_to)?.display_name||'Equipe toda')+'</p><label class="tw-muted">Status <select class="tw-field" data-task-status="'+teamEsc(t.id)+'">'+TEAM_STATES.map(s=>'<option value="'+s+'" '+(t.status===s?'selected':'')+'>'+TEAM_LABELS[s]+'</option>').join('')+'</select></label></article>';
+  const taskCard=t=>'<article class="tw-task" data-team-task-card="'+teamEsc(t.id)+'"><strong>'+teamEsc(t.title)+'</strong><p>'+teamEsc(t.description||'')+'</p><p class="tw-muted">Prioridade: '+teamEsc(t.priority)+' · '+(t.due_date?'Prazo '+teamEsc(t.due_date):'Sem prazo')+'</p><p class="tw-muted">Responsável: '+teamEsc(members.find(m=>m.user_id===t.assigned_to)?.display_name||'Equipe toda')+'</p><label class="tw-muted">Status <select class="tw-field" data-task-status="'+teamEsc(t.id)+'">'+TEAM_STATES.map(s=>'<option value="'+s+'" '+(t.status===s?'selected':'')+'>'+TEAM_LABELS[s]+'</option>').join('')+'</select></label></article>';
   const taskColumns=TEAM_STATES.map(s=>'<section class="tw-card"><h3>'+TEAM_LABELS[s]+' ('+statusTasks(s).length+')</h3>'+statusTasks(s).map(taskCard).join('')+'</section>').join('');
   const memberOptions='<option value="">Equipe toda</option>'+members.map(m=>'<option value="'+teamEsc(m.user_id)+'">'+teamEsc(m.display_name)+(m.role==='leader'?' · mentor':'')+'</option>').join('');
   const goalHtml=goals.map(g=>{const taskPct=g.target_tasks?Math.min(100,Math.round(done/g.target_tasks*100)):0;const roundPct=g.target_rounds?Math.min(100,Math.round(rounds.length/g.target_rounds*100)):0;return '<div class="tw-task"><strong>'+teamEsc(g.title)+'</strong><p>'+teamEsc(g.description||'')+'</p><p>Tarefas: '+done+'/'+g.target_tasks+' ('+taskPct+'%)</p><progress max="100" value="'+taskPct+'" style="width:100%"></progress><p>Rounds registrados: '+rounds.length+'/'+g.target_rounds+' ('+roundPct+'%)</p><progress max="100" value="'+roundPct+'" style="width:100%"></progress><p>Meta de média: '+Number(g.target_average_score||0)+' pts · '+teamEsc(g.due_date||'Sem prazo')+'</p></div>'}).join('');
@@ -265,7 +265,7 @@
    '<div class="tw-grid"><section class="tw-card"><h3>Notas compartilhadas</h3>'+teamFormField('twNoteTitle','Título da nota','Ideias da reunião')+'<textarea class="tw-field" id="twNoteBody" rows="4" maxlength="8000" placeholder="Planejamento, decisões, o que testar..."></textarea><button class="tw-btn" id="twAddNote">Salvar anotação</button><div>'+(notes.slice().reverse().map(n=>'<article class="tw-task"><strong>'+teamEsc(n.title)+'</strong><p style="white-space:pre-wrap">'+teamEsc(n.body)+'</p><small class="tw-muted">'+teamEsc(new Date(n.created_at).toLocaleString())+' · '+teamEsc(members.find(m=>m.user_id===n.author_user_id)?.display_name||'Membro')+'</small></article>').join('')||'<p class="tw-muted">Nenhuma anotação ainda.</p>')+'</div></section>'+
    '<section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Mensagens de texto compartilhadas entre membros. Sem chamadas.</p><div id="twMessages" style="max-height:300px;overflow:auto">'+messages.slice(-60).map(m=>'<div class="tw-bubble"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong><p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p><small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small></div>').join('')+'</div><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage">Enviar mensagem</button></section></div>'+
    '<div id="twFeedback" aria-live="polite"></div>');
-  $('twRefresh')?.addEventListener('click',renderTeamWorkspace);
+  $('twRefresh')?.addEventListener('click',()=>{refreshTeamBackground();teamFeedback('Atualizando os dados em segundo plano…')});
   $('twMakeInvite')?.addEventListener('click',createTeamInvite);
   $('twAddTask')?.addEventListener('click',createTeamTask);
   $('twAddGoal')?.addEventListener('click',createTeamGoal);
@@ -411,6 +411,11 @@
     teamState.messageSignature='';
     refreshTeamBackground();
    })
+   .on('postgres_changes',{event:'*',schema:'public',table:'team_tasks',filter:'team_id=eq.'+teamId},()=>refreshTeamBackground())
+   .on('postgres_changes',{event:'*',schema:'public',table:'team_round_logs',filter:'team_id=eq.'+teamId},()=>refreshTeamBackground())
+   .on('postgres_changes',{event:'*',schema:'public',table:'team_goals',filter:'team_id=eq.'+teamId},()=>refreshTeamBackground())
+   .on('postgres_changes',{event:'*',schema:'public',table:'team_notes',filter:'team_id=eq.'+teamId},()=>refreshTeamBackground())
+   .on('postgres_changes',{event:'*',schema:'public',table:'team_memberships',filter:'team_id=eq.'+teamId},()=>refreshTeamBackground())
    .subscribe(status=>{teamState.realtimeReady=status==='SUBSCRIBED';if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Chat realtime indisponível; usando atualização de reserva.')});
   teamState.realtimeChannel=channel;
  }
@@ -447,6 +452,10 @@
     const values=[tasks.length,done,progress+'%',avg];
     values.forEach((value,i)=>{if(stats[i].textContent!==String(value))stats[i].textContent=String(value)});
    }
+   tasks.forEach(task=>{
+    const select=root.querySelector('[data-task-status="'+task.id+'"]');
+    if(select&&select.value!==task.status)select.value=task.status;
+   });
    const statLabels=root.querySelectorAll('.tw-stat + div');
    if(statLabels.length>=4&&statLabels[3].textContent!==('Média dos rounds · '+rounds.length+' registros'))statLabels[3].textContent='Média dos rounds · '+rounds.length+' registros';
    const messageBox=$('twMessages');
@@ -484,11 +493,11 @@
    const user=currentUser(),key=user?String(user.id||'')+':'+String(adminAllowed()):'out';
    if(key!==previous){previous=key;syncAdmin()}
   },700);
-  window.addEventListener('rb-auth-state-changed',syncAdmin);
+  window.addEventListener('rb-auth-state-changed',()=>{syncAdmin();setupSiteSettingsRealtime();loadPublicSettings()});
   window.addEventListener('rb-site-settings-updated',loadPublicSettings);
   setupSiteSettingsRealtime();
-  // Fallback only; realtime updates are the primary path.
-  setInterval(loadPublicSettings,60000);
+  // Realtime is primary; this low-frequency fallback also retries channel setup.
+  setInterval(()=>{setupSiteSettingsRealtime();loadPublicSettings()},60000);
  }
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
  else init();
