@@ -677,23 +677,32 @@
    const currentUserId=teamState.profile?.user_id;
    const goalsBox=$('twGoalsList');
    if(goalsBox){
-    const goalHtml=goals.map(g=>{
-     const taskPct=g.target_tasks?Math.min(100,Math.round(done/g.target_tasks*100)):0;
-     const roundPct=g.target_rounds?Math.min(100,Math.round(rounds.length/g.target_rounds*100)):0;
-     return '<div class="tw-task" data-goal-id="'+teamEsc(g.id)+'"><strong>'+teamEsc(g.title)+'</strong><p>'+teamEsc(g.description||'')+'</p><p>Tarefas: '+done+'/'+g.target_tasks+' ('+taskPct+'%)</p><progress max="100" value="'+taskPct+'" style="width:100%"></progress><p>Rounds registrados: '+rounds.length+'/'+g.target_rounds+' ('+roundPct+'%)</p><progress max="100" value="'+roundPct+'" style="width:100%"></progress><p>Meta de média: '+Number(g.target_average_score||0)+' pts · '+teamEsc(g.due_date||'Sem prazo')+'</p>'+(currentManager?'<button class="tw-btn" data-team-delete="team_goals" data-record-id="'+teamEsc(g.id)+'">Excluir meta</button>':'')+'</div>';
-    }).join('')||'<p class="tw-muted">O mentor ainda não cadastrou metas.</p>';
-    if(goalsBox.innerHTML!==goalHtml)goalsBox.innerHTML=goalHtml;
+    const goalSignature=JSON.stringify([goals.map(g=>[g.id,g.title,g.description,g.target_tasks,g.target_rounds,g.target_average_score,g.due_date]),done,rounds.length,currentManager]);
+    if(goalsBox.dataset.refreshSignature!==goalSignature){
+     const goalHtml=goals.map(g=>{
+      const taskPct=g.target_tasks?Math.min(100,Math.round(done/g.target_tasks*100)):0;
+      const roundPct=g.target_rounds?Math.min(100,Math.round(rounds.length/g.target_rounds*100)):0;
+      return '<div class="tw-task" data-goal-id="'+teamEsc(g.id)+'"><strong>'+teamEsc(g.title)+'</strong><p>'+teamEsc(g.description||'')+'</p><p>Tarefas: '+done+'/'+g.target_tasks+' ('+taskPct+'%)</p><progress max="100" value="'+taskPct+'" style="width:100%"></progress><p>Rounds registrados: '+rounds.length+'/'+g.target_rounds+' ('+roundPct+'%)</p><progress max="100" value="'+roundPct+'" style="width:100%"></progress><p>Meta de média: '+Number(g.target_average_score||0)+' pts · '+teamEsc(g.due_date||'Sem prazo')+'</p>'+(currentManager?'<button class="tw-btn" data-team-delete="team_goals" data-record-id="'+teamEsc(g.id)+'">Excluir meta</button>':'')+'</div>';
+     }).join('')||'<p class="tw-muted">O mentor ainda não cadastrou metas.</p>';
+     goalsBox.innerHTML=goalHtml;goalsBox.dataset.refreshSignature=goalSignature;
+    }
    }
    const roundList=$('twRoundList');
    if(roundList){
-    const roundHtml=rounds.slice().reverse().map(r=>'<article class="tw-task" data-round-id="'+teamEsc(r.id)+'"><strong>Round '+teamEsc(r.round_number)+'</strong><p>'+Number(r.score||0)+' pontos · '+teamEsc(r.start_position||'Início não informado')+'</p><p class="tw-muted">'+teamEsc(r.notes||'')+'</p>'+((currentManager||r.created_by===currentUserId)?'<button class="tw-btn" data-team-delete="team_round_logs" data-record-id="'+teamEsc(r.id)+'">Excluir round</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhum round registrado.</p>';
-    if(roundList.innerHTML!==roundHtml)roundList.innerHTML=roundHtml;
+    const roundSignature=JSON.stringify([rounds.map(r=>[r.id,r.round_number,r.score,r.start_position,r.notes,r.created_by]),currentManager,currentUserId]);
+    if(roundList.dataset.refreshSignature!==roundSignature){
+     const roundHtml=rounds.slice().reverse().map(r=>'<article class="tw-task" data-round-id="'+teamEsc(r.id)+'"><strong>Round '+teamEsc(r.round_number)+'</strong><p>'+Number(r.score||0)+' pontos · '+teamEsc(r.start_position||'Início não informado')+'</p><p class="tw-muted">'+teamEsc(r.notes||'')+'</p>'+((currentManager||r.created_by===currentUserId)?'<button class="tw-btn" data-team-delete="team_round_logs" data-record-id="'+teamEsc(r.id)+'">Excluir round</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhum round registrado.</p>';
+     roundList.innerHTML=roundHtml;roundList.dataset.refreshSignature=roundSignature;
+    }
    }
    const roundChart=$('twRoundChart');
    if(roundChart){
     const recentRounds=rounds.slice(-5);
-    const chartHtml=recentRounds.length?'<div style="display:flex;align-items:end;gap:8px;height:140px;padding:8px 0">'+recentRounds.map(r=>'<div style="flex:1;min-width:24px;text-align:center"><div title="'+Number(r.score||0)+' pontos" style="height:'+Math.max(5,Math.round(Number(r.score||0)/Math.max(1,...recentRounds.map(x=>Number(x.score||0)))*105))+'px;background:#9dcc65;border-radius:6px 6px 0 0"></div><small>'+teamEsc('R'+r.round_number)+'</small><br><strong>'+Number(r.score||0)+'</strong></div>').join('')+'</div>':'<p class="tw-muted">Registre os rounds abaixo para começar o gráfico de desempenho.</p>';
-    if(roundChart.innerHTML!==chartHtml)roundChart.innerHTML=chartHtml;
+    const chartSignature=JSON.stringify(recentRounds.map(r=>[r.id,r.round_number,r.score]));
+    if(roundChart.dataset.refreshSignature!==chartSignature){
+     const chartHtml=recentRounds.length?'<div style="display:flex;align-items:end;gap:8px;height:140px;padding:8px 0">'+recentRounds.map(r=>'<div style="flex:1;min-width:24px;text-align:center"><div title="'+Number(r.score||0)+' pontos" style="height:'+Math.max(5,Math.round(Number(r.score||0)/Math.max(1,...recentRounds.map(x=>Number(x.score||0)))*105))+'px;background:#9dcc65;border-radius:6px 6px 0 0"></div><small>'+teamEsc('R'+r.round_number)+'</small><br><strong>'+Number(r.score||0)+'</strong></div>').join('')+'</div>':'<p class="tw-muted">Registre os rounds abaixo para começar o gráfico de desempenho.</p>';
+     roundChart.innerHTML=chartHtml;roundChart.dataset.refreshSignature=chartSignature;
+    }
    }
    const roundsAverage=$('twRoundsAverage');if(roundsAverage)roundsAverage.textContent=avg+' pontos';
    const roundsFooter=$('twRoundCountFooter');if(roundsFooter)roundsFooter.textContent=rounds.length+' rounds de treino registrados.';
