@@ -248,7 +248,13 @@
   const scrollY=window.scrollY;
   const active=document.activeElement;
   const activeId=active&&root.contains(active)?active.id:'';
-  const activeValue=activeId&&'value' in active?active.value:null;
+  // Preserve every in-progress field if a foreground action must redraw the view.
+  // Previously only the focused field survived, so the rest of a form could vanish.
+  const savedFields=new Map([...root.querySelectorAll('input[id],textarea[id],select[id]')].map(el=>[el.id,{
+   value:el.value,checked:'checked' in el?el.checked:undefined,
+   selectionStart:typeof el.selectionStart==='number'?el.selectionStart:null,
+   selectionEnd:typeof el.selectionEnd==='number'?el.selectionEnd:null
+  }]));
   root.innerHTML='<style>'+
    '#rbTeamWorkspaceRoot .tw-card{background:rgba(12,29,18,.92);border:1px solid #34543a;border-radius:16px;padding:16px;margin:12px 0;min-width:0}'+
    '#rbTeamWorkspaceRoot .tw-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:12px}'+
@@ -262,8 +268,9 @@
    '#rbTeamWorkspaceRoot .tw-stat{font-size:1.65rem;font-weight:800;color:#d0f477}'+
    '@media(max-width:650px){#rbTeamWorkspaceRoot .tw-board{grid-template-columns:repeat(3,minmax(205px,1fr))}}'+
    '</style>'+body;
-  if(activeId){const restored=$(activeId);if(restored&&document.activeElement!==restored){restored.focus({preventScroll:true});if(activeValue!==null&&'value' in restored)restored.value=activeValue}}
-  if(preserveScroll&&scrollY>0)requestAnimationFrame(()=>{if($('page-team-workspace')?.classList.contains('active'))window.scrollTo({top:scrollY,behavior:'auto'})});
+  savedFields.forEach((saved,id)=>{const el=$(id);if(!el)return;if('value' in el)el.value=saved.value;if(saved.checked!==undefined&&'checked' in el)el.checked=saved.checked});
+  if(activeId){const restored=$(activeId);if(restored){restored.focus({preventScroll:true});const saved=savedFields.get(activeId);if(saved&&saved.selectionStart!==null&&typeof restored.setSelectionRange==='function'){try{restored.setSelectionRange(saved.selectionStart,saved.selectionEnd)}catch(_){}}}}
+  if(preserveScroll)requestAnimationFrame(()=>{if($('page-team-workspace')?.classList.contains('active'))window.scrollTo({top:scrollY,behavior:'auto'})});
  }
  function teamMissionPicker(){const labels=[];document.querySelectorAll('#page-score [data-mission-id],#page-score [data-mission],#page-score .mission-card,#page-score .mission-item').forEach(el=>{const text=(el.querySelector('h2,h3,h4,label,strong,.mission-title')?.textContent||el.getAttribute('data-mission-name')||el.textContent||'').trim().replace(/\\s+/g,' ');if(/M(?:iss[aã]o)?\\s*0?\\d{1,2}/i.test(text)&&!labels.includes(text))labels.push(text.slice(0,100))});if(!labels.length)for(let i=1;i<=15;i++)labels.push('M'+String(i).padStart(2,'0'));return '<fieldset style="border:1px solid #49684b;border-radius:10px;padding:10px;margin:7px 0"><legend>Missões tentadas</legend>'+labels.map(name=>'<label style="display:block;margin:5px 0"><input type="checkbox" name="twRoundMission" value="'+teamEsc(name)+'"> '+teamEsc(name)+'</label>').join('')+'</fieldset>'}
   function teamFormField(id,label,placeholder,type='text',attrs=''){
@@ -283,8 +290,8 @@
   const profile=Array.isArray(result.data)?result.data[0]:result.data;
   teamState.profile=profile||null;teamState.team=profile?.member?profile:null;
   if(!(profile?.member&&profile?.team_id)){
-   teamShell('<div class="tw-card"><h2>Monte o espaço da sua equipe</h2><p>O mentor cria a equipe; depois compartilha o convite com os alunos. Cada pessoa entra usando a própria conta do Rabbitech.</p><div class="tw-grid"><section><h3>Criar equipe</h3>'+teamFormField('twTeamName','Nome da equipe','Ex.: Techscorpions')+teamFormField('twLeaderName','Seu nome','Nome do mentor')+'<button class="tw-btn" id="twCreate">Criar equipe</button></section><section><h3>Aceitar convite</h3>'+teamFormField('twInviteInput','Código de convite','Cole o código recebido')+teamFormField('twMemberName','Seu nome na equipe','Nome para os colegas')+'<button class="tw-btn" id="twJoin">Entrar na equipe</button></section></div><p class="tw-muted">Uma conta só pode pertencer a uma equipe por vez. O acesso aos dados é protegido no banco, não apenas por esconder botões.</p><div id="twMessage" aria-live="polite"></div></div>');
-   $('twCreate')?.addEventListener('click',createTeamWorkspace);$('twJoin')?.addEventListener('click',joinTeamWorkspace);return;
+   teamShell('<div class="tw-card"><h2>Monte o espaço da sua equipe</h2><p>O mentor cria a equipe; depois compartilha o convite com os alunos. Cada pessoa entra usando a própria conta do Rabbitech.</p><div class="tw-grid"><section><h3>Criar equipe</h3>'+teamFormField('twTeamName','Nome da equipe','Ex.: Techscorpions')+teamFormField('twLeaderName','Seu nome','Nome do mentor')+'<button class="tw-btn" id="twCreate">Criar equipe</button></section><section><h3>Aceitar convite</h3>'+teamFormField('twInviteInput','Código de convite','Cole o código recebido')+teamFormField('twMemberName','Seu nome na equipe','Nome para os colegas')+'<button class="tw-btn" id="twJoin">Entrar na equipe</button></section></div><p class="tw-muted">Uma conta só pode pertencer a uma equipe por vez. O acesso aos dados é protegido no banco, não apenas por esconder botões.</p><div id="twFeedback" aria-live="polite"></div></div>');
+   $('twCreate')?.addEventListener('click',createTeamWorkspace);$('twJoin')?.addEventListener('click',()=>joinTeamWorkspace('twInviteInput','twMemberName','twFeedback'));return;
   }
   const teamId=profile.team_id;
   if(typeof teamId!=='string'||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(teamId)){
@@ -383,7 +390,8 @@
   await teamWrite(c=>c.rpc('create_team_workspace',{p_name:name,p_display_name:display}),{rerender:true});
  }
  async function joinTeamWorkspace(codeInput='twInviteInput',nameInput='twMemberName',feedbackId='twFeedback'){
-  const code=$(codeInput)?.value.trim(),display=$(nameInput)?.value.trim();
+  // Invite codes are case-insensitive hashes; ignore pasted whitespace/newlines.
+  const code=String($(codeInput)?.value||'').replace(/\\s+/g,'').toLowerCase(),display=$(nameInput)?.value.trim();
   const feedback=$(feedbackId);
   const say=(message,error=false)=>{if(feedback)feedback.innerHTML='<p style="color:'+(error?'#ffb4a9':'#d0f477')+'">'+teamEsc(message)+'</p>';else teamFeedback(message,error)};
   if(!code||!display){say('Informe o código do convite e seu nome.',true);return}
@@ -396,7 +404,8 @@
     say('Esta conta já está vinculada à equipe '+(data.team_name||'atual')+'. O código não foi usado e nenhuma equipe foi alterada.',true);
     return;
    }
-   say('Convite aceito! Você entrou na equipe '+(data?.team_name||'com sucesso')+'.');
+   if(!data?.joined&&!data?.team_id)throw new Error('O servidor não confirmou a entrada na equipe. Gere um novo convite e tente novamente.');
+   say(data?.already_member?'Esta conta já faz parte da equipe '+(data?.team_name||'atual')+'. Carregando o espaço da equipe.':'Convite aceito! Você entrou na equipe '+(data?.team_name||'com sucesso')+'.');
    await renderTeamWorkspace();
    const root=$('rbTeamWorkspaceRoot');if(root)root.dataset.initialized='true';
   }catch(e){say(e?.message||'Não foi possível aceitar o convite. Confira se o código está correto e ainda é válido.',true)}
