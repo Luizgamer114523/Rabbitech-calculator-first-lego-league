@@ -868,7 +868,8 @@
     '#rbFirstVisitTour .rb-tour-progress{height:4px;background:#253c2a;border-radius:9px;overflow:hidden;margin-top:14px}'+
     '#rbFirstVisitTour .rb-tour-progress span{display:block;height:100%;background:#d0f477;transition:width .2s}'+
     '#rbFirstVisitTour .rb-tour-arrow{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:2147483002;overflow:visible}'+
-    '#rbFirstVisitTour .rb-tour-arrow path{fill:none;stroke:#d0f477;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(208,244,119,.8))}'+\n    '#rbFirstVisitTour .rb-tour-arrow defs path{fill:#d0f477;stroke:none;filter:none}'+
+    '#rbFirstVisitTour .rb-tour-arrow path{fill:none;stroke:#d0f477;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 5px rgba(208,244,119,.8))}'+
+    '#rbFirstVisitTour .rb-tour-arrow defs path{fill:#d0f477;stroke:none;filter:none}'+
     '#rbTourReplay{margin:5px 0 8px 8px;padding:5px 9px;border-radius:9px;border:1px solid #49684b;background:rgba(8,24,14,.72);color:inherit;font:inherit;font-size:12px;cursor:pointer}'+
     '@media(min-width:700px){#rbFirstVisitTour .rb-tour-card{left:50%;right:auto;width:min(560px,calc(100vw - 32px));transform:translateX(-50%)}}'+
     '@media(prefers-reduced-motion:reduce){#rbFirstVisitTour *{transition:none!important;scroll-behavior:auto!important}}';
