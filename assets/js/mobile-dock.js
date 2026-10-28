@@ -214,10 +214,14 @@
   const scrollToTeam=()=>{if(!refs.page.hidden&&refs.page.classList.contains('active')){const top=Math.max(0,window.scrollY+refs.page.getBoundingClientRect().top-12);window.scrollTo({top,behavior:'auto'})}};
   scrollToTeam();
   const root=$('rbTeamWorkspaceRoot');
-  if(root?.dataset.initialized==='true'){
-   if(teamState.team?.team_id)refreshTeamBackground();
+  // The page may have been opened before Google sign-in finished. Do not keep
+  // the anonymous/loading screen cached after the auth state changes.
+  const signedIn=!!teamClientUser();
+  if(root?.dataset.initialized==='true'&&teamState.team?.team_id){
+   refreshTeamBackground();
    return;
   }
+  if(root?.dataset.initialized==='true'&&!signedIn)return;
   await renderTeamWorkspace();
   if(root)root.dataset.initialized='true';
   requestAnimationFrame(scrollToTeam);
@@ -581,7 +585,15 @@
    const user=currentUser(),key=user?String(user.id||'')+':'+String(adminAllowed()):'out';
    if(key!==previous){previous=key;syncAdmin()}
   },700);
-  window.addEventListener('rb-auth-state-changed',()=>{syncAdmin();setupSiteSettingsRealtime();loadPublicSettings()});
+  window.addEventListener('rb-auth-state-changed',()=>{
+   syncAdmin();setupSiteSettingsRealtime();loadPublicSettings();
+   const root=$('rbTeamWorkspaceRoot'),page=$('page-team-workspace');
+   if(root&&page?.classList.contains('active')){
+    root.dataset.initialized='false';
+    teamState.team=null;
+    renderTeamWorkspace().then(()=>{if(root)root.dataset.initialized='true'}).catch(()=>{});
+   }
+  });
   window.addEventListener('rb-site-settings-updated',loadPublicSettings);
   setupSiteSettingsRealtime();
   // Realtime is primary; this low-frequency fallback also retries channel setup.
