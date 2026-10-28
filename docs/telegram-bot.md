@@ -9,7 +9,7 @@ The webhook is implemented at `/api/telegram-webhook`. It is intentionally not e
 - `/team`: team and member role
 - `/tasks`: up to 10 unfinished team tasks
 - `/rounds`: last 5 rounds and their average
-- `/notice`: active global notice
+- `/notice`: active global notice\n- Automatic global-notice delivery: when the admin settings Realtime event arrives in an authenticated admin session, the server verifies admin access and sends the active notice once per unique text/type
 - `/support`: Rabbitech help link
 - `/unlink`: remove the Telegram link
 
@@ -23,7 +23,7 @@ All commands except `/start`, `/help`, and `/link` require an account link. The 
    - `TELEGRAM_WEBHOOK_SECRET` (random secret, 32+ characters)
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_ROLE_KEY`
-3. Apply migration `supabase/migrations/20261028170000_telegram_bot_linking.sql` to the **active** Supabase project `ieijssfqonoucqheedac`. Review it first; do not apply it to the inactive project.
+3. Apply migration `supabase/migrations/20261028170000_telegram_bot_linking.sql and `supabase/migrations/20261028162000_telegram_notice_broadcasts.sql`` to the **active** Supabase project `ieijssfqonoucqheedac`. Review it first; do not apply it to the inactive project.
 4. Configure Telegram's webhook using the bot token and the secret header:
    `https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://rabbitech-fllc.vercel.app/api/telegram-webhook&secret_token=<URL_ENCODED_SECRET>`
    Call the URL from a secure environment; never commit it or post it in chat.
@@ -43,4 +43,4 @@ All commands except `/start`, `/help`, and `/link` require an account link. The 
 - The database stores only a SHA-256 hash of each code.
 - The bot uses the server-side Supabase service key and never exposes it to Telegram messages or the browser.
 - Team data is scoped to the team of the linked user. Admin controls, account creation, task mutations, and global-notice publishing are deliberately not exposed as bot commands in this first phase.
-- This initial version responds to `/notice` when requested; automatic push of every global notice is a separate outbound-notification step.
+- Global notice delivery is attempted from an authenticated admin session when the existing Supabase Realtime invalidation arrives. A notice with the same text and type is deduplicated, even if several admin tabs receive the event.
