@@ -938,11 +938,11 @@
    if($('rbAdsConsentStyles'))return;
    const style=document.createElement('style');style.id='rbAdsConsentStyles';
    style.textContent=`
-    #rbAdsConsentDialog{position:fixed;inset:0;z-index:100000;display:grid;place-items:center;padding:18px;background:rgba(2,10,5,.76);backdrop-filter:blur(5px)}
+    #rbAdsConsentDialog{position:fixed;left:12px;right:12px;bottom:calc(136px + env(safe-area-inset-bottom));z-index:100000;display:flex;justify-content:center;padding:0;background:transparent;pointer-events:none}
     #rbAdsConsentDialog[hidden],#rbOptionalAdSlot[hidden]{display:none!important}
-    #rbAdsConsentDialog .rb-ads-card{width:min(100%,440px);padding:22px;border:1px solid #49684b;border-radius:20px;background:#0c1d12;color:#eff8ed;box-shadow:0 20px 70px #0009;line-height:1.55}
-    #rbAdsConsentDialog h2{margin:0 0 10px;font-size:22px}
-    #rbAdsConsentDialog p{margin:8px 0 16px}
+    #rbAdsConsentDialog .rb-ads-card{pointer-events:auto;width:min(100%,440px);padding:16px;border:1px solid #49684b;border-radius:18px;background:#0c1d12;color:#eff8ed;box-shadow:0 8px 28px #0008;line-height:1.45;max-height:45vh;overflow:auto}
+    #rbAdsConsentDialog h2{margin:0 0 8px;font-size:19px}
+    #rbAdsConsentDialog p{margin:8px 0 12px;font-size:14px}
     #rbAdsConsentDialog .rb-ads-actions{display:flex;flex-wrap:wrap;gap:10px}
     #rbAdsConsentDialog button,#rbAdsPreferenceButton{border:1px solid #49684b;border-radius:999px;padding:10px 14px;font-weight:700;cursor:pointer}
     #rbAdsAccept{background:#d0f477;color:#102015}#rbAdsReject{background:#17271c;color:#eff8ed}
@@ -958,7 +958,7 @@
   let dialog=$('rbAdsConsentDialog');
   if(!dialog){
    dialog=document.createElement('div');dialog.id='rbAdsConsentDialog';dialog.hidden=true;
-   dialog.setAttribute('role','dialog');dialog.setAttribute('aria-modal','true');dialog.setAttribute('aria-labelledby','rbAdsConsentTitle');
+   dialog.setAttribute('role','region');dialog.setAttribute('aria-labelledby','rbAdsConsentTitle');
    dialog.innerHTML='<section class="rb-ads-card"><h2 id="rbAdsConsentTitle">Anúncios opcionais</h2><p>O Rabbitech pode exibir anúncios discretos para ajudar a manter o site. Eles não são necessários para usar as funções do site. Se aceitar, um pequeno espaço de anúncio aparecerá no canto da tela. Se recusar, nenhum espaço de anúncio será exibido. Você pode mudar essa escolha depois.</p><div class="rb-ads-actions"><button id="rbAdsAccept" type="button">Aceitar anúncios</button><button id="rbAdsReject" type="button">Não quero anúncios</button></div></section>';
    document.body.append(dialog);
   }
@@ -971,7 +971,7 @@
   let pref=$('rbAdsPreferenceButton');
   if(!pref){
    pref=document.createElement('button');pref.id='rbAdsPreferenceButton';pref.type='button';pref.textContent='Preferências de anúncios';
-   pref.addEventListener('click',()=>{dialog.hidden=false;$('rbAdsAccept')?.focus()});
+   pref.addEventListener('click',()=>{dialog.hidden=false;});
    document.body.append(pref);
   }
   const apply=value=>{
@@ -997,7 +997,7 @@
   $('rbAdsAccept').addEventListener('click',()=>choose('yes'));
   $('rbAdsReject').addEventListener('click',()=>choose('no'));
   const current=read();
-  if(current===null){slot.hidden=true;dialog.hidden=false;setTimeout(()=>$('rbAdsAccept')?.focus(),0)}
+  if(current===null){slot.hidden=true;dialog.hidden=false}
   else apply(current);
  }
  function init(){
