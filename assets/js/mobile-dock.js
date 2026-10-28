@@ -272,7 +272,7 @@
   if(result?.error){teamShell('<div class="tw-card"><h2>Espaço da equipe</h2><p>O Supabase recusou a consulta. Verifique sua sessão e as permissões do projeto.</p><p class="tw-muted">'+teamEsc(result.error.message)+'</p><button class="tw-btn" id="twRetry">Tentar novamente</button></div>');$('twRetry')?.addEventListener('click',renderTeamWorkspace);return}
   const profile=Array.isArray(result.data)?result.data[0]:result.data;
   teamState.profile=profile||null;teamState.team=profile?.member?profile:null;
-  if(!profile?.member&&!profile?.team_id){
+  if(!(profile?.member&&profile?.team_id)){
    teamShell('<div class="tw-card"><h2>Monte o espaço da sua equipe</h2><p>O mentor cria a equipe; depois compartilha o convite com os alunos. Cada pessoa entra usando a própria conta do Rabbitech.</p><div class="tw-grid"><section><h3>Criar equipe</h3>'+teamFormField('twTeamName','Nome da equipe','Ex.: Techscorpions')+teamFormField('twLeaderName','Seu nome','Nome do mentor')+'<button class="tw-btn" id="twCreate">Criar equipe</button></section><section><h3>Aceitar convite</h3>'+teamFormField('twInviteInput','Código de convite','Cole o código recebido')+teamFormField('twMemberName','Seu nome na equipe','Nome para os colegas')+'<button class="tw-btn" id="twJoin">Entrar na equipe</button></section></div><p class="tw-muted">Uma conta só pode pertencer a uma equipe por vez. O acesso aos dados é protegido no banco, não apenas por esconder botões.</p><div id="twMessage" aria-live="polite"></div></div>');
    $('twCreate')?.addEventListener('click',createTeamWorkspace);$('twJoin')?.addEventListener('click',joinTeamWorkspace);return;
   }
@@ -602,6 +602,7 @@
      existingMessages.delete(id);
     });
     existingMessages.forEach(el=>el.remove());
+    const emptyMessage=messageBox.querySelector('.tw-muted');if(messages.length&&emptyMessage&&emptyMessage.textContent.includes('Nenhuma mensagem'))emptyMessage.remove();
     if(!messages.length&&!messageBox.querySelector('[data-message-id]')&&!messageBox.querySelector('[data-pending-message]'))messageBox.textContent='Nenhuma mensagem ainda.';
     if(wasNearBottom)messageBox.scrollTop=messageBox.scrollHeight;
    }
@@ -650,12 +651,8 @@
   },700);
   window.addEventListener('rb-auth-state-changed',()=>{
    syncAdmin();setupSiteSettingsRealtime();loadPublicSettings();
-   const root=$('rbTeamWorkspaceRoot'),page=$('page-team-workspace');
-   if(root&&page?.classList.contains('active')){
-    root.dataset.initialized='false';
-    teamState.team=null;
-    renderTeamWorkspace().then(()=>{if(root)root.dataset.initialized='true'}).catch(()=>{});
-   }
+   // initTeamWorkspace owns team auth changes. Do not start a second concurrent
+   // renderTeamWorkspace() here: duplicate auth listeners rebuilt the visible UI twice.
   });
   window.addEventListener('rb-site-settings-updated',loadPublicSettings);
   setupSiteSettingsRealtime();
