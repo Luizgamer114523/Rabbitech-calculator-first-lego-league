@@ -140,7 +140,7 @@
  // Team workspace: leader/member portal backed by Supabase RLS and RPCs.
  const TEAM_STATES=['todo','in_progress','done'];
  const TEAM_LABELS={todo:'A fazer',in_progress:'Em andamento',done:'Concluído'};
- let teamState={profile:null,team:null,loading:false,refreshing:false,inviteCode:'',timer:null,realtimeChannel:null,realtimeTeamId:null,realtimeReady:false,messageSignature:'',notesSignature:'',backgroundRefreshInFlight:false,backgroundRefreshQueued:false};
+ let teamState={profile:null,team:null,authUserId:null,loading:false,refreshing:false,inviteCode:'',timer:null,realtimeChannel:null,realtimeTeamId:null,realtimeReady:false,messageSignature:'',notesSignature:'',backgroundRefreshInFlight:false,backgroundRefreshQueued:false};
  const teamEsc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const teamClient=()=>getSupabaseClient();
  function ensureTeamPage(){
@@ -207,6 +207,7 @@
  }
  async function openTeamPage(){
   const refs=ensureTeamPage();if(!refs)return;
+  const wasAlreadyActive=!refs.page.hidden&&refs.page.classList.contains('active');
   document.querySelectorAll('main .page').forEach(p=>{
    p.classList.remove('active');
    p.hidden=true;
@@ -222,10 +223,10 @@
    if(active)btn.setAttribute('aria-current','page');else btn.removeAttribute('aria-current');
   });
   const root=$('rbTeamWorkspaceRoot');
-  // If the team workspace is already open and loaded, keep the DOM, focus and
-  // scroll position exactly as they are. Refresh data in place instead.
-  if(refs.page.classList.contains('active')&&root?.dataset.initialized==='true'&&teamState.team?.team_id){
-   refreshTeamBackground();
+  // Do not reconstruct the entry form when a user taps Equipe again while it is open.
+  // For existing teams, update server data in place without replacing the visible DOM.
+  if(wasAlreadyActive&&root?.dataset.initialized==='true'){
+   if(teamState.team?.team_id)refreshTeamBackground();
    return;
   }
   const scrollToTeam=()=>{if(!refs.page.hidden&&refs.page.classList.contains('active')){const top=Math.max(0,window.scrollY+refs.page.getBoundingClientRect().top-12);window.scrollTo({top,behavior:'auto'})}};
@@ -279,6 +280,7 @@
  async function renderTeamWorkspace(){
   const root=$('rbTeamWorkspaceRoot');if(!root)return;
   const c=teamClient(),user=await teamAuthUser();
+  teamState.authUserId=user?.id||null;
   if(!c||!user){
    teamShell('<div class="tw-card"><h2>👥 Espaço da equipe</h2><p>Entre na sua conta do Rabbitech para criar uma equipe ou aceitar um convite.</p></div>');return;
   }
@@ -412,7 +414,10 @@
    if(r?.error)throw r.error;
    const data=Array.isArray(r.data)?r.data[0]:r.data;
    if(data?.already_member){
-    say('Esta conta já está vinculada à equipe '+(data.team_name||'atual')+'. O código não foi usado e nenhuma equipe foi alterada.',true);
+    const currentTeamName=data.team_name||'equipe atual';
+    await renderTeamWorkspace();
+    const root=$('rbTeamWorkspaceRoot');if(root)root.dataset.initialized='true';
+    teamFeedback('Esta conta já está vinculada à equipe '+currentTeamName+'. Abri o espaço que já pertence a esta conta. Cada conta só pode participar de uma equipe por vez; para entrar em outra, é preciso resolver o vínculo anterior.',false);
     return;
    }
    if(!data?.joined&&!data?.team_id)throw new Error('O servidor não confirmou a entrada na equipe. Gere um novo convite e tente novamente.');
@@ -687,7 +692,9 @@
   syncTeamWorkspace();
   window.addEventListener('rb-auth-state-changed',async()=>{
    const user=await teamAuthUser();
-   if(!user||user.id!==teamState.profile?.user_id){
+   const userId=user?.id||null;
+   if(userId!==teamState.authUserId){
+    teamState.authUserId=userId;
     teamState.profile=null;teamState.team=null;
     teamState.messageSignature='';teamState.notesSignature='';
     const root=$('rbTeamWorkspaceRoot');
