@@ -498,6 +498,7 @@
     pending.removeAttribute('data-pending-message');
     const time=pending.querySelector('small');if(time)time.textContent=new Date(result.data.created_at).toLocaleString();
     pending.dataset.messageId=result.data.id;
+    const deleteButton=document.createElement('button');deleteButton.type='button';deleteButton.className='tw-btn';deleteButton.dataset.teamDelete='team_messages';deleteButton.dataset.recordId=String(result.data.id);deleteButton.textContent='Apagar mensagem';pending.append(deleteButton);
    }
    const renderedMessages=[...(box?.querySelectorAll('.tw-bubble')||[])].map(el=>el.dataset.messageId||'').filter(Boolean);
    teamState.messageSignature=renderedMessages.join('|');
