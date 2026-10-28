@@ -909,12 +909,13 @@
   }
   function restoreTarget(){
    if(!activeTarget)return;
-   activeTarget.style.removeProperty('position');
-   activeTarget.style.removeProperty('z-index');
-   activeTarget.style.removeProperty('border-radius');
-   activeTarget.style.removeProperty('box-shadow');
+   ['position','z-index','border-radius','box-shadow'].forEach(name=>{
+    const old=targetStyleBackup&&targetStyleBackup[name];
+    if(old&&old.value)activeTarget.style.setProperty(name,old.value,old.priority||'');
+    else activeTarget.style.removeProperty(name);
+   });
    activeTarget.removeAttribute('data-rb-tour-highlight');
-   activeTarget=null;
+   activeTarget=null;targetStyleBackup=null;
   }
   function position(){
    if(!overlay||overlay.hidden||!activeTarget)return;
@@ -940,6 +941,8 @@
    while(nextIndex<steps.length&&!visible(steps[nextIndex].target))nextIndex++;
    if(nextIndex>=steps.length){finish();return}
    index=nextIndex;activeTarget=steps[index].target;
+   targetStyleBackup={};
+   ['position','z-index','border-radius','box-shadow'].forEach(name=>targetStyleBackup[name]={value:activeTarget.style.getPropertyValue(name),priority:activeTarget.style.getPropertyPriority(name)});
    activeTarget.style.setProperty('position','relative');
    activeTarget.style.setProperty('z-index','2147483003');
    activeTarget.style.setProperty('border-radius','12px');
