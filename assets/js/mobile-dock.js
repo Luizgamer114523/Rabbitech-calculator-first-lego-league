@@ -888,6 +888,96 @@
  }
 
 
+ // Preferência persistente de anúncios opcionais. Não carrega rastreadores nem
+ // exibe anúncios por conta própria; um provedor só pode iniciar após consentimento.
+ const OPTIONAL_ADS_KEY='rabbitech.optional-ads-consent.v1';
+ let optionalAdsPrefs={decided:false,enabled:false,updatedAt:null};
+ function readOptionalAdsPrefs(){
+  try{
+   const saved=JSON.parse(localStorage.getItem(OPTIONAL_ADS_KEY)||'null');
+   if(saved&&saved.version===1&&typeof saved.enabled==='boolean'&&saved.decided===true){
+    optionalAdsPrefs={decided:true,enabled:saved.enabled,updatedAt:saved.updatedAt||null};
+   }else optionalAdsPrefs={decided:false,enabled:false,updatedAt:null};
+  }catch(_){optionalAdsPrefs={decided:false,enabled:false,updatedAt:null}}
+  window.rbOptionalAdsAllowed=optionalAdsPrefs.decided&&optionalAdsPrefs.enabled;
+  return optionalAdsPrefs;
+ }
+ function saveOptionalAdsPrefs(enabled){
+  const next={version:1,decided:true,enabled:enabled===true,updatedAt:new Date().toISOString()};
+  try{localStorage.setItem(OPTIONAL_ADS_KEY,JSON.stringify(next))}
+  catch(_){
+   // Se o navegador bloquear armazenamento, falha em modo seguro: anúncios opcionais desligados.
+   optionalAdsPrefs={decided:false,enabled:false,updatedAt:null};
+   window.rbOptionalAdsAllowed=false;
+   window.dispatchEvent(new CustomEvent('rb-ad-consent-changed',{detail:{...optionalAdsPrefs,allowed:false,storageAvailable:false}}));
+   renderOptionalAdsConsent();
+   return false;
+  }
+  optionalAdsPrefs={decided:true,enabled:next.enabled,updatedAt:next.updatedAt};
+  window.rbOptionalAdsAllowed=next.enabled;
+  window.dispatchEvent(new CustomEvent('rb-ad-consent-changed',{detail:{...optionalAdsPrefs,allowed:next.enabled,storageAvailable:true}}));
+  renderOptionalAdsConsent();
+  return true;
+ }
+ function initOptionalAdsConsent(){
+  readOptionalAdsPrefs();
+  if(!$('rbOptionalAdsConsentStyle')){
+   const style=document.createElement('style');style.id='rbOptionalAdsConsentStyle';
+   style.textContent=`
+    #rbOptionalAdsConsent{margin:10px 14px 0;padding:12px 14px;border:1px solid rgba(145,190,128,.38);border-radius:14px;background:rgba(9,27,16,.94);color:var(--text,#eef7eb);font-size:14px;line-height:1.45}
+    #rbOptionalAdsConsent p{margin:5px 0 9px}
+    #rbOptionalAdsConsent .rb-ad-actions{display:flex;gap:8px;flex-wrap:wrap}
+    #rbOptionalAdsConsent button,#rbOptionalAdsSettings button{min-height:36px;padding:7px 11px;border:1px solid rgba(145,190,128,.45);border-radius:10px;background:rgba(50,83,57,.5);color:inherit;font:inherit;font-weight:650}
+    #rbOptionalAdsConsent button[data-choice="allow"]{background:var(--accent,#d0f477);color:#102015}
+    #rbOptionalAdsSettings{margin:14px 0;padding:16px;border:1px solid #34543a;border-radius:14px;background:rgba(12,29,18,.94);color:var(--text,#eef7eb)}
+    #rbOptionalAdsSettings label{display:flex;gap:10px;align-items:flex-start;margin:10px 0}
+    #rbOptionalAdsSettings input{width:18px;height:18px;flex:0 0 auto;margin-top:2px}
+    #rbOptionalAdsStatus{font-size:13px;opacity:.85}
+    @media(prefers-reduced-motion:reduce){#rbOptionalAdsConsent *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+   `;
+   document.head.appendChild(style);
+  }
+  if(!$('rbOptionalAdsConsent')){
+   const banner=document.createElement('aside');banner.id='rbOptionalAdsConsent';banner.setAttribute('aria-label','Preferência de anúncios opcionais');banner.hidden=true;
+   const header=document.querySelector('body>header');
+   if(header&&header.parentElement)header.insertAdjacentElement('afterend',banner);
+   else (document.querySelector('main')||document.body).prepend(banner);
+  }
+  ensureOptionalAdsSettings();
+  renderOptionalAdsConsent();
+ }
+ function ensureOptionalAdsSettings(){
+  const page=$('page-privacy');if(!page||$('rbOptionalAdsSettings'))return;
+  const section=document.createElement('section');section.id='rbOptionalAdsSettings';
+  section.innerHTML='<h3>Preferências de anúncios opcionais</h3><p>Você escolhe se o Rabbitech poderá carregar anúncios opcionais quando um provedor de anúncios estiver configurado. A escolha não é necessária para usar o site e não afeta os recursos da equipe.</p><label><input id="rbOptionalAdsToggle" type="checkbox"><span><strong>Permitir anúncios opcionais</strong><br><small>Desativado por padrão até você permitir. Esta preferência não autoriza anúncios personalizados nem rastreamento adicional.</small></span></label><p id="rbOptionalAdsStatus" role="status"></p><div class="rb-ad-actions"><button type="button" id="rbOptionalAdsSave">Salvar preferência</button><button type="button" id="rbOptionalAdsReject">Recusar anúncios opcionais</button></div>';
+  const disclosure=$('rbPrivacyDataNotice');if(disclosure)page.insertBefore(section,disclosure);else page.appendChild(section);
+  $('rbOptionalAdsSave').addEventListener('click',()=>saveOptionalAdsPrefs($('rbOptionalAdsToggle').checked));
+  $('rbOptionalAdsReject').addEventListener('click',()=>saveOptionalAdsPrefs(false));
+ }
+ function renderOptionalAdsConsent(){
+  const banner=$('rbOptionalAdsConsent');
+  const settings=$('rbOptionalAdsSettings');
+  if(settings){
+   const toggle=$('rbOptionalAdsToggle'),status=$('rbOptionalAdsStatus');
+   if(toggle)toggle.checked=optionalAdsPrefs.decided&&optionalAdsPrefs.enabled;
+   if(status)status.textContent=!optionalAdsPrefs.decided?'Nenhuma escolha salva. Anúncios opcionais permanecem desligados.':optionalAdsPrefs.enabled?'Preferência salva: anúncios opcionais permitidos, caso um provedor esteja configurado.':'Preferência salva: anúncios opcionais recusados.';
+  }
+  if(!banner)return;
+  banner.hidden=optionalAdsPrefs.decided;
+  if(banner.hidden)return;
+  banner.innerHTML='<strong>Preferências de anúncios</strong><p>O Rabbitech pode oferecer anúncios opcionais no futuro. Eles ficam desativados até você permitir. Essa escolha não bloqueia a navegação e pode ser alterada em Privacidade.</p><div class="rb-ad-actions"><button type="button" data-choice="allow">Permitir opcionais</button><button type="button" data-choice="reject">Recusar</button><button type="button" data-choice="settings">Configurar</button></div><div id="rbOptionalAdsQuickSettings" hidden><label><input id="rbOptionalAdsQuickToggle" type="checkbox"><span>Permitir anúncios opcionais</span></label><button type="button" data-choice="save">Salvar escolha</button></div>';
+  banner.querySelector('[data-choice="allow"]').addEventListener('click',()=>saveOptionalAdsPrefs(true));
+  banner.querySelector('[data-choice="reject"]').addEventListener('click',()=>saveOptionalAdsPrefs(false));
+  banner.querySelector('[data-choice="settings"]').addEventListener('click',()=>{
+   const panel=$('rbOptionalAdsQuickSettings');if(panel){panel.hidden=!panel.hidden;$('rbOptionalAdsQuickToggle').checked=false}
+  });
+  banner.querySelector('[data-choice="save"]').addEventListener('click',()=>saveOptionalAdsPrefs($('rbOptionalAdsQuickToggle').checked));
+ }
+ function refreshOptionalAdsConsent(){
+  readOptionalAdsPrefs();ensureOptionalAdsSettings();renderOptionalAdsConsent();
+ }
+
+
  function ensurePrivacyDisclosure(){
   if($('rbPrivacyDataNotice'))return;
   const navButton=document.querySelector('nav button[data-page="privacy"]');
@@ -928,9 +1018,9 @@
   page.appendChild(section);
  }
  function init(){
-  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initFirstVisitTour();
+  setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initOptionalAdsConsent();initFirstVisitTour();
   const observer=new MutationObserver(()=>{
-   setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();
+   setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();ensureOptionalAdsSettings();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
