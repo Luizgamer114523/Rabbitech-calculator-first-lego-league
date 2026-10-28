@@ -212,7 +212,8 @@
   if(scrollY>0)requestAnimationFrame(()=>window.scrollTo({top:scrollY,behavior:'auto'}));
   if(activeId){const restored=$(activeId);if(restored){restored.focus({preventScroll:true});if(activeValue!==null&&'value' in restored)restored.value=activeValue}}
  }
- function teamFormField(id,label,placeholder,type='text',attrs=''){
+ function teamMissionPicker(){const labels=[];document.querySelectorAll('#page-score [data-mission-id],#page-score [data-mission],#page-score .mission-card,#page-score .mission-item').forEach(el=>{const text=(el.querySelector('h2,h3,h4,label,strong,.mission-title')?.textContent||el.getAttribute('data-mission-name')||el.textContent||'').trim().replace(/\\s+/g,' ');if(/M(?:iss[aã]o)?\\s*0?\\d{1,2}/i.test(text)&&!labels.includes(text))labels.push(text.slice(0,100))});if(!labels.length)for(let i=1;i<=15;i++)labels.push('M'+String(i).padStart(2,'0'));return '<fieldset style="border:1px solid #49684b;border-radius:10px;padding:10px;margin:7px 0"><legend>Missões tentadas</legend>'+labels.map(name=>'<label style="display:block;margin:5px 0"><input type="checkbox" name="twRoundMission" value="'+teamEsc(name)+'"> '+teamEsc(name)+'</label>').join('')+'</fieldset>'}
+  function teamFormField(id,label,placeholder,type='text',attrs=''){
   return '<label style="display:block;margin:7px 0">'+teamEsc(label)+'<input class="tw-field" id="'+id+'" type="'+type+'" placeholder="'+teamEsc(placeholder)+'" '+attrs+'></label>';
  }
  async function renderTeamWorkspace(){
@@ -261,8 +262,8 @@
    '<div class="tw-card"><h3>Quadro Kanban</h3><p class="tw-muted">Mova tarefas entre A fazer, Em andamento e Concluído. O histórico de alterações fica salvo.</p><div class="tw-board">'+taskColumns+'</div></div>'+
    (manager?'<div class="tw-card"><h3>Metas da equipe</h3>'+teamFormField('twGoalTitle','Meta','Ex.: 10 rounds confiáveis')+teamFormField('twGoalDue','Prazo','', 'date')+'<div class="tw-grid"><label>Meta de tarefas<input class="tw-field" id="twGoalTasks" type="number" min="0" max="10000" value="0"></label><label>Meta de rounds<input class="tw-field" id="twGoalRounds" type="number" min="0" max="10000" value="0"></label><label>Média de pontos alvo<input class="tw-field" id="twGoalAverage" type="number" min="0" max="10000" value="0"></label></div><textarea class="tw-field" id="twGoalDescription" rows="2" maxlength="1000" placeholder="Descrição da meta"></textarea><button class="tw-btn" id="twAddGoal">Salvar meta</button></div>':'')+
    '<div class="tw-card"><h3>Metas e progresso</h3>'+(goalHtml||'<p class="tw-muted">O mentor ainda não cadastrou metas.</p>')+'</div>'+
-   '<div class="tw-grid"><section class="tw-card"><h3>Registrar round de treino</h3>'+teamFormField('twRoundNumber','Número do round','1','number','min="1" max="10000"')+teamFormField('twRoundScore','Pontuação','0','number','min="0" max="10000"')+teamFormField('twRoundStart','Onde começou','Ex.: base / lado esquerdo')+'<textarea class="tw-field" id="twRoundMissions" rows="2" maxlength="2000" placeholder="Missões tentadas"></textarea><textarea class="tw-field" id="twRoundNotes" rows="2" maxlength="2000" placeholder="Observações do round"></textarea><button class="tw-btn" id="twAddRound">Salvar round</button></section><section class="tw-card"><h3>Desempenho dos rounds</h3><p>Média atual: <strong>'+avg+' pontos</strong></p>'+chart+'<p class="tw-muted">'+rounds.length+' rounds de treino registrados.</p></section></div>'+
-   '<div class="tw-grid"><section class="tw-card"><h3>Notas compartilhadas</h3>'+teamFormField('twNoteTitle','Título da nota','Ideias da reunião')+'<textarea class="tw-field" id="twNoteBody" rows="4" maxlength="8000" placeholder="Planejamento, decisões, o que testar..."></textarea><button class="tw-btn" id="twAddNote">Salvar anotação</button><div>'+(notes.slice().reverse().map(n=>'<article class="tw-task"><strong>'+teamEsc(n.title)+'</strong><p style="white-space:pre-wrap">'+teamEsc(n.body)+'</p><small class="tw-muted">'+teamEsc(new Date(n.created_at).toLocaleString())+' · '+teamEsc(members.find(m=>m.user_id===n.author_user_id)?.display_name||'Membro')+'</small></article>').join('')||'<p class="tw-muted">Nenhuma anotação ainda.</p>')+'</div></section>'+
+   '<div class="tw-grid"><section class="tw-card"><h3>Registrar round de treino</h3>'+teamFormField('twRoundNumber','Número do round','1','number','min="1" max="10000"')+teamFormField('twRoundScore','Pontuação','0','number','min="0" max="10000"')+'<label style="display:block;margin:7px 0">Onde começou<select class="tw-field" id="twRoundStart"><option value="Base esquerda">Base esquerda</option><option value="Base direita">Base direita</option></select></label>'+teamMissionPicker()<textarea class="tw-field" id="twRoundNotes" rows="2" maxlength="2000" placeholder="Observações do round"></textarea><button class="tw-btn" id="twAddRound">Salvar round</button></section><section class="tw-card"><h3>Desempenho dos rounds</h3><p>Média atual: <strong>'+avg+' pontos</strong></p>'+chart+'<p class="tw-muted">'+rounds.length+' rounds de treino registrados.</p></section></div>'+
+   '<div class="tw-grid"><section class="tw-card"><h3>Notas compartilhadas</h3>'+teamFormField('twNoteTitle','Título da nota','Ideias da reunião')+'<textarea class="tw-field" id="twNoteBody" rows="4" maxlength="8000" placeholder="Planejamento, decisões, o que testar..."></textarea><button class="tw-btn" id="twAddNote">Salvar anotação</button><div id="twNotesList">'+(notes.slice().reverse().map(n=>'<article class="tw-task"><strong>'+teamEsc(n.title)+'</strong><p style="white-space:pre-wrap">'+teamEsc(n.body)+'</p><small class="tw-muted">'+teamEsc(new Date(n.created_at).toLocaleString())+' · '+teamEsc(members.find(m=>m.user_id===n.author_user_id)?.display_name||'Membro')+'</small></article>').join('')||'<p class="tw-muted">Nenhuma anotação ainda.</p>')+'</div></section>'+
    '<section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Mensagens de texto compartilhadas entre membros. Sem chamadas.</p><div id="twMessages" style="max-height:300px;overflow:auto">'+messages.slice(-60).map(m=>'<div class="tw-bubble"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong><p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p><small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small></div>').join('')+'</div><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage">Enviar mensagem</button></section></div>'+
    '<div id="twFeedback" aria-live="polite"></div>');
   $('twRefresh')?.addEventListener('click',()=>{refreshTeamBackground();teamFeedback('Atualizando os dados em segundo plano…')});
@@ -337,7 +338,7 @@
  }
  async function createTeamRound(){
   const t=teamState.team,p=teamState.profile,roundNumber=Number($('twRoundNumber')?.value),score=Number($('twRoundScore')?.value||0);if(!Number.isInteger(roundNumber)||roundNumber<1||score<0){teamFeedback('Confira o número do round e a pontuação.',true);return}
-  await teamWrite(c=>c.from('team_round_logs').insert({team_id:t.team_id,created_by:p.user_id,round_number:roundNumber,score,start_position:$('twRoundStart')?.value.trim()||'',missions:$('twRoundMissions')?.value.trim()||'',notes:$('twRoundNotes')?.value.trim()||''}));
+  await teamWrite(c=>c.from('team_round_logs').insert({team_id:t.team_id,created_by:p.user_id,round_number:roundNumber,score,start_position:$('twRoundStart')?.value||'',missions:[...document.querySelectorAll('#rbTeamWorkspaceRoot input[name="twRoundMission"]:checked')].map(el=>el.value).join(', '),notes:$('twRoundNotes')?.value.trim()||''}));
  }
  async function createTeamNote(){
   const t=teamState.team,p=teamState.profile,title=$('twNoteTitle')?.value.trim(),body=$('twNoteBody')?.value.trim();if(!title||!body){teamFeedback('Preencha o título e o conteúdo da anotação.',true);return}
@@ -433,15 +434,16 @@
   teamState.backgroundRefreshInFlight=true;
   try{
    const teamId=team.team_id;
-   const [taskResult,roundResult,messageResult]=await Promise.all([
+   const [taskResult,roundResult,messageResult,noteResult]=await Promise.all([
     client.from('team_tasks').select('*').eq('team_id',teamId).order('created_at',{ascending:true}).limit(250),
     client.from('team_round_logs').select('id,score,round_number,performed_at').eq('team_id',teamId).order('performed_at',{ascending:true}).limit(250),
-    client.from('team_messages').select('id,author_user_id,body,created_at').eq('team_id',teamId).order('created_at',{ascending:true}).limit(60)
+    client.from('team_messages').select('id,author_user_id,body,created_at').eq('team_id',teamId).order('created_at',{ascending:true}).limit(60),
+    client.from('team_notes').select('id,author_user_id,title,body,created_at').eq('team_id',teamId).order('created_at',{ascending:false}).limit(100)
    ]);
-   if(taskResult.error||roundResult.error||messageResult.error)return;
+   if(taskResult.error||roundResult.error||messageResult.error||noteResult.error)return;
    // If the user navigated away while the queries were running, do not touch the page.
    if(!$('page-team-workspace')?.classList.contains('active'))return;
-   const tasks=taskResult.data||[],rounds=roundResult.data||[],messages=messageResult.data||[];
+   const tasks=taskResult.data||[],rounds=roundResult.data||[],messages=messageResult.data||[],notes=noteResult.data||[];
    const done=tasks.filter(t=>t.status==='done').length;
    const progress=tasks.length?Math.round(done/tasks.length*100):0;
    const avg=rounds.length?Math.round(rounds.reduce((sum,r)=>sum+Number(r.score||0),0)/rounds.length):0;
@@ -482,6 +484,8 @@
    }
    const statLabels=root.querySelectorAll('.tw-stat + div');
    if(statLabels.length>=4&&statLabels[3].textContent!==('Média dos rounds · '+rounds.length+' registros'))statLabels[3].textContent='Média dos rounds · '+rounds.length+' registros';
+   const notesBox=$('twNotesList');
+   if(notesBox){const notesHtml=notes.map(n=>'<article class="tw-task"><strong>'+teamEsc(n.title)+'</strong><p style="white-space:pre-wrap">'+teamEsc(n.body)+'</p><small class="tw-muted">'+teamEsc(new Date(n.created_at).toLocaleString())+' · '+teamEsc(teamState.members?.find(m=>m.user_id===n.author_user_id)?.display_name||'Membro')+'</small></article>').join('');const notesSignature=notes.map(n=>n.id+':'+n.created_at+':'+n.body).join('|');if(notesSignature!==teamState.notesSignature){notesBox.innerHTML=notesHtml||'<p class="tw-muted">Nenhuma anotação ainda.</p>';teamState.notesSignature=notesSignature;}}
    const messageBox=$('twMessages');
    if(messageBox){
     const previousLast=messageBox.querySelector('.tw-bubble:last-child')?.textContent||'';
