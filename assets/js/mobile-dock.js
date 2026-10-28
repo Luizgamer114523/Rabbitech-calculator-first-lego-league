@@ -854,9 +854,10 @@
    if($tour('rbFirstVisitTourStyles'))return;
    const style=document.createElement('style');style.id='rbFirstVisitTourStyles';
    style.textContent=
-    '#rbFirstVisitTour{position:fixed;inset:0;z-index:2147483000;background:rgba(1,8,4,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);color:#f3ffed}'+
+    '#rbFirstVisitTour{position:fixed;inset:0;z-index:auto;background:transparent;pointer-events:none;color:#f3ffed}'+
+    '#rbFirstVisitTour:before{content:"";position:fixed;inset:0;z-index:2147483000;background:rgba(1,8,4,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);pointer-events:auto}'+
     '#rbFirstVisitTour[hidden]{display:none!important}'+
-    '#rbFirstVisitTour .rb-tour-card{position:fixed;left:16px;right:16px;max-width:560px;margin:auto;z-index:2147483004;box-sizing:border-box;padding:19px;border:1px solid rgba(208,244,119,.7);border-radius:20px;background:rgba(8,25,14,.97);box-shadow:0 18px 65px rgba(0,0,0,.55);font:inherit}'+
+    '#rbFirstVisitTour .rb-tour-card{position:fixed;left:16px;right:16px;max-width:560px;margin:auto;z-index:2147483004;pointer-events:auto;box-sizing:border-box;padding:19px;border:1px solid rgba(208,244,119,.7);border-radius:20px;background:rgba(8,25,14,.97);box-shadow:0 18px 65px rgba(0,0,0,.55);font:inherit}'+
     '#rbFirstVisitTour .rb-tour-kicker{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#d0f477;font-weight:800}'+
     '#rbFirstVisitTour h2{font-size:clamp(21px,5vw,28px);line-height:1.15;margin:9px 0}'+
     '#rbFirstVisitTour p{font-size:15px;line-height:1.55;margin:9px 0 17px;color:#e2eee0}'+
