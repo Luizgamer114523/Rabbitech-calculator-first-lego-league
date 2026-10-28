@@ -391,7 +391,7 @@
  }
  async function joinTeamWorkspace(codeInput='twInviteInput',nameInput='twMemberName',feedbackId='twFeedback'){
   // Invite codes are case-insensitive hashes; ignore pasted whitespace/newlines.
-  const code=String($(codeInput)?.value||'').replace(/\\s+/g,'').toLowerCase(),display=$(nameInput)?.value.trim();
+  const code=String($(codeInput)?.value||'').replace(/\s+/g,'').toLowerCase(),display=$(nameInput)?.value.trim();
   const feedback=$(feedbackId);
   const say=(message,error=false)=>{if(feedback)feedback.innerHTML='<p style="color:'+(error?'#ffb4a9':'#d0f477')+'">'+teamEsc(message)+'</p>';else teamFeedback(message,error)};
   if(!code||!display){say('Informe o código do convite e seu nome.',true);return}
