@@ -976,26 +976,25 @@
   es:{welcome:['Te damos la bienvenida de nuevo a Rabbitech','Buenos días','Buenas tardes','Buenas noches'],bye:'¡Hasta luego! Gracias por usar Rabbitech. ¡Vuelve pronto!',team:'Equipo',admin:'Administración',score:'Marcador',history:'Historial',ranking:'Clasificación',strategy:'Estrategia',routes:'Rutas',rules:'Reglas',tv:'Rabbitech TV',music:'Música',privacy:'Privacidad',refresh:'Actualizar',createTeam:'Crear equipo',joinTeam:'Unirse a un equipo'}
  };
  function rbCurrentLocale(){
-  let saved='';try{saved=localStorage.getItem('rbPreferredLanguage')||''}catch(_){}
+  let saved='';
+  try{saved=localStorage.getItem('rbPreferredLanguage')||''}catch(_){}
   const selector=$('rbLanguageQuick')?.querySelector('select')||$('rbLanguageQuickSelect')||$('rbConsentLanguage')||document.querySelector('select[id*="language" i],select[name*="language" i]');
-  const chosen=String(saved||selector?.value||'').trim().toLowerCase();
-  // Explicit user choice wins. If none exists, detect the browser's locale.
-  const raw=chosen||String(navigator.languages?.[0]||navigator.language||document.documentElement.lang||'en').trim().toLowerCase();
-  if(raw==='pt-br'||raw.startsWith('pt'))return 'pt';
-  if(raw==='en-us'||raw.startsWith('en'))return 'en';
-  if(raw==='es'||raw.startsWith('es'))return 'es';
-  // The greeting dictionary currently supports Portuguese, English and Spanish.
-  return 'en';
+  const selected=String(saved||selector?.value||'').trim().replace('_','-').toLowerCase();
+  const supported=raw=>{
+   if(/^pt(?:-|$)/i.test(raw))return 'pt';
+   if(/^en(?:-|$)/i.test(raw))return 'en';
+   if(/^es(?:-|$)/i.test(raw))return 'es';
+   return '';
+  };
+  const manual=supported(selected);
+  if(manual)return manual;
+  const browserLanguages=Array.isArray(navigator.languages)?navigator.languages:[];
+  const detected=[...browserLanguages,navigator.language,document.documentElement.lang]
+   .map(value=>String(value||'').trim().replace('_','-').toLowerCase())
+   .find(value=>supported(value));
+  return detected?supported(detected):'en';
  }
- function rbCurrentLocale(){
-  let saved='';try{saved=localStorage.getItem('rbPreferredLanguage')||''}catch(_){}
-  const selector=$('rbLanguageQuick')?.querySelector('select')||$('rbLanguageQuickSelect')||$('rbConsentLanguage')||document.querySelector('select[id*="language" i],select[name*="language" i]');
-  const chosen=String(saved||selector?.value||'').toLowerCase();
-  const lang=chosen||String(navigator.language||document.documentElement.lang||'pt').toLowerCase();
-  if(lang.startsWith('en'))return 'en';
-  if(lang.startsWith('es'))return 'es';
-  return 'pt';
- }
+
  function rbGreetingKey(){
   const hour=new Date().getHours();
   return hour<12?1:hour<18?2:3;
@@ -1020,25 +1019,48 @@
    :dict.welcome[0]+(name?', '+name:'')+'! '+dict.welcome[rbGreetingKey()]+'!';
   rbToast(greeting);
  }
+ const rbUiTranslations={
+  pt:{'Home':'Início','Team':'Equipe','Admin':'Admin','Scoreboard':'Placar','Score':'Placar','History':'Histórico','Ranking':'Ranking','Strategy':'Estratégia','Routes':'Rotas','Rules':'Regras','Music':'Música','Privacy':'Privacidade','Refresh':'Atualizar','Create team':'Criar equipe','Join an existing team':'Entrar em equipe existente','Invite':'Convidar','Members':'Membros','Tasks':'Tarefas','Goals':'Metas','Progress':'Progresso','Performance':'Desempenho','Chat':'Chat','Send':'Enviar','Cancel':'Cancelar','Save':'Salvar','Close':'Fechar','Back':'Voltar','Next':'Avançar','Continue':'Continuar','Confirm':'Confirmar','Delete':'Excluir','Edit':'Editar','Loading...':'Carregando...','Loading…':'Carregando…','Search':'Pesquisar','Name':'Nome','Email':'E-mail','Password':'Senha','Sign in':'Entrar','Sign out':'Sair','Log in':'Entrar','Log out':'Sair','Settings':'Configurações','Notifications':'Notificações','No results':'Nenhum resultado','No data available':'Nenhum dado disponível','Try again':'Tentar novamente','Error':'Erro','Success':'Sucesso','Warning':'Aviso','Scheduled':'Agendado','Active':'Ativo','Inactive':'Inativo','Language':'Idioma','Create':'Criar','Join':'Entrar','Start':'Iniciar','Stop':'Parar','Round':'Round','Rounds':'Rounds','Average score':'Pontuação média','Global notices':'Avisos globais','Team workspace':'Área da equipe','Welcome back':'Bem-vindo de volta','Bem-vindo de volta ao Rabbitech':'Bem-vindo de volta ao Rabbitech'},
+  en:{'Início':'Home','Equipe':'Team','Placar':'Scoreboard','Histórico':'History','Estratégia':'Strategy','Rotas':'Routes','Regras':'Rules','Música':'Music','Privacidade':'Privacy','Atualizar':'Refresh','Criar equipe':'Create team','Entrar em equipe existente':'Join an existing team','Convidar':'Invite','Membros':'Members','Tarefas':'Tasks','Metas':'Goals','Progresso':'Progress','Desempenho':'Performance','Enviar':'Send','Cancelar':'Cancel','Salvar':'Save','Fechar':'Close','Voltar':'Back','Avançar':'Next','Continuar':'Continue','Confirmar':'Confirm','Excluir':'Delete','Editar':'Edit','Carregando...':'Loading...','Carregando…':'Loading…','Pesquisar':'Search','Nome':'Name','Senha':'Password','Entrar':'Sign in','Sair':'Sign out','Configurações':'Settings','Notificações':'Notifications','Nenhum resultado':'No results','Nenhum dado disponível':'No data available','Tentar novamente':'Try again','Erro':'Error','Sucesso':'Success','Aviso':'Warning','Agendado':'Scheduled','Ativo':'Active','Inativo':'Inactive','Idioma':'Language','Criar':'Create','Iniciar':'Start','Parar':'Stop','Pontuação média':'Average score','Avisos globais':'Global notices','Área da equipe':'Team workspace','Bem-vindo de volta':'Welcome back'},
+  es:{'Home':'Inicio','Team':'Equipo','Admin':'Administración','Scoreboard':'Marcador','Score':'Puntuación','History':'Historial','Ranking':'Clasificación','Strategy':'Estrategia','Routes':'Rutas','Rules':'Reglas','Music':'Música','Privacy':'Privacidad','Refresh':'Actualizar','Create team':'Crear equipo','Join an existing team':'Unirse a un equipo','Invite':'Invitar','Members':'Miembros','Tasks':'Tareas','Goals':'Objetivos','Progress':'Progreso','Performance':'Rendimiento','Send':'Enviar','Cancel':'Cancelar','Save':'Guardar','Close':'Cerrar','Back':'Volver','Next':'Siguiente','Continue':'Continuar','Confirm':'Confirmar','Delete':'Eliminar','Edit':'Editar','Loading...':'Cargando...','Search':'Buscar','Name':'Nombre','Email':'Correo electrónico','Password':'Contraseña','Sign in':'Iniciar sesión','Sign out':'Cerrar sesión','Settings':'Configuración','Notifications':'Notificaciones','No results':'Sin resultados','Try again':'Intentar de nuevo','Error':'Error','Success':'Éxito','Warning':'Aviso','Language':'Idioma','Create':'Crear','Join':'Unirse','Start':'Iniciar','Stop':'Detener','Global notices':'Avisos globales','Team workspace':'Área del equipo'}
+ };
  function rbApplyLanguageFallback(){
-  const locale=rbCurrentLocale(),dict=rbLocaleText[locale]||rbLocaleText.pt;
+  const locale=rbCurrentLocale(),dict=rbLocaleText[locale]||rbLocaleText.en;
   const nav=document.querySelector('nav.rb-samsung-dock');
   if(nav){
    const labels={score:dict.score,history:dict.history,leaderboard:dict.ranking,strategy:dict.strategy,routes:dict.routes,rules:dict.rules,youtube:dict.tv,music:dict.music,privacy:dict.privacy,'team-workspace':dict.team,admin:dict.admin};
    nav.querySelectorAll('button[data-page]').forEach(button=>{
-    const key=button.dataset.page, label=labels[key], node=button.querySelector('.dock-label');
+    const label=labels[button.dataset.page],node=button.querySelector('.dock-label');
     if(label&&node){node.textContent=label;button.setAttribute('aria-label',label);button.title=label}
    });
   }
   const teamButton=$('rbTeamWorkspaceNav');
   if(teamButton){const label=dict.team;teamButton.querySelector('.dock-label')?.replaceChildren(document.createTextNode(label));teamButton.title=label;teamButton.setAttribute('aria-label',label)}
+  const phrases=rbUiTranslations[locale]||{};
+  document.querySelectorAll('[data-i18n]').forEach(element=>{
+   const key=element.getAttribute('data-i18n');
+   if(dict[key])element.textContent=dict[key];else if(phrases[key])element.textContent=phrases[key];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(element=>{const key=element.getAttribute('data-i18n-placeholder');if(phrases[key])element.setAttribute('placeholder',phrases[key])});
+  document.querySelectorAll('[data-i18n-title]').forEach(element=>{const key=element.getAttribute('data-i18n-title');if(phrases[key])element.setAttribute('title',phrases[key])});
+  document.querySelectorAll('[data-i18n-aria-label]').forEach(element=>{const key=element.getAttribute('data-i18n-aria-label');if(phrases[key])element.setAttribute('aria-label',phrases[key])});
+  // Exact phrase translations safely cover common static and dynamically-created UI text.
+  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+  const nodes=[];
+  while(walker.nextNode()){
+   const node=walker.currentNode,parent=node.parentElement;
+   if(!parent||parent.closest('script,style,textarea,input,select,option,code,pre,[contenteditable="true"],[data-user-content]'))continue;
+   const original=node.nodeValue||'',trimmed=original.trim();
+   if(trimmed&&Object.prototype.hasOwnProperty.call(phrases,trimmed))nodes.push({node,original,trimmed});
+  }
+  nodes.forEach(({node,original,trimmed})=>{const translated=phrases[trimmed];if(translated)node.nodeValue=original.replace(trimmed,translated)});
  }
  function initLocalizedGreetings(){
   let lastUserId=currentUser()?.id||null;
   const language=$('rbLanguageQuick')?.querySelector('select')||$('rbLanguageQuickSelect')||$('rbConsentLanguage')||document.querySelector('select[id*="language" i],select[name*="language" i]');
   // The site's existing i18n controller owns rbPreferredLanguage. Do not overwrite
   // a manually selected language with the device language on every page load.
-  language?.addEventListener('change',()=>setTimeout(rbApplyLanguageFallback,0));
+  language?.addEventListener('change',()=>{try{localStorage.setItem('rbPreferredLanguage',language.value)}catch(_){};setTimeout(rbApplyLanguageFallback,0)});
   rbApplyLanguageFallback();
   window.addEventListener('rb-auth-state-changed',()=>{
    const user=currentUser(),id=user?.id||null;
