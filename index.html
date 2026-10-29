@@ -2137,7 +2137,10 @@ setInterval(()=>{if(document.visibilityState==='visible'&&rbClient)rbLoadGlobalS
 </script>
 
 <style id="rb-remaster-hotfix">#rb-public-ranking-callout{display:none!important}#page-leaderboard #rb-public-ranking-callout{display:block!important}#rbGlobalNotice.rb-notice-warning{background:linear-gradient(110deg,#551010,#8b1717,#551010)!important;color:#fff!important;border:2px solid #ff4545!important;box-shadow:0 0 8px #ff3434,0 0 22px #ff343499!important;animation:rbAlertPulse 1.25s ease-in-out infinite}#rbGlobalNotice.rb-notice-success{background:linear-gradient(110deg,#063c25,#0b6338,#063c25)!important;color:#effff4!important;border:2px solid #40f58a!important;box-shadow:0 0 12px #24e87899!important}#rbGlobalNotice.rb-notice-info{background:linear-gradient(110deg,#0c3154,#174f7d,#0c3154)!important;color:#eff8ff!important;border:2px solid #59baff!important;box-shadow:0 0 12px #40b4ff88!important}#rbLanguageConsent{position:fixed;inset:0;z-index:999999;background:rgba(2,8,5,.94);backdrop-filter:blur(16px);display:grid;place-items:center;padding:16px}#rbLanguageConsent[hidden]{display:none!important}#rbLanguageConsent .rb-consent-card{width:min(680px,100%);max-height:92dvh;overflow:auto;background:#0d2116;color:#edf7ed;border:1px solid #52734e;border-radius:22px;padding:20px;box-shadow:0 18px 70px #000b}#rbLanguageConsent h2{color:#d0f477;margin:0 0 12px}#rbLanguageConsent select,#rbLanguageConsent button{font:inherit;padding:12px;border-radius:12px}#rbLanguageConsent select{width:100%;background:#07140d;color:#fff;border:1px solid #63805f;margin:8px 0 14px}#rbConsentText{white-space:pre-wrap;line-height:1.55;overflow-wrap:anywhere}#rbConsentAccept{width:100%;background:#d0f477;color:#13200b;font-weight:900;border:0;margin-top:16px}#rbGlobalNotice.rb-notice-warning:before{content:"⚠️";width:auto;height:auto;background:none;color:inherit;font-size:20px}#rbGlobalNotice.rb-notice-success:before{content:"✅";width:auto;height:auto;background:none;color:inherit;font-size:20px}#rbGlobalNotice.rb-notice-info:before{content:"ℹ️";width:auto;height:auto;background:none;color:inherit;font-size:20px}</style>
-<script id="rb-remaster-hotfix-script">(function(){'use strict';const L={'pt-BR':{name:'Português',title:'Privacidade e idioma',intro:'Escolha o idioma do site e leia o aviso de privacidade antes de continuar.',policy:'O Rabbitech BIOGLOW pode armazenar dados de equipe, pontuações e rodadas para oferecer sincronização e ranking. O login Google identifica a conta e ajuda a proteger a equipe vinculada. Não informe senhas ou dados pessoais desnecessários. Os recursos conectados dependem do Google e do Supabase. Ao continuar, você confirma que leu este aviso.',accept:'Li e aceito continuar',team:'Nome da equipe (obrigatório)',need:'Digite o nome da equipe antes de entrar com Google.'},en:{name:'English',title:'Privacy and language',intro:'Choose the site language and read the privacy notice before continuing.',policy:'Rabbitech BIOGLOW may store team names, scores, and rounds to provide synchronization and rankings. Google sign-in identifies your account and helps protect the linked team. Do not provide passwords or unnecessary personal data. Connected features depend on Google and Supabase. By continuing, you confirm that you have read this notice.',accept:'I have read and accept',team:'Team name (required)',need:'Enter a team name before signing in with Google.'},es:{name:'Español',title:'Privacidad e idioma',intro:'Elige el idioma del sitio y lee el aviso de privacidad antes de continuar.',policy:'Rabbitech BIOGLOW puede almacenar nombres de equipos, puntuaciones y rondas para ofrecer sincronización y clasificaciones. El inicio de sesión de Google identifica tu cuenta y ayuda a proteger el equipo vinculado. No compartas contraseñas ni datos personales innecesarios. Las funciones conectadas dependen de Google y Supabase. Al continuar, confirmas que has leído este aviso.',accept:'He leído y acepto continuar',team:'Nombre del equipo (obligatorio)',need:'Introduce el nombre del equipo antes de iniciar sesión con Google.'},fr:{name:'Français',title:'Confidentialité et langue',intro:'Choisissez la langue du site et lisez l’avis de confidentialité avant de continuer.',policy:'Rabbitech BIOGLOW peut stocker les noms des équipes, les scores et les manches pour assurer la synchronisation et les classements. La connexion Google identifie votre compte et contribue à protéger l’équipe associée. Ne partagez pas de mots de passe ni de données personnelles inutiles. Les fonctions connectées dépendent de Google et Supabase. En continuant, vous confirmez avoir lu cet avis.',accept:'J’ai lu et j’accepte',team:'Nom de l’équipe (obligatoire)',need:'Saisissez le nom de l’équipe avant de vous connecter avec Google.'},de:{name:'Deutsch',title:'Datenschutz und Sprache',intro:'Wähle die Sprache der Website und lies den Datenschutzhinweis, bevor du fortfährst.',policy:'Rabbitech BIOGLOW kann Teamnamen, Punktzahlen und Runden speichern, um Synchronisierung und Ranglisten bereitzustellen. Die Google-Anmeldung identifiziert dein Konto und hilft, das verknüpfte Team zu schützen. Gib keine Passwörter oder unnötigen persönlichen Daten an. Verbundene Funktionen hängen von Google und Supabase ab. Wenn du fortfährst, bestätigst du, dass du diesen Hinweis gelesen hast.',accept:'Gelesen und akzeptiert',team:'Teamname (erforderlich)',need:'Gib vor der Google-Anmeldung einen Teamnamen ein.'},it:{name:'Italiano',title:'Privacy e lingua',intro:'Scegli la lingua del sito e leggi l’informativa sulla privacy prima di continuare.',policy:'Rabbitech BIOGLOW può memorizzare nomi delle squadre, punteggi e round per offrire sincronizzazione e classifiche. L’accesso con Google identifica il tuo account e aiuta a proteggere la squadra collegata. Non condividere password o dati personali non necessari. Le funzioni collegate dipendono da Google e Supabase. Continuando, confermi di aver letto questa informativa.',accept:'Ho letto e accetto',team:'Nome della squadra (obbligatorio)',need:'Inserisci il nome della squadra prima di accedere con Google.'}};function $(x){return document.getElementById(x)}function lang(){return localStorage.getItem('rbPreferredLanguage')||'pt-BR'}function render(){let t=L[lang()]||L['pt-BR'];if($('rbConsentTitle'))$('rbConsentTitle').textContent=t.title;if($('rbConsentIntro'))$('rbConsentIntro').textContent=t.intro;if($('rbConsentText'))$('rbConsentText').textContent=t.policy;if($('rbConsentAccept'))$('rbConsentAccept').textContent=t.accept}function setLanguage(k){if(!L[k])k='pt-BR';localStorage.setItem('rbPreferredLanguage',k);document.documentElement.lang=k;let a=$('rbConsentLanguage'),b=$('rbLanguageQuickSelect'),c=$('rbLanguageGateSelect');if(a&&a.value!==k)a.value=k;if(b&&b.value!==k)b.value=k;if(c&&c.value!==k)c.value=k;render()}function setup(){let call=$('rb-public-ranking-callout'),rank=$('page-leaderboard');if(call&&rank&&!rank.contains(call))rank.prepend(call);let b=document.querySelector('#rb-public-ranking-callout button,.rb-public-ranking-inner button');if(b)b.addEventListener('click',()=>{let n=document.querySelector('[data-page="leaderboard"]');if(n)n.click();else{document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-leaderboard'));scrollTo({top:0,behavior:'smooth'})}});let team=$('rbCloudTeam'),g=$('rbCloudGoogle');if(g)g.addEventListener('click',e=>{if(!team||team.value.trim().length<2){e.preventDefault();e.stopImmediatePropagation();alert((L[lang()]||L['pt-BR']).need);if(team)team.focus()}else localStorage.setItem('rabbitech_pending_team_name',team.value.trim())},true);let n=$('rbGlobalNotice');if(n){let apply=()=>{let cfg=(typeof rbGlobalSettingsCurrent!=='undefined'?rbGlobalSettingsCurrent:{}),type=cfg.notice_type||'info';type=/atenção|atencao|warning/i.test(type)?'warning':/sucesso|success/i.test(type)?'success':'info';n.classList.remove('rb-notice-warning','rb-notice-success','rb-notice-info');n.classList.add('rb-notice-'+type);n.setAttribute('role',type==='warning'?'alert':'status')};apply();}let overlay=document.createElement('div');overlay.id='rbLanguageConsent';overlay.innerHTML='<div class="rb-consent-card" role="dialog" aria-modal="true" aria-labelledby="rbConsentTitle"><h2 id="rbConsentTitle"></h2><p id="rbConsentIntro"></p><label for="rbConsentLanguage">🌐 Language / Idioma</label><select id="rbConsentLanguage"></select><div id="rbConsentText"></div><button id="rbConsentAccept" type="button"></button></div>';document.body.appendChild(overlay);let s=$('rbConsentLanguage');Object.keys(L).forEach(k=>{let o=document.createElement('option');o.value=k;o.textContent=L[k].name;s.appendChild(o)});s.value=lang();s.addEventListener('change',()=>setLanguage(s.value));$('rbConsentAccept').addEventListener('click',()=>{localStorage.setItem('rbPrivacyAccepted','yes');overlay.hidden=true;document.body.style.overflow='';});render();let quick=document.createElement('label');quick.id='rbLanguageQuick';quick.style.cssText='display:block;margin:12px;padding:10px;border:1px solid #49684b;border-radius:12px';quick.textContent='🌐 Idioma / Language ';let qs=document.createElement('select');qs.style.cssText='margin-left:8px;background:#0a1a10;color:inherit;padding:6px;border-radius:8px';Object.keys(L).forEach(k=>{let o=document.createElement('option');o.value=k;o.textContent=L[k].name;qs.appendChild(o)});qs.value=lang();qs.id='rbLanguageQuickSelect';qs.addEventListener('change',()=>setLanguage(qs.value));quick.appendChild(qs);let header=document.querySelector('body>header'),headerRow=header&&header.firstElementChild;if(headerRow){quick.id='rbLanguageHeader';quick.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:rgba(8,24,14,.72)';qs.style.cssText='max-width:100%;margin-left:4px;background:var(--panel);color:var(--text);padding:6px 8px;border:1px solid var(--line);border-radius:8px';let season=headerRow.querySelector('.season');if(season)season.insertBefore(quick,season.firstChild);else headerRow.appendChild(quick)}let gateCard=$('rbPrivacyGate')?.querySelector('.rb-gate-card'),gateCheck=$('rbPrivacyGateCheck');if(gateCard&&gateCheck&&!$('rbLanguageGateQuick')){let gateQuick=quick.cloneNode(true);gateQuick.id='rbLanguageGateQuick';gateQuick.style.cssText='display:block;margin:12px 0;padding:10px;border:1px solid #49684b;border-radius:12px';let gateSelect=gateQuick.querySelector('select');if(gateSelect){gateSelect.id='rbLanguageGateSelect';gateSelect.value=lang();gateSelect.addEventListener('change',()=>setLanguage(gateSelect.value));}gateCard.insertBefore(gateQuick,gateCheck.closest('label')||gateCard.querySelector('.rb-gate-actions'));}let logout=$('rbCloudLogout'),admin=$('rbAdminNav');if(logout)logout.addEventListener('click',()=>{if(admin)admin.hidden=true;let ap=$('page-admin');if(ap)ap.classList.remove('active')},true)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup,{once:true});else setup()})();</script>
+<script id="rb-remaster-hotfix-script">(function(){'use strict';const L={'pt-BR':{name:'Português',title:'Privacidade e idioma',intro:'Escolha o idioma do site e leia o aviso de privacidade antes de continuar.',policy:'O Rabbitech BIOGLOW pode armazenar dados de equipe, pontuações e rodadas para oferecer sincronização e ranking. O login Google identifica a conta e ajuda a proteger a equipe vinculada. Não informe senhas ou dados pessoais desnecessários. Os recursos conectados dependem do Google e do Supabase. Ao continuar, você confirma que leu este aviso.',accept:'Li e aceito continuar',team:'Nome da equipe (obrigatório)',need:'Digite o nome da equipe antes de entrar com Google.'},en:{name:'English',title:'Privacy and language',intro:'Choose the site language and read the privacy notice before continuing.',policy:'Rabbitech BIOGLOW may store team names, scores, and rounds to provide synchronization and rankings. Google sign-in identifies your account and helps protect the linked team. Do not provide passwords or unnecessary personal data. Connected features depend on Google and Supabase. By continuing, you confirm that you have read this notice.',accept:'I have read and accept',team:'Team name (required)',need:'Enter a team name before signing in with Google.'},es:{name:'Español',title:'Privacidad e idioma',intro:'Elige el idioma del sitio y lee el aviso de privacidad antes de continuar.',policy:'Rabbitech BIOGLOW puede almacenar nombres de equipos, puntuaciones y rondas para ofrecer sincronización y clasificaciones. El inicio de sesión de Google identifica tu cuenta y ayuda a proteger el equipo vinculado. No compartas contraseñas ni datos personales innecesarios. Las funciones conectadas dependen de Google y Supabase. Al continuar, confirmas que has leído este aviso.',accept:'He leído y acepto continuar',team:'Nombre del equipo (obligatorio)',need:'Introduce el nombre del equipo antes de iniciar sesión con Google.'},fr:{name:'Français',title:'Confidentialité et langue',intro:'Choisissez la langue du site et lisez l’avis de confidentialité avant de continuer.',policy:'Rabbitech BIOGLOW peut stocker les noms des équipes, les scores et les manches pour assurer la synchronisation et les classements. La connexion Google identifie votre compte et contribue à protéger l’équipe associée. Ne partagez pas de mots de passe ni de données personnelles inutiles. Les fonctions connectées dépendent de Google et Supabase. En continuant, vous confirmez avoir lu cet avis.',accept:'J’ai lu et j’accepte',team:'Nom de l’équipe (obligatoire)',need:'Saisissez le nom de l’équipe avant de vous connecter avec Google.'},de:{name:'Deutsch',title:'Datenschutz und Sprache',intro:'Wähle die Sprache der Website und lies den Datenschutzhinweis, bevor du fortfährst.',policy:'Rabbitech BIOGLOW kann Teamnamen, Punktzahlen und Runden speichern, um Synchronisierung und Ranglisten bereitzustellen. Die Google-Anmeldung identifiziert dein Konto und hilft, das verknüpfte Team zu schützen. Gib keine Passwörter oder unnötigen persönlichen Daten an. Verbundene Funktionen hängen von Google und Supabase ab. Wenn du fortfährst, bestätigst du, dass du diesen Hinweis gelesen hast.',accept:'Gelesen und akzeptiert',team:'Teamname (erforderlich)',need:'Gib vor der Google-Anmeldung einen Teamnamen ein.'},it:{name:'Italiano',title:'Privacy e lingua',intro:'Scegli la lingua del sito e leggi l’informativa sulla privacy prima di continuare.',policy:'Rabbitech BIOGLOW può memorizzare nomi delle squadre, punteggi e round per offrire sincronizzazione e classifiche. L’accesso con Google identifica il tuo account e aiuta a proteggere la squadra collegata. Non condividere password o dati personali non necessari. Le funzioni collegate dipendono da Google e Supabase. Continuando, confermi di aver letto questa informativa.',accept:'Ho letto e accetto',team:'Nome della squadra (obbligatorio)',need:'Inserisci il nome della squadra prima di accedere con Google.'}};function $(x){return document.getElementById(x)}function lang(){return localStorage.getItem('rbPreferredLanguage')||'pt-BR'}function render(){let t=L[lang()]||L['pt-BR'];if($('rbConsentTitle'))$('rbConsentTitle').textContent=t.title;if($('rbConsentIntro'))$('rbConsentIntro').textContent=t.intro;if($('rbConsentText'))$('rbConsentText').textContent=t.policy;if($('rbConsentAccept'))$('rbConsentAccept').textContent=t.accept}function setLanguage(k){if(!L[k])k='pt-BR';localStorage.setItem('rbPreferredLanguage',k);document.documentElement.lang=k;let a=$('rbConsentLanguage'),b=$('rbLanguageQuickSelect'),c=$('rbLanguageGateSelect');if(a&&a.value!==k)a.value=k;if(b&&b.value!==k)b.value=k;if(c&&c.value!==k)c.value=k;render()}function setup(){let call=$('rb-public-ranking-callout'),rank=$('page-leaderboard');if(call&&rank&&!rank.contains(call))rank.prepend(call);let b=document.querySelector('#rb-public-ranking-callout button,.rb-public-ranking-inner button');if(b)b.addEventListener('click',()=>{let n=document.querySelector('[data-page="leaderboard"]');if(n)n.click();else{document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-leaderboard'));scrollTo({top:0,behavior:'smooth'})}});let team=$('rbCloudTeam'),g=$('rbCloudGoogle');if(g)g.addEventListener('click',e=>{if(!team||team.value.trim().length<2){e.preventDefault();e.stopImmediatePropagation();alert((L[lang()]||L['pt-BR']).need);if(team)team.focus()}else localStorage.setItem('rabbitech_pending_team_name',team.value.trim())},true);let n=$('rbGlobalNotice');if(n){let apply=()=>{let cfg=(typeof rbGlobalSettingsCurrent!=='undefined'?rbGlobalSettingsCurrent:{}),type=cfg.notice_type||'info';type=/atenção|atencao|warning/i.test(type)?'warning':/sucesso|success/i.test(type)?'success':'info';n.classList.remove('rb-notice-warning','rb-notice-success','rb-notice-info');n.classList.add('rb-notice-'+type);n.setAttribute('role',type==='warning'?'alert':'status')};apply();}let overlay=document.createElement('div');overlay.id='rbLanguageConsent';overlay.innerHTML='<div class="rb-consent-card" role="dialog" aria-modal="true" aria-labelledby="rbConsentTitle"><h2 id="rbConsentTitle"></h2><p id="rbConsentIntro"></p><label for="rbConsentLanguage">🌐 Language / Idioma</label><select id="rbConsentLanguage"></select><div id="rbConsentText"></div><button id="rbConsentAccept" type="button"></button></div>';document.body.appendChild(overlay);let s=$('rbConsentLanguage');Object.keys(L).forEach(k=>{let o=document.createElement('option');o.value=k;o.textContent=L[k].name;s.appendChild(o)});s.value=lang();s.addEventListener('change',()=>setLanguage(s.value));$('rbConsentAccept').addEventListener('click',()=>{localStorage.setItem('rbPrivacyAccepted','yes');overlay.hidden=true;document.body.style.overflow='';});render();let quick=document.createElement('label');quick.id='rbLanguageQuick';quick.style.cssText='display:block;margin:12px;padding:10px;border:1px solid #49684b;border-radius:12px';quick.textContent='🌐 Idioma / Language ';let qs=document.createElement('select');qs.style.cssText='margin-left:8px;background:#0a1a10;color:inherit;padding:6px;border-radius:8px';Object.keys(L).forEach(k=>{let o=document.createElement('option');o.value=k;o.textContent=L[k].name;qs.appendChild(o)});qs.value=lang();qs.id='rbLanguageQuickSelect';qs.addEventListener('change',()=>setLanguage(qs.value));quick.appendChild(qs);let header=document.querySelector('body>header'),headerRow=header&&header.firstElementChild;if(headerRow){quick.id='rbLanguageHeader';quick.style.cssText='display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0;padding:8px 10px;border:1px solid var(--line);border-radius:12px;background:rgba(8,24,14,.72)';qs.style.cssText='max-width:100%;margin-left:4px;background:var(--panel);color:var(--text);padding:6px 8px;border:1px solid var(--line);border-radius:8px';let season=headerRow.querySelector('.season');if(season)season.insertBefore(quick,season.firstChild);else headerRow.appendChild(quick)}let gateCard=$('rbPrivacyGate')?.querySelector('.rb-gate-card'),gateCheck=$('rbPrivacyGateCheck');if(gateCard&&gateCheck&&!$('rbLanguageGateQuick')){let gateQuick=quick.cloneNode(true);gateQuick.id='rbLanguageGateQuick';gateQuick.style.cssText='display:block;margin:12px 0;padding:10px;border:1px solid #49684b;border-radius:12px';let gateSelect=gateQuick.querySelector('select');if(gateSelect){gateSelect.id='rbLanguageGateSelect';gateSelect.value=lang();gateSelect.addEventListener('change',()=>setLanguage(gateSelect.value));}gateCard.insertBefore(gateQuick,gateCheck.closest('label')||gateCard.querySelector('.rb-gate-actions'));}let logout=$('rbCloudLogout'),admin=$('rbAdminNav');if(logout)logout.addEventListener('click',()=>{if(admin)admin.hidden=true;let ap=$('page-admin');if(ap)ap.classList.remove('active')},true)}if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',setup,{once:true});else setup(),
+'zh-CN':{name:'简体中文',title:'隐私与语言',intro:'请选择网站语言，并在继续前阅读隐私说明。',policy:'Rabbitech BIOGLOW 可能会存储团队名称、分数和回合记录，以提供同步和排行榜。Google 登录用于识别帐户并帮助保护关联团队。请勿提供密码或不必要的个人信息。连接功能依赖 Google 和 Supabase。继续即表示您已阅读本说明。',accept:'我已阅读并接受',team:'团队名称（必填）',need:'请先输入团队名称，再使用 Google 登录。'},
+ja:{name:'日本語',title:'プライバシーと言語',intro:'サイトの言語を選択し、続行する前にプライバシーのお知らせをお読みください。',policy:'Rabbitech BIOGLOW は、同期やランキングを提供するためにチーム名、スコア、ラウンド記録を保存する場合があります。Google ログインはアカウントを識別し、関連チームの保護に役立ちます。パスワードや不要な個人情報を入力しないでください。接続機能は Google と Supabase に依存します。続行すると、このお知らせを読んだことを確認したものとみなされます。',accept:'読みました。同意して続行',team:'チーム名（必須）',need:'Google でログインする前にチーム名を入力してください。'},
+hi:{name:'हिन्दी',title:'गोपनीयता और भाषा',intro:'जारी रखने से पहले साइट की भाषा चुनें और गोपनीयता सूचना पढ़ें।',policy:'सिंक और रैंकिंग देने के लिए Rabbitech BIOGLOW टीम के नाम, स्कोर और राउंड रिकॉर्ड सहेज सकता है। Google साइन-इन खाते की पहचान करता है और जुड़ी टीम की सुरक्षा में मदद करता है। पासवर्ड या अनावश्यक निजी जानकारी न दें। जुड़ी सुविधाएँ Google और Supabase पर निर्भर हैं। आगे बढ़कर आप पुष्टि करते हैं कि आपने यह सूचना पढ़ ली है।',accept:'मैंने पढ़ लिया है और सहमत हूँ',team:'टीम का नाम (अनिवार्य)',need:'Google से साइन इन करने से पहले टीम का नाम दर्ज करें.'}})();</script>
 
 
 <script id="rb-rabbitech-fix-round2">
@@ -2243,6 +2246,10 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    fr:['Confidentialité et langue','Choisissez la langue du site et lisez l’avis de confidentialité avant de continuer.','Rabbitech BIOGLOW peut stocker les noms des équipes, les scores et les manches pour la synchronisation et les classements. La connexion Google aide à protéger l’équipe associée.','J’ai lu et j’accepte','Fermer sans accepter'],
    de:['Datenschutz und Sprache','Wähle die Sprache der Website und lies den Datenschutzhinweis, bevor du fortfährst.','Rabbitech BIOGLOW kann Teamnamen, Punktzahlen und Runden für Synchronisierung und Ranglisten speichern. Die Google-Anmeldung hilft, das verknüpfte Team zu schützen.','Gelesen und akzeptiert','Schließen ohne Zustimmung'],
    it:['Privacy e lingua','Scegli la lingua del sito e leggi l’informativa sulla privacy prima di continuare.','Rabbitech BIOGLOW può memorizzare nomi delle squadre, punteggi e round per sincronizzazione e classifiche. L’accesso con Google aiuta a proteggere la squadra collegata.','Ho letto e accetto','Chiudi senza accettare']
+,
+   'zh-CN':['隐私与语言','请选择网站语言，并在继续前阅读隐私说明。','Rabbitech BIOGLOW 可能会存储团队名称、分数和回合记录，以提供同步和排行榜。Google 登录用于识别帐户并帮助保护关联团队。请勿提供密码或不必要的个人信息。','我已阅读并接受','不接受并退出'],
+   ja:['プライバシーと言語','サイトの言語を選択し、続行する前にプライバシーのお知らせをお読みください。','Rabbitech BIOGLOW は、同期やランキングのためにチーム名、スコア、ラウンド記録を保存する場合があります。Google ログインはアカウントを識別し、関連チームの保護に役立ちます。','読みました。同意して続行','同意せずに閉じる'],
+   hi:['गोपनीयता और भाषा','जारी रखने से पहले साइट की भाषा चुनें और गोपनीयता सूचना पढ़ें।','सिंक और रैंकिंग के लिए Rabbitech BIOGLOW टीम के नाम, स्कोर और राउंड रिकॉर्ड सहेज सकता है। Google साइन-इन खाते की पहचान और जुड़ी टीम की सुरक्षा में मदद करता है।','मैंने पढ़ लिया है और सहमत हूँ','बिना सहमति बंद करें']
   };
   function current(){var k=localStorage.getItem('rbPreferredLanguage')||'pt-BR';return texts[k]?k:'pt-BR';}
   function syncLanguage(code){
@@ -2342,30 +2349,198 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
  ['Histórico de segurança','Security history','Historial de seguridad','Historique de sécurité','Sicherheitsverlauf','Cronologia sicurezza'],
  ['Atualizar histórico','Refresh history','Actualizar historial','Actualiser l’historique','Verlauf aktualisieren','Aggiorna cronologia']
  ];
- const codes=['pt-BR','en','es','fr','de','it'];
- const lang=()=>{const v=localStorage.getItem('rbPreferredLanguage')||'pt-BR';return codes.includes(v)?v:'pt-BR';};
+
+ const extraLangs={
+  'Placar':['记分板','スコアボード','स्कोरबोर्ड'],
+  'Histórico':['历史记录','履歴','इतिहास'],
+  'Ranking':['排行榜','ランキング','रैंकिंग'],
+  'Estratégia':['策略','戦略','रणनीति'],
+  'Rotas':['路线','ルート','मार्ग'],
+  'Regras':['规则','ルール','नियम'],
+  'Rabbitech TV':['Rabbitech TV','Rabbitech TV','Rabbitech TV'],
+  'Privacidade':['隐私','プライバシー','गोपनीयता'],
+  'Admin':['管理员','管理者','व्यवस्थापक'],
+  'Rabbitech Cloud · Founders Edition':['Rabbitech Cloud · 创始者版','Rabbitech Cloud · Founders Edition','Rabbitech Cloud · Founders Edition'],
+  'Primeiro informe o nome da equipe e depois entre com Google. Cada nome pode pertencer a uma única conta Google. Os rounds privados ficam separados por equipe.':['请先填写团队名称，再使用 Google 登录。每个团队名称只能关联一个 Google 帐户。各团队的私人回合记录彼此独立。','チーム名を入力してから Google でログインしてください。各チーム名は 1 つの Google アカウントにのみ紐付けられます。非公開のラウンド記録はチームごとに分かれています。','पहले टीम का नाम दर्ज करें, फिर Google से साइन इन करें। प्रत्येक टीम नाम केवल एक Google खाते से जुड़ सकता है। निजी राउंड रिकॉर्ड हर टीम के लिए अलग रहते हैं।'],
+  'Nome da equipe (obrigatório)':['团队名称（必填）','チーム名（必須）','टीम का नाम (अनिवार्य)'],
+  'Entrar com Google':['使用 Google 登录','Google でログイン','Google से साइन इन करें'],
+  'Trocar conta Google':['切换 Google 帐户','Google アカウントを切り替える','Google खाता बदलें'],
+  'Vincular este nome à minha conta':['将此名称关联到我的帐户','この名前を自分のアカウントに紐付ける','इस नाम को मेरे खाते से जोड़ें'],
+  'Sincronizar histórico e atualizar nuvem':['同步历史记录并更新云端','履歴を同期してクラウドを更新','इतिहास सिंक करें और क्लाउड अपडेट करें'],
+  'Sair':['退出','ログアウト','साइन आउट'],
+  'Digite o nome da equipe para continuar com Google. O nome não dá acesso a uma equipe já registrada.':['请输入团队名称以继续使用 Google 登录。仅有名称并不能访问已注册的团队。','Google で続行するにはチーム名を入力してください。名前だけでは登録済みチームにアクセスできません。','Google से आगे बढ़ने के लिए टीम का नाम दर्ज करें। केवल नाम से किसी पंजीकृत टीम तक पहुँच नहीं मिलती।'],
+  '🏆 Ranking público BIOGLOW':['🏆 BIOGLOW 公共排行榜','🏆 BIOGLOW 公開ランキング','🏆 BIOGLOW सार्वजनिक रैंकिंग'],
+  'Consulte as equipes classificadas, a média de pontuação e a quantidade de rounds registrados. Não é necessário ser administrador.':['查看排名团队、平均分数和已记录的回合数量。无需管理员权限。','ランキング、平均スコア、記録されたラウンド数を確認できます。管理者権限は不要です。','टीम रैंकिंग, औसत स्कोर और दर्ज राउंड की संख्या देखें। व्यवस्थापक होना आवश्यक नहीं है।'],
+  'Ver ranking público →':['查看公开排行榜 →','公開ランキングを見る →','सार्वजनिक रैंकिंग देखें →'],
+  'Natureza em equilíbrio.':['自然，和谐共生。','自然との調和。','प्रकृति में संतुलन।'],
+  'Placar sob controle.':['掌控得分。','スコアを管理しよう。','स्कोर पर नियंत्रण।'],
+  'Placar de treino da BIOGLOW FLLC 2026–2027. Registre condições verificadas, pratique rounds de 2min30s e revise as regras e atualizações oficiais.':['BIOGLOW FLLC 2026–2027 训练记分板。记录已确认的任务条件，练习 2 分 30 秒的回合，并查看官方规则和更新。','BIOGLOW FLLC 2026–2027 の練習用スコアボードです。確認済みの条件を記録し、2 分 30 秒のラウンドを練習し、公式ルールと更新を確認します。','BIOGLOW FLLC 2026–2027 अभ्यास स्कोरबोर्ड। सत्यापित स्थितियाँ दर्ज करें, 2 मिनट 30 सेकंड के राउंड का अभ्यास करें और आधिकारिक नियम व अपडेट देखें।'],
+  '15 missões':['15 个任务','15 ミッション','15 मिशन'],
+  '150 segundos por round':['每回合 150 秒','1 ラウンド 150 秒','प्रति राउंड 150 सेकंड'],
+  'Máximo teórico: 510 pts':['理论最高：510 分','理論上限：510 点','सैद्धांतिक अधिकतम: 510 अंक'],
+  'Informação':['信息','情報','जानकारी'],
+  'Sucesso':['成功','成功','सफलता'],
+  'Atenção':['警告','注意','चेतावनी'],
+  'Publicar aviso':['发布公告','お知らせを公開','सूचना प्रकाशित करें'],
+  'Remover aviso':['移除公告','お知らせを削除','सूचना हटाएँ'],
+  'Aviso global do site':['全站公告','サイト全体のお知らせ','साइट की वैश्विक सूचना'],
+  'Mensagem global':['全局消息','全体メッセージ','वैश्विक संदेश'],
+  'Tipo de aviso':['公告类型','お知らせの種類','सूचना का प्रकार'],
+  'Aparência global':['全局外观','全体の外観','वैश्विक रूप'],
+  'Cor de destaque':['强调色','アクセントカラー','मुख्य रंग'],
+  'Nome do tema':['主题名称','テーマ名','थीम का नाम'],
+  'Salvar aparência global':['保存全局外观','全体の外観を保存','वैश्विक रूप सहेजें'],
+  'Administradores':['管理员','管理者','व्यवस्थापक'],
+  'Somente o proprietário pode adicionar ou remover administradores.':['只有所有者可以添加或移除管理员。','管理者の追加・削除はオーナーのみ行えます。','केवल मालिक व्यवस्थापकों को जोड़ या हटा सकता है।'],
+  'E-mail Google':['Google 电子邮件','Google メールアドレス','Google ईमेल'],
+  'Adicionar administrador':['添加管理员','管理者を追加','व्यवस्थापक जोड़ें'],
+  'Histórico de segurança':['安全记录','セキュリティ履歴','सुरक्षा इतिहास'],
+  'Atualizar histórico':['刷新历史记录','履歴を更新','इतिहास रीफ़्रेश करें']
+ };
+ for(const row of rows){const add=extraLangs[row[0]]||[row[0],row[0],row[0]];row.push(...add);}
+ const moreRows=[
+  ['Mostrar opções da nuvem','Show cloud options','Mostrar opciones de la nube','Afficher les options cloud','Cloud-Optionen anzeigen','Mostra opzioni cloud','显示云端选项','クラウドのオプションを表示','क्लाउड विकल्प दिखाएँ'],
+  ['☁ Mostrar opções da nuvem','☁ Show cloud options','☁ Mostrar opciones de la nube','☁ Afficher les options cloud','☁ Cloud-Optionen anzeigen','☁ Mostra opzioni cloud','☁ 显示云端选项','☁ クラウドのオプションを表示','☁ क्लाउड विकल्प दिखाएँ'],
+  ['Conectado como','Connected as','Conectado como','Connecté en tant que','Angemeldet als','Connesso come','已登录为','ログイン中：','इस रूप में लॉग इन हैं:'],
+  ['Equipe','Team','Equipo','Équipe','Team','Squadra','团队','チーム','टीम'],
+  ['Nenhum resultado','No results','Sin resultados','Aucun résultat','Keine Ergebnisse','Nessun risultato','没有结果','結果なし','कोई परिणाम नहीं'],
+  ['Digite o nome da equipe','Enter the team name','Introduce el nombre del equipo','Saisissez le nom de l’équipe','Teamnamen eingeben','Inserisci il nome della squadra','请输入团队名称','チーム名を入力','टीम का नाम दर्ज करें'],
+  ['Pontuação baseada nas condições marcadas. Confirme no campo antes de registrar.','Score is based on the checked conditions. Confirm them before saving.','La puntuación se basa en las condiciones marcadas. Confírmalas antes de guardar.','Le score dépend des conditions cochées. Confirmez-les avant d’enregistrer.','Die Punktzahl basiert auf den markierten Bedingungen. Bestätige sie vor dem Speichern.','Il punteggio dipende dalle condizioni selezionate. Confermale prima di salvare.','分数根据勾选的条件计算。保存前请确认。','得点は選択した条件に基づきます。保存前に確認してください。','अंक चुनी गई शर्तों पर आधारित हैं। सहेजने से पहले पुष्टि करें।'],
+  ['PONTOS NESTE ROUND','SCORE THIS ROUND','PUNTOS DE ESTA RONDA','SCORE DE CE ROUND','PUNKTE IN DIESER RUNDE','PUNTI DI QUESTO ROUND','本回合得分','このラウンドの得点','इस राउंड के अंक'],
+  ['MISSÕES PONTUADAS','MISSIONS SCORED','MISIONES PUNTUADAS','MISSIONS MARQUÉES','BEWERTETE MISSIONEN','MISSIONI VALUTATE','已计分任务','得点したミッション','अंक वाली मिशन'],
+  ['CRONÔMETRO','TIMER','CRONÓMETRO','CHRONOMÈTRE','TIMER','CRONOMETRO','计时器','タイマー','टाइमर'],
+  ['RODADAS GUARDADAS','ROUNDS SAVED','RONDAS GUARDADAS','MANCHES ENREGISTRÉES','GESPEICHERTE RUNDEN','ROUND SALVATI','已保存回合','保存したラウンド','सहेजे गए राउंड'],
+  ['TEMPO OFICIAL DO ROBOT GAME','OFFICIAL ROBOT GAME TIME','TIEMPO OFICIAL DEL ROBOT GAME','TEMPS OFFICIEL DU ROBOT GAME','OFFIZIELLE ROBOT-GAME-ZEIT','TEMPO UFFICIALE DEL ROBOT GAME','机器人比赛官方时间','ロボットゲーム公式時間','रोबोट गेम का आधिकारिक समय'],
+  ['Pronto para iniciar.','Ready to start.','Listo para empezar.','Prêt à démarrer.','Bereit zum Start.','Pronto per iniziare.','准备开始。','開始できます。','शुरू करने के लिए तैयार।'],
+  ['Pausado / pronto','Paused / ready','En pausa / listo','En pause / prêt','Pausiert / bereit','In pausa / pronto','已暂停 / 就绪','一時停止 / 準備完了','रुका हुआ / तैयार'],
+  ['Iniciar','Start','Iniciar','Démarrer','Starten','Avvia','开始','開始','शुरू करें'],
+  ['Pausar','Pause','Pausar','Pause','Pause','Pausa','暂停','一時停止','रोकें'],
+  ['Resetar','Reset','Reiniciar','Réinitialiser','Zurücksetzen','Azzera','重置','リセット','रीसेट'],
+  ['Missões M01–M15','Missions M01–M15','Misiones M01–M15','Missions M01–M15','Missionen M01–M15','Missioni M01–M15','任务 M01–M15','ミッション M01–M15','मिशन M01–M15'],
+  ['Marque apenas o que foi confirmado no tapete. As restrições que retiram pontos ficam agrupadas no final da página.','Mark only what has been confirmed on the mat. Point penalties are grouped at the end of the page.','Marca solo lo confirmado en el tapete. Las restricciones que restan puntos están al final de la página.','Cochez uniquement ce qui a été confirmé sur le tapis. Les restrictions qui retirent des points sont regroupées en fin de page.','Markiere nur, was auf der Matte bestätigt wurde. Punktabzüge stehen gesammelt am Seitenende.','Segna solo ciò che è stato confermato sul tappeto. Le restrizioni che sottraggono punti sono raggruppate alla fine della pagina.','只勾选在任务垫上确认的项目。扣分限制集中在页面底部。','マット上で確認できた項目だけを選択してください。減点条件はページ下部にまとめています。','मैट पर पुष्टि की गई चीज़ें ही चुनें। अंक घटाने वाली पाबंदियाँ पृष्ठ के अंत में हैं।'],
+  ['Imprimir placar','Print scoreboard','Imprimir marcador','Imprimer le tableau des scores','Spielstand drucken','Stampa tabellone','打印记分板','スコアボードを印刷','स्कोरबोर्ड प्रिंट करें'],
+  ['Levantamento com Drone','Drone Lift','Elevación con dron','Levage par drone','Drohnenheben','Sollevamento con drone','无人机升起','ドローンのリフト','ड्रोन उठाना'],
+  ['Lance o drone e vire completamente o mapa LiDAR.','Launch the drone and completely flip the LiDAR map.','Lanza el dron y voltea por completo el mapa LiDAR.','Lancez le drone et retournez complètement la carte LiDAR.','Starte die Drohne und drehe die LiDAR-Karte vollständig um.','Lancia il drone e gira completamente la mappa LiDAR.','发射无人机并将 LiDAR 地图完全翻转。','ドローンを発射し、LiDAR マップを完全に裏返します。','ड्रोन लॉन्च करें और LiDAR मानचित्र को पूरी तरह पलटें।'],
+  ['Sementes Explosivas','Exploding Seeds','Semillas explosivas','Graines explosives','Explosive Samen','Semi esplosivi','爆裂种子','爆発する種','विस्फोटक बीज'],
+  ['Dispare as sementes para que deixem de tocar o caule.','Launch the seeds so they no longer touch the stem.','Dispara las semillas para que dejen de tocar el tallo.','Lancez les graines pour qu’elles ne touchent plus la tige.','Schieße die Samen ab, sodass sie den Stängel nicht mehr berühren.','Lancia i semi in modo che non tocchino più il gambo.','发射种子，使其不再接触茎。','種を飛ばし、茎に触れない状態にします。','बीजों को इस तरह छोड़ें कि वे तने को न छुएँ।'],
+  ['Vire a Rocha','Turn Over the Rock','Voltear la roca','Retourner le rocher','Den Felsen wenden','Gira la roccia','翻转岩石','岩をひっくり返す','चट्टान पलटें'],
+  ['Folhas da Sorte','Lucky Leaves','Hojas de la suerte','Feuilles porte-bonheur','Glücksblätter','Foglie fortunate','幸运叶片','ラッキーリーフ','भाग्यशाली पत्तियाँ'],
+  ['Raízes que se Estendem','Spreading Roots','Raíces que se extienden','Racines qui s’étendent','Ausbreitende Wurzeln','Radici che si estendono','蔓延的根系','広がる根','फैलती जड़ें'],
+  ['Corrida das Formigas Cortadeiras','Leafcutter Ant Race','Carrera de hormigas cortadoras','Course des fourmis coupeuses','Blattschneiderameisen-Rennen','Gara delle formiche tagliafoglie','切叶蚁竞赛','ハキリアリレース','पत्ती काटने वाली चींटियों की दौड़'],
+  ['Fungo Gigante','Giant Mushroom','Hongo gigante','Champignon géant','Riesenpilz','Fungo gigante','巨型蘑菇','巨大なキノコ','विशाल मशरूम'],
+  ['Enxameado','Swarming','Enjambre','Essaim','Schwarm','Sciame','蜂群','群れ','झुंड'],
+  ['Plataforma de Pesquisa','Research Platform','Plataforma de investigación','Plateforme de recherche','Forschungsplattform','Piattaforma di ricerca','研究平台','研究プラットフォーム','अनुसंधान मंच'],
+  ['Micro-habitats Frágeis','Fragile Microhabitats','Microhábitats frágiles','Microhabitats fragiles','Empfindliche Mikrohabitate','Microhabitat fragili','脆弱的微生境','壊れやすい微小生息地','नाज़ुक सूक्ष्म आवास'],
+  ['Janela para o Passado','Window to the Past','Ventana al pasado','Fenêtre sur le passé','Fenster zur Vergangenheit','Finestra sul passato','通往过去的窗口','過去への窓','अतीत की खिड़की'],
+  ['Ancião da Floresta','Forest Elder','Anciano del bosque','Ancien de la forêt','Waldältester','Antico della foresta','森林长者','森の長老','वन के बुज़ुर्ग'],
+  ['Espécie-chave','Keystone Species','Especie clave','Espèce clé','Schlüsselart','Specie chiave','关键物种','キーストーン種','कीस्टोन प्रजाति'],
+  ['Sementes da Renovação','Seeds of Renewal','Semillas de renovación','Graines du renouveau','Samen der Erneuerung','Semi del rinnovamento','重生种子','再生の種','नवीकरण के बीज'],
+  ['Arquitetura Biotécnica','Biotechnical Architecture','Arquitectura biotécnica','Architecture biotechnique','Biotechnische Architektur','Architettura biotecnica','生物技术建筑','バイオテクニカル建築','जैव-तकनीकी वास्तुकला'],
+  ['A Fazer','To do','Por hacer','À faire','Zu erledigen','Da fare','待办','未着手','करना है'],
+  ['Em andamento','In progress','En curso','En cours','In Bearbeitung','In corso','进行中','進行中','जारी'],
+  ['Concluído','Completed','Completado','Terminé','Abgeschlossen','Completato','已完成','完了','पूर्ण'],
+  ['Quadro Kanban','Kanban board','Tablero Kanban','Tableau Kanban','Kanban-Board','Bacheca Kanban','看板','カンバンボード','कानबन बोर्ड'],
+  ['Metas da equipe','Team goals','Metas del equipo','Objectifs de l’équipe','Teamziele','Obiettivi della squadra','团队目标','チームの目標','टीम के लक्ष्य'],
+  ['Metas e progresso','Goals and progress','Metas y progreso','Objectifs et progression','Ziele und Fortschritt','Obiettivi e progressi','目标与进度','目標と進捗','लक्ष्य और प्रगति'],
+  ['Registrar round de treino','Log a practice round','Registrar ronda de práctica','Enregistrer une manche d’entraînement','Trainingsrunde erfassen','Registra un round di allenamento','记录训练回合','練習ラウンドを記録','अभ्यास राउंड दर्ज करें'],
+  ['Número do round','Round number','Número de ronda','Numéro de manche','Rundennummer','Numero del round','回合编号','ラウンド番号','राउंड संख्या'],
+  ['Pontuação','Score','Puntuación','Score','Punktzahl','Punteggio','分数','スコア','स्कोर'],
+  ['Onde começou','Starting position','Posición inicial','Position de départ','Startposition','Posizione iniziale','起始位置','開始位置','शुरुआती स्थान'],
+  ['Observações do round','Round notes','Notas de la ronda','Notes de la manche','Rundennotizen','Note del round','回合备注','ラウンドのメモ','राउंड नोट्स'],
+  ['Salvar round','Save round','Guardar ronda','Enregistrer la manche','Runde speichern','Salva round','保存回合','ラウンドを保存','राउंड सहेजें'],
+  ['Desempenho dos rounds','Round performance','Rendimiento de las rondas','Performances des manches','Rundenleistung','Prestazioni dei round','回合表现','ラウンドの成績','राउंड प्रदर्शन'],
+  ['Média atual','Current average','Promedio actual','Moyenne actuelle','Aktueller Durchschnitt','Media attuale','当前平均分','現在の平均','वर्तमान औसत'],
+  ['Histórico de rounds','Round history','Historial de rondas','Historique des manches','Rundenverlauf','Cronologia dei round','回合历史','ラウンド履歴','राउंड इतिहास'],
+  ['Nenhum round registrado.','No rounds recorded.','No hay rondas registradas.','Aucune manche enregistrée.','Keine Runden erfasst.','Nessun round registrato.','尚未记录回合。','ラウンドはまだ記録されていません。','कोई राउंड दर्ज नहीं है।'],
+  ['Notas compartilhadas','Shared notes','Notas compartidas','Notes partagées','Geteilte Notizen','Note condivise','共享笔记','共有メモ','साझा नोट्स'],
+  ['Chat da equipe','Team chat','Chat del equipo','Chat de l’équipe','Team-Chat','Chat della squadra','团队聊天','チームチャット','टीम चैट'],
+  ['Escreva para a equipe','Write to the team','Escribe al equipo','Écrire à l’équipe','An das Team schreiben','Scrivi alla squadra','给团队留言','チームへのメッセージを書く','टीम को लिखें'],
+  ['Enviar mensagem','Send message','Enviar mensaje','Envoyer un message','Nachricht senden','Invia messaggio','发送消息','メッセージを送信','संदेश भेजें'],
+  ['Análise dos treinos','Practice analysis','Análisis de entrenamientos','Analyse des entraînements','Trainingsanalyse','Analisi degli allenamenti','训练分析','練習分析','अभ्यास विश्लेषण'],
+  ['Média dos rounds guardados','Average of saved rounds','Promedio de rondas guardadas','Moyenne des manches enregistrées','Durchschnitt gespeicherter Runden','Media dei round salvati','已保存回合平均分','保存したラウンドの平均','सहेजे गए राउंड का औसत'],
+  ['Melhor pontuação','Best score','Mejor puntuación','Meilleur score','Beste Punktzahl','Miglior punteggio','最高分','最高得点','सर्वश्रेष्ठ स्कोर'],
+  ['Tendência dos últimos rounds','Recent round trend','Tendencia de las últimas rondas','Tendance des dernières manches','Trend der letzten Runden','Tendenza degli ultimi round','近期回合趋势','最近のラウンド傾向','हाल के राउंड का रुझान'],
+  ['Missões com pontos','Missions with points','Misiones con puntos','Missions avec points','Missionen mit Punkten','Missioni con punti','得分任务','得点したミッション','अंक वाली मिशन'],
+  ['Missões com menor aproveitamento','Lowest-scoring missions','Misiones con menor puntuación','Missions les moins rentables','Missionen mit geringster Ausbeute','Missioni con rendimento più basso','得分最低的任务','得点率の低いミッション','सबसे कम अंक वाली मिशन'],
+  ['Prioridades para a competição','Competition priorities','Prioridades para la competición','Priorités pour la compétition','Wettbewerbsprioritäten','Priorità per la competizione','比赛优先事项','大会に向けた優先事項','प्रतियोगिता की प्राथमिकताएँ'],
+  ['Regras essenciais','Essential rules','Reglas esenciales','Règles essentielles','Wichtige Regeln','Regole essenziali','核心规则','重要ルール','मुख्य नियम'],
+  ['Atualizações oficiais','Official updates','Actualizaciones oficiales','Mises à jour officielles','Offizielle Updates','Aggiornamenti ufficiali','官方更新','公式アップデート','आधिकारिक अपडेट'],
+  ['Fontes oficiais e consulta','Official sources and references','Fuentes oficiales y consulta','Sources officielles et références','Offizielle Quellen und Referenzen','Fonti ufficiali e riferimenti','官方来源与参考','公式情報と参考資料','आधिकारिक स्रोत और संदर्भ'],
+  ['Pesquise vídeos e assista sem sair do Rabbitech BIOGLOW.','Search for videos and watch them without leaving Rabbitech BIOGLOW.','Busca videos y míralos sin salir de Rabbitech BIOGLOW.','Recherchez des vidéos et regardez-les sans quitter Rabbitech BIOGLOW.','Suche Videos und schaue sie an, ohne Rabbitech BIOGLOW zu verlassen.','Cerca video e guardali senza uscire da Rabbitech BIOGLOW.','搜索视频并在 Rabbitech BIOGLOW 内观看。','Rabbitech BIOGLOW を離れずに動画を検索して視聴できます。','Rabbitech BIOGLOW छोड़े बिना वीडियो खोजें और देखें।'],
+  ['Escolher arquivo','Choose file','Elegir archivo','Choisir un fichier','Datei auswählen','Scegli file','选择文件','ファイルを選択','फ़ाइल चुनें'],
+  ['Nenhum arquivo escolhido','No file chosen','No se ha elegido ningún archivo','Aucun fichier choisi','Keine Datei ausgewählt','Nessun file selezionato','未选择文件','ファイルが選択されていません','कोई फ़ाइल नहीं चुनी गई'],
+  ['Privacidade e proteção de dados','Privacy and data protection','Privacidad y protección de datos','Confidentialité et protection des données','Datenschutz und Datensicherheit','Privacy e protezione dei dati','隐私与数据保护','プライバシーとデータ保護','गोपनीयता और डेटा सुरक्षा']
+ ];
+ rows.push(...moreRows);
+ const codes=['pt-BR','en','es','fr','de','it','zh-CN','ja','hi'];
+
+ const lang=()=>{
+  let v='pt-BR';try{v=localStorage.getItem('rbPreferredLanguage')||'pt-BR'}catch(_){}
+  v=String(v).trim().replace('_','-');
+  if(/^zh(?:-|$)/i.test(v))return 'zh-CN';
+  if(/^ja(?:-|$)/i.test(v))return 'ja';
+  if(/^hi(?:-|$)/i.test(v)||/^in(?:-|$)/i.test(v))return 'hi';
+  const found=codes.find(code=>code.toLowerCase()===v.toLowerCase());
+  return found||'pt-BR';
+ };
  const byOriginal=new Map(rows.map(r=>[r[0],r]));
  const reverse=new Map();
  for(const r of rows)for(let i=1;i<r.length;i++)if(!reverse.has(r[i]))reverse.set(r[i],r[0]);
- function apply(){
-   const target=codes.indexOf(lang());
-   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
-   const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
-   for(const node of nodes){
-     const raw=node.nodeValue||'',trim=raw.trim();if(!trim)continue;
-     const original=byOriginal.has(trim)?trim:reverse.get(trim);
-     if(!original)continue;
-     const row=byOriginal.get(original);if(!row)continue;
-     const next=row[target]||original;
-     if(next!==trim){const lead=raw.match(/^\s*/)?.[0]||'',trail=raw.match(/\s*$/)?.[0]||'';node.nodeValue=lead+next+trail;}
-   }
-   document.documentElement.lang=lang();
+ function lookupPhrase(value,target){
+  if(!value)return value;
+  const direct=byOriginal.get(value);
+  let canonical=direct?value:reverse.get(value);
+  let prefix='';
+  if(!canonical){
+   const match=value.match(/^([^\\p{L}\\p{N}]{1,5}\\s+)(.+)$/u);
+   if(match){const maybe=byOriginal.has(match[2])?match[2]:reverse.get(match[2]);if(maybe){prefix=match[1];canonical=maybe;}}
+  }
+  if(!canonical)return value;
+  const row=byOriginal.get(canonical);if(!row)return value;
+  return prefix+(row[target]||canonical);
  }
- document.addEventListener('change',e=>{if(e.target?.id==='rbConsentLanguage'||e.target?.closest('#rbLanguageQuick,#rbLanguageGateQuick'))setTimeout(apply,0);});
- // Do one full pass at startup and when the language selector changes.
- // Avoid observing every text/DOM mutation across this very large page: each mutation
- // previously triggered a full-document TreeWalker pass on mobile devices.
- const start=()=>{apply();};
+ function translateTextNode(node,target){
+  const parent=node.parentElement;
+  if(!parent||parent.closest('script,style,textarea,input,code,pre,[contenteditable="true"],[data-user-content],.team-message-body,[data-user-message]'))return;
+  const raw=node.nodeValue||'',trim=raw.trim();if(!trim)return;
+  const translated=lookupPhrase(trim,target);
+  if(translated===trim)return;
+  const lead=raw.match(/^\\s*/)?.[0]||'',trail=raw.match(/\\s*$/)?.[0]||'';
+  const next=lead+translated+trail;
+  if(node.nodeValue!==next)node.nodeValue=next;
+ }
+ function apply(root=document.body){
+  if(!root)return;
+  const target=codes.indexOf(lang());
+  if(root.nodeType===Node.TEXT_NODE){translateTextNode(root,target);return;}
+  if(root.nodeType!==Node.ELEMENT_NODE&&root!==document)return;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
+  while(walker.nextNode())translateTextNode(walker.currentNode,target);
+  if(root.querySelectorAll){
+   root.querySelectorAll('input[placeholder],textarea[placeholder],[title],[aria-label]').forEach(el=>{
+    if(el.closest('[data-user-content],.team-message-body,[data-user-message]'))return;
+    ['placeholder','title','aria-label'].forEach(attr=>{
+     const current=el.getAttribute(attr);if(!current)return;
+     const translated=lookupPhrase(current,target);
+     if(translated!==current)el.setAttribute(attr,translated);
+    });
+   });
+  }
+  if(root===document.body)document.documentElement.lang=lang();
+ }
+ document.addEventListener('change',e=>{
+  if(e.target?.id==='rbConsentLanguage'||e.target?.id==='rbLanguageQuickSelect'||e.target?.id==='rbLanguageGateSelect'||e.target?.closest('#rbLanguageQuick,#rbLanguageGateQuick')){
+   setTimeout(()=>apply(document.body),0);
+  }
+ });
+ const start=()=>{
+  apply(document.body);
+  if(window.__rbSiteI18nObserver)return;
+  window.__rbSiteI18nObserver=new MutationObserver(records=>{
+   for(const record of records)for(const node of record.addedNodes)if(node.nodeType===Node.ELEMENT_NODE||node.nodeType===Node.TEXT_NODE)apply(node);
+  });
+  window.__rbSiteI18nObserver.observe(document.body,{subtree:true,childList:true});
+ };
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 </script>
