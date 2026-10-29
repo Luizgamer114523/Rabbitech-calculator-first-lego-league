@@ -1,5 +1,35 @@
 /* Rabbitech mobile dock + admin visibility. Single controller, idempotent setup. */
 (()=>{'use strict';
+ // Consent recovery guard: the privacy gate is critical UI, so bind it here too
+ // in case an earlier inline handler failed during page initialization.
+ function rbEnsurePrivacyGateControls(){
+  const gate=document.getElementById('rbPrivacyGate');
+  const check=document.getElementById('rbPrivacyGateCheck');
+  const confirmBtn=document.getElementById('rbPrivacyGateConfirm');
+  if(!gate||!check||!confirmBtn||gate.dataset.rbRecoveryBound==='1')return;
+  gate.dataset.rbRecoveryBound='1';
+  gate.style.pointerEvents='auto';
+  gate.style.zIndex='2147483001';
+  const sync=()=>{confirmBtn.disabled=!check.checked;confirmBtn.style.pointerEvents='auto';};
+  check.addEventListener('change',sync);
+  check.addEventListener('click',()=>setTimeout(sync,0));
+  confirmBtn.addEventListener('click',event=>{
+   if(!check.checked){event.preventDefault();event.stopImmediatePropagation();sync();return;}
+   try{sessionStorage.setItem('rb-privacy-accepted-v1','yes');localStorage.setItem('rbPrivacyAccepted','yes');}catch(_){}
+   gate.classList.remove('rb-gate-open');
+   document.body.classList.remove('rb-privacy-gate-open');
+   document.body.style.overflow='';
+   gate.style.display='none';
+   const language=document.getElementById('rbLanguageConsent');
+   if(language){language.hidden=true;language.style.setProperty('display','none','important');}
+  },true);
+  sync();
+  let accepted=false;
+  try{accepted=sessionStorage.getItem('rb-privacy-accepted-v1')==='yes'||localStorage.getItem('rbPrivacyAccepted')==='yes';}catch(_){}
+  if(accepted){gate.classList.remove('rb-gate-open');document.body.classList.remove('rb-privacy-gate-open');gate.style.display='none';}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',rbEnsurePrivacyGateControls,{once:true});
+ else rbEnsurePrivacyGateControls();
  // Prevent duplicate event handlers and Supabase subscriptions if the bundle is included twice.
  if(window.__rbMobileDockSingleton)return;
  window.__rbMobileDockSingleton=true;
