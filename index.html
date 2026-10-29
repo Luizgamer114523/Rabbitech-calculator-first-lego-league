@@ -2362,7 +2362,23 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
    document.documentElement.lang=lang();
  }
  document.addEventListener('change',e=>{if(e.target?.id==='rbConsentLanguage'||e.target?.closest('#rbLanguageQuick,#rbLanguageGateQuick'))setTimeout(apply,0);});
- const start=()=>{apply();const observer=new MutationObserver(()=>apply());observer.observe(document.body,{subtree:true,childList:true,characterData:true});};
+ let applyScheduled=false;
+ const scheduleApply=()=>{
+   if(applyScheduled)return;
+   applyScheduled=true;
+   const run=()=>{applyScheduled=false;apply();};
+   if(typeof requestAnimationFrame==='function')requestAnimationFrame(run);
+   else setTimeout(run,80);
+ };
+ const start=()=>{
+   apply();
+   // Do not observe characterData: apply() changes text nodes itself, so watching
+   // those changes causes needless full-document rescans on every translation.
+   const observer=new MutationObserver(records=>{
+     if(records.some(record=>record.type==='childList'))scheduleApply();
+   });
+   observer.observe(document.body,{subtree:true,childList:true});
+ };
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
 })();
 </script>
