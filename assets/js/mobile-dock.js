@@ -1090,7 +1090,17 @@ for(const [locale,parts] of Object.entries(rbLogoutParts)){
    if(user)rbGreeting(user,'bye');
   });
  }
+ function loadExtendedSiteI18n(){
+  if($('rbCompleteI18nScript'))return;
+  const script=document.createElement('script');
+  script.id='rbCompleteI18nScript';
+  script.src='assets/js/site-i18n-complete.js?v=20261029-i18n-coverage-2';
+  script.async=true;
+  script.onerror=()=>console.warn('Rabbitech multilingual UI package could not be loaded.');
+  document.head.appendChild(script);
+ }
  function init(){
+  loadExtendedSiteI18n();
   removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();initLocalizedGreetings();ensurePrivacyDisclosure();initFirstVisitTour();
   const observer=new MutationObserver(()=>{
    removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();rbApplyLanguageFallback();ensurePrivacyDisclosure();
