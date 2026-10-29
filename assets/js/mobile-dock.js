@@ -1060,11 +1060,12 @@
   const phrases=rbUiTranslations[locale]||{};
   document.querySelectorAll('[data-i18n]').forEach(element=>{
    const key=element.getAttribute('data-i18n');
-   if(dict[key])element.textContent=dict[key];else if(phrases[key])element.textContent=phrases[key];
+   const translated=dict[key]||phrases[key];
+   if(translated&&element.textContent!==translated)element.textContent=translated;
   });
-  document.querySelectorAll('[data-i18n-placeholder]').forEach(element=>{const key=element.getAttribute('data-i18n-placeholder');if(phrases[key])element.setAttribute('placeholder',phrases[key])});
-  document.querySelectorAll('[data-i18n-title]').forEach(element=>{const key=element.getAttribute('data-i18n-title');if(phrases[key])element.setAttribute('title',phrases[key])});
-  document.querySelectorAll('[data-i18n-aria-label]').forEach(element=>{const key=element.getAttribute('data-i18n-aria-label');if(phrases[key])element.setAttribute('aria-label',phrases[key])});
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(element=>{const key=element.getAttribute('data-i18n-placeholder'),translated=phrases[key];if(translated&&element.getAttribute('placeholder')!==translated)element.setAttribute('placeholder',translated)});
+  document.querySelectorAll('[data-i18n-title]').forEach(element=>{const key=element.getAttribute('data-i18n-title'),translated=phrases[key];if(translated&&element.getAttribute('title')!==translated)element.setAttribute('title',translated)});
+  document.querySelectorAll('[data-i18n-aria-label]').forEach(element=>{const key=element.getAttribute('data-i18n-aria-label'),translated=phrases[key];if(translated&&element.getAttribute('aria-label')!==translated)element.setAttribute('aria-label',translated)});
   // Translate known UI phrases in either direction while preserving original spacing.
   // User-entered content and form values are deliberately excluded.
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
@@ -1078,7 +1079,8 @@
   }
   nodes.forEach(({node,original,trimmed})=>{
    const translated=rbTranslatePhrase(trimmed,locale);
-   node.nodeValue=translated===trimmed?original:original.replace(trimmed,translated);
+   const nextValue=translated===trimmed?original:original.replace(trimmed,translated);
+   if(node.nodeValue!==nextValue)node.nodeValue=nextValue;
   });
  }
  function initLocalizedGreetings(){
