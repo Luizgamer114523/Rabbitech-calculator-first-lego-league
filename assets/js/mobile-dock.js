@@ -1,5 +1,35 @@
 /* Rabbitech mobile dock + admin visibility. Single controller, idempotent setup. */
 (()=>{'use strict';
+ // Consent recovery guard: the privacy gate is critical UI, so bind it here too
+ // in case an earlier inline handler failed during page initialization.
+ function rbEnsurePrivacyGateControls(){
+  const gate=document.getElementById('rbPrivacyGate');
+  const check=document.getElementById('rbPrivacyGateCheck');
+  const confirmBtn=document.getElementById('rbPrivacyGateConfirm');
+  if(!gate||!check||!confirmBtn||gate.dataset.rbRecoveryBound==='1')return;
+  gate.dataset.rbRecoveryBound='1';
+  gate.style.pointerEvents='auto';
+  gate.style.zIndex='2147483001';
+  const sync=()=>{confirmBtn.disabled=!check.checked;confirmBtn.style.pointerEvents='auto';};
+  check.addEventListener('change',sync);
+  check.addEventListener('click',()=>setTimeout(sync,0));
+  confirmBtn.addEventListener('click',event=>{
+   if(!check.checked){event.preventDefault();event.stopImmediatePropagation();sync();return;}
+   try{sessionStorage.setItem('rb-privacy-accepted-v1','yes');localStorage.setItem('rbPrivacyAccepted','yes');}catch(_){}
+   gate.classList.remove('rb-gate-open');
+   document.body.classList.remove('rb-privacy-gate-open');
+   document.body.style.overflow='';
+   gate.style.display='none';
+   const language=document.getElementById('rbLanguageConsent');
+   if(language){language.hidden=true;language.style.setProperty('display','none','important');}
+  },true);
+  sync();
+  let accepted=false;
+  try{accepted=sessionStorage.getItem('rb-privacy-accepted-v1')==='yes'||localStorage.getItem('rbPrivacyAccepted')==='yes';}catch(_){}
+  if(accepted){gate.classList.remove('rb-gate-open');document.body.classList.remove('rb-privacy-gate-open');gate.style.display='none';}
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',rbEnsurePrivacyGateControls,{once:true});
+ else rbEnsurePrivacyGateControls();
  // Prevent duplicate event handlers and Supabase subscriptions if the bundle is included twice.
  if(window.__rbMobileDockSingleton)return;
  window.__rbMobileDockSingleton=true;
@@ -976,26 +1006,25 @@
   es:{welcome:['Te damos la bienvenida de nuevo a Rabbitech','Buenos días','Buenas tardes','Buenas noches'],bye:'¡Hasta luego! Gracias por usar Rabbitech. ¡Vuelve pronto!',team:'Equipo',admin:'Administración',score:'Marcador',history:'Historial',ranking:'Clasificación',strategy:'Estrategia',routes:'Rutas',rules:'Reglas',tv:'Rabbitech TV',music:'Música',privacy:'Privacidad',refresh:'Actualizar',createTeam:'Crear equipo',joinTeam:'Unirse a un equipo'}
  };
  function rbCurrentLocale(){
-  let saved='';try{saved=localStorage.getItem('rbPreferredLanguage')||''}catch(_){}
+  let saved='';
+  try{saved=localStorage.getItem('rbPreferredLanguage')||''}catch(_){}
   const selector=$('rbLanguageQuick')?.querySelector('select')||$('rbLanguageQuickSelect')||$('rbConsentLanguage')||document.querySelector('select[id*="language" i],select[name*="language" i]');
-  const chosen=String(saved||selector?.value||'').trim().toLowerCase();
-  // Explicit user choice wins. If none exists, detect the browser's locale.
-  const raw=chosen||String(navigator.languages?.[0]||navigator.language||document.documentElement.lang||'en').trim().toLowerCase();
-  if(raw==='pt-br'||raw.startsWith('pt'))return 'pt';
-  if(raw==='en-us'||raw.startsWith('en'))return 'en';
-  if(raw==='es'||raw.startsWith('es'))return 'es';
-  // The greeting dictionary currently supports Portuguese, English and Spanish.
-  return 'en';
+  const selected=String(saved||selector?.value||'').trim().replace('_','-').toLowerCase();
+  const supported=raw=>{
+   if(/^pt(?:-|$)/i.test(raw))return 'pt';
+   if(/^en(?:-|$)/i.test(raw))return 'en';
+   if(/^es(?:-|$)/i.test(raw))return 'es';
+   return '';
+  };
+  const manual=supported(selected);
+  if(manual)return manual;
+  const browserLanguages=Array.isArray(navigator.languages)?navigator.languages:[];
+  const detected=[...browserLanguages,navigator.language,document.documentElement.lang]
+   .map(value=>String(value||'').trim().replace('_','-').toLowerCase())
+   .find(value=>supported(value));
+  return detected?supported(detected):'en';
  }
- function rbCurrentLocale(){
-  let saved='';try{saved=localStorage.getItem('rbPreferredLanguage')||''}catch(_){}
-  const selector=$('rbLanguageQuick')?.querySelector('select')||$('rbLanguageQuickSelect')||$('rbConsentLanguage')||document.querySelector('select[id*="language" i],select[name*="language" i]');
-  const chosen=String(saved||selector?.value||'').toLowerCase();
-  const lang=chosen||String(navigator.language||document.documentElement.lang||'pt').toLowerCase();
-  if(lang.startsWith('en'))return 'en';
-  if(lang.startsWith('es'))return 'es';
-  return 'pt';
- }
+
  function rbGreetingKey(){
   const hour=new Date().getHours();
   return hour<12?1:hour<18?2:3;
@@ -1020,25 +1049,76 @@
    :dict.welcome[0]+(name?', '+name:'')+'! '+dict.welcome[rbGreetingKey()]+'!';
   rbToast(greeting);
  }
+ const rbUiTranslations={
+  pt:{
+   'Home':'Início','Team':'Equipe','Admin':'Admin','Scoreboard':'Placar','Score':'Placar','History':'Histórico','Ranking':'Ranking','Strategy':'Estratégia','Routes':'Rotas','Rules':'Regras','Music':'Música','Privacy':'Privacidade','Refresh':'Atualizar','Create team':'Criar equipe','Join an existing team':'Entrar em equipe existente','Invite':'Convidar','Members':'Membros','Tasks':'Tarefas','Goals':'Metas','Progress':'Progresso','Performance':'Desempenho','Chat':'Chat','Send':'Enviar','Cancel':'Cancelar','Save':'Salvar','Close':'Fechar','Back':'Voltar','Next':'Avançar','Continue':'Continuar','Confirm':'Confirmar','Delete':'Excluir','Edit':'Editar','Loading...':'Carregando...','Loading…':'Carregando…','Search':'Pesquisar','Name':'Nome','Email':'E-mail','Password':'Senha','Sign in':'Entrar','Sign out':'Sair','Log in':'Entrar','Log out':'Sair','Settings':'Configurações','Notifications':'Notificações','No results':'Nenhum resultado','No data available':'Nenhum dado disponível','Try again':'Tentar novamente','Error':'Erro','Success':'Sucesso','Warning':'Aviso','Scheduled':'Agendado','Active':'Ativo','Inactive':'Inativo','Language':'Idioma','Create':'Criar','Join':'Entrar','Start':'Iniciar','Stop':'Parar','Round':'Rodada','Rounds':'Rodadas','Average score':'Pontuação média','Global notices':'Avisos globais','Team workspace':'Área da equipe','Welcome back':'Bem-vindo de volta'
+  },
+  en:{
+   'Home':'Home','Team':'Team','Admin':'Admin','Scoreboard':'Scoreboard','Score':'Score','History':'History','Ranking':'Ranking','Strategy':'Strategy','Routes':'Routes','Rules':'Rules','Music':'Music','Privacy':'Privacy','Refresh':'Refresh','Create team':'Create team','Join an existing team':'Join an existing team','Invite':'Invite','Members':'Members','Tasks':'Tasks','Goals':'Goals','Progress':'Progress','Performance':'Performance','Chat':'Chat','Send':'Send','Cancel':'Cancel','Save':'Save','Close':'Close','Back':'Back','Next':'Next','Continue':'Continue','Confirm':'Confirm','Delete':'Delete','Edit':'Edit','Loading...':'Loading...','Loading…':'Loading…','Search':'Search','Name':'Name','Email':'Email','Password':'Password','Sign in':'Sign in','Sign out':'Sign out','Log in':'Log in','Log out':'Log out','Settings':'Settings','Notifications':'Notifications','No results':'No results','No data available':'No data available','Try again':'Try again','Error':'Error','Success':'Success','Warning':'Warning','Scheduled':'Scheduled','Active':'Active','Inactive':'Inactive','Language':'Language','Create':'Create','Join':'Join','Start':'Start','Stop':'Stop','Round':'Round','Rounds':'Rounds','Average score':'Average score','Global notices':'Global notices','Team workspace':'Team workspace','Welcome back':'Welcome back'
+  },
+  es:{
+   'Home':'Inicio','Team':'Equipo','Admin':'Administración','Scoreboard':'Marcador','Score':'Puntuación','History':'Historial','Ranking':'Clasificación','Strategy':'Estrategia','Routes':'Rutas','Rules':'Reglas','Music':'Música','Privacy':'Privacidad','Refresh':'Actualizar','Create team':'Crear equipo','Join an existing team':'Unirse a un equipo','Invite':'Invitar','Members':'Miembros','Tasks':'Tareas','Goals':'Objetivos','Progress':'Progreso','Performance':'Rendimiento','Chat':'Chat','Send':'Enviar','Cancel':'Cancelar','Save':'Guardar','Close':'Cerrar','Back':'Volver','Next':'Siguiente','Continue':'Continuar','Confirm':'Confirmar','Delete':'Eliminar','Edit':'Editar','Loading...':'Cargando...','Loading…':'Cargando…','Search':'Buscar','Name':'Nombre','Email':'Correo electrónico','Password':'Contraseña','Sign in':'Iniciar sesión','Sign out':'Cerrar sesión','Log in':'Iniciar sesión','Log out':'Cerrar sesión','Settings':'Configuración','Notifications':'Notificaciones','No results':'Sin resultados','No data available':'No hay datos disponibles','Try again':'Intentar de nuevo','Error':'Error','Success':'Éxito','Warning':'Aviso','Scheduled':'Programado','Active':'Activo','Inactive':'Inactivo','Language':'Idioma','Create':'Crear','Join':'Unirse','Start':'Iniciar','Stop':'Detener','Round':'Ronda','Rounds':'Rondas','Average score':'Puntuación media','Global notices':'Avisos globales','Team workspace':'Área del equipo','Welcome back':'Te damos la bienvenida'
+  }
+ };
+ // Resolve a phrase against any supported locale, then render the same canonical key
+ // in the selected language. This makes language switching reversible.
+ const rbOriginalTextNodes=new WeakMap();
+ function rbTranslatePhrase(phrase,locale){
+  const dictionaries=Object.entries(rbUiTranslations);
+  for(const [sourceLocale,sourceDict] of dictionaries){
+   for(const [key,value] of Object.entries(sourceDict)){
+    if(phrase===key||phrase===value){
+     const target=rbUiTranslations[locale]||rbUiTranslations.en;
+     return Object.prototype.hasOwnProperty.call(target,key)?target[key]:phrase;
+    }
+   }
+  }
+  return phrase;
+ }
  function rbApplyLanguageFallback(){
-  const locale=rbCurrentLocale(),dict=rbLocaleText[locale]||rbLocaleText.pt;
+  const locale=rbCurrentLocale(),dict=rbLocaleText[locale]||rbLocaleText.en;
   const nav=document.querySelector('nav.rb-samsung-dock');
   if(nav){
    const labels={score:dict.score,history:dict.history,leaderboard:dict.ranking,strategy:dict.strategy,routes:dict.routes,rules:dict.rules,youtube:dict.tv,music:dict.music,privacy:dict.privacy,'team-workspace':dict.team,admin:dict.admin};
    nav.querySelectorAll('button[data-page]').forEach(button=>{
-    const key=button.dataset.page, label=labels[key], node=button.querySelector('.dock-label');
+    const label=labels[button.dataset.page],node=button.querySelector('.dock-label');
     if(label&&node){node.textContent=label;button.setAttribute('aria-label',label);button.title=label}
    });
   }
   const teamButton=$('rbTeamWorkspaceNav');
   if(teamButton){const label=dict.team;teamButton.querySelector('.dock-label')?.replaceChildren(document.createTextNode(label));teamButton.title=label;teamButton.setAttribute('aria-label',label)}
+  const phrases=rbUiTranslations[locale]||{};
+  document.querySelectorAll('[data-i18n]').forEach(element=>{
+   const key=element.getAttribute('data-i18n');
+   const translated=dict[key]||phrases[key];
+   if(translated&&element.textContent!==translated)element.textContent=translated;
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(element=>{const key=element.getAttribute('data-i18n-placeholder'),translated=phrases[key];if(translated&&element.getAttribute('placeholder')!==translated)element.setAttribute('placeholder',translated)});
+  document.querySelectorAll('[data-i18n-title]').forEach(element=>{const key=element.getAttribute('data-i18n-title'),translated=phrases[key];if(translated&&element.getAttribute('title')!==translated)element.setAttribute('title',translated)});
+  document.querySelectorAll('[data-i18n-aria-label]').forEach(element=>{const key=element.getAttribute('data-i18n-aria-label'),translated=phrases[key];if(translated&&element.getAttribute('aria-label')!==translated)element.setAttribute('aria-label',translated)});
+  // Translate known UI phrases in either direction while preserving original spacing.
+  // User-entered content and form values are deliberately excluded.
+  const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
+  const nodes=[];
+  while(walker.nextNode()){
+   const node=walker.currentNode,parent=node.parentElement;
+   if(!parent||parent.closest('script,style,textarea,input,select,option,code,pre,[contenteditable="true"],[data-user-content]'))continue;
+   if(!rbOriginalTextNodes.has(node))rbOriginalTextNodes.set(node,node.nodeValue||'');
+   const original=rbOriginalTextNodes.get(node),trimmed=original.trim();
+   if(trimmed)nodes.push({node,original,trimmed});
+  }
+  nodes.forEach(({node,original,trimmed})=>{
+   const translated=rbTranslatePhrase(trimmed,locale);
+   const nextValue=translated===trimmed?original:original.replace(trimmed,translated);
+   if(node.nodeValue!==nextValue)node.nodeValue=nextValue;
+  });
  }
  function initLocalizedGreetings(){
   let lastUserId=currentUser()?.id||null;
   const language=$('rbLanguageQuick')?.querySelector('select')||$('rbLanguageQuickSelect')||$('rbConsentLanguage')||document.querySelector('select[id*="language" i],select[name*="language" i]');
   // The site's existing i18n controller owns rbPreferredLanguage. Do not overwrite
   // a manually selected language with the device language on every page load.
-  language?.addEventListener('change',()=>setTimeout(rbApplyLanguageFallback,0));
+  language?.addEventListener('change',()=>{try{localStorage.setItem('rbPreferredLanguage',language.value)}catch(_){};setTimeout(rbApplyLanguageFallback,0)});
   rbApplyLanguageFallback();
   window.addEventListener('rb-auth-state-changed',()=>{
    const user=currentUser(),id=user?.id||null;
