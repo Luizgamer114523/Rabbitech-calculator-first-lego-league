@@ -9,6 +9,8 @@
  const reverse=new Map();
  for(const row of rows)for(let i=0;i<row.length;i++)if(!reverse.has(row[i]))reverse.set(row[i],row[0]);
  function translateStatus(){
+  // The complete nine-language controller owns translation once it is loaded.
+  if(window.__rbCompleteI18nLoaded)return;
   const el=document.getElementById('rbCloudStatus');if(!el)return;
   const text=String(el.textContent||'').trim();
   const match=text.match(/^(?:Conectado como|Signed in as|Connecté en tant que|Angemeldet als|Accesso effettuato come)\s+(.+?)\.\s*(?:Equipe|Team|Equipo|Équipe|Squadra)\s*:\s*(.+?)\.\s*(\d+)\s*(?:round\(s\)|rounds?|ronda\(s\)|rondas?|manche\(s\)|manches?|Runde\(n\)|Runden|round|rounds)\s*(?:na nuvem|in the cloud|en la nube|dans le cloud|in der Cloud|nel cloud)\.$/i);
@@ -25,6 +27,7 @@
   if(el.textContent!==out)el.textContent=out;
  }
  function apply(root=document.body){
+  if(window.__rbCompleteI18nLoaded)return;
   if(!root)return;
   const i=codes.indexOf(lang());
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
