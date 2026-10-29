@@ -968,10 +968,78 @@
   });
  }
 
+
+ // Localized greetings and lightweight UI language fallback.
+ const rbLocaleText={
+  pt:{welcome:['Bem-vindo','Bom dia','Boa tarde','Boa noite'],bye:'Tchau, até mais!',team:'Equipe',admin:'Admin',score:'Placar',history:'Histórico',ranking:'Ranking',strategy:'Estratégia',routes:'Rotas',rules:'Regras',tv:'Rabbitech TV',music:'Música',privacy:'Privacidade',refresh:'Atualizar',createTeam:'Criar equipe',joinTeam:'Entrar em equipe existente'},
+  en:{welcome:['Welcome','Good morning','Good afternoon','Good evening'],bye:'Goodbye, see you next time!',team:'Team',admin:'Admin',score:'Scoreboard',history:'History',ranking:'Ranking',strategy:'Strategy',routes:'Routes',rules:'Rules',tv:'Rabbitech TV',music:'Music',privacy:'Privacy',refresh:'Refresh',createTeam:'Create team',joinTeam:'Join an existing team'},
+  es:{welcome:['Bienvenido/a','Buenos días','Buenas tardes','Buenas noches'],bye:'¡Hasta luego!',team:'Equipo',admin:'Administración',score:'Marcador',history:'Historial',ranking:'Clasificación',strategy:'Estrategia',routes:'Rutas',rules:'Reglas',tv:'Rabbitech TV',music:'Música',privacy:'Privacidad',refresh:'Actualizar',createTeam:'Crear equipo',joinTeam:'Unirse a un equipo'}
+ };
+ function rbCurrentLocale(){
+  const selector=$('rbLanguageQuick')?.querySelector('select')||document.querySelector('select[id*="language" i],select[name*="language" i]');
+  const chosen=String(selector?.value||'').toLowerCase();
+  const lang=chosen||String(document.documentElement.lang||navigator.language||'pt').toLowerCase();
+  if(lang.startsWith('en'))return 'en';
+  if(lang.startsWith('es'))return 'es';
+  return 'pt';
+ }
+ function rbGreetingKey(){
+  const hour=new Date().getHours();
+  return hour<12?1:hour<18?2:3;
+ }
+ function rbToast(message){
+  let toast=$('rbGreetingToast');
+  if(!toast){
+   toast=document.createElement('div');toast.id='rbGreetingToast';
+   toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');
+   toast.style.cssText='position:fixed;z-index:2147483000;left:50%;top:max(14px,env(safe-area-inset-top));transform:translateX(-50%);max-width:min(92vw,520px);padding:12px 18px;border:1px solid #71956d;border-radius:14px;background:rgba(7,24,14,.96);color:#f2ffe9;box-shadow:0 8px 28px #0006;font-weight:700;text-align:center;opacity:0;transition:opacity .2s;pointer-events:none';
+   document.body.append(toast);
+  }
+  toast.textContent=message;toast.style.opacity='1';
+  clearTimeout(toast._rbHideTimer);toast._rbHideTimer=setTimeout(()=>{toast.style.opacity='0'},3600);
+ }
+ function rbGreeting(user,kind){
+  if(!user)return;
+  const locale=rbCurrentLocale(),dict=rbLocaleText[locale]||rbLocaleText.pt;
+  const name=String(user.user_metadata?.full_name||user.user_metadata?.name||user.email||'').split('@')[0].trim();
+  const greeting=kind==='bye'?dict.bye:dict.welcome[rbGreetingKey()];
+  rbToast(kind==='bye'?greeting:(name?greeting+', '+name+'!':greeting+'!'));
+ }
+ function rbApplyLanguageFallback(){
+  const locale=rbCurrentLocale(),dict=rbLocaleText[locale]||rbLocaleText.pt;
+  const nav=document.querySelector('nav.rb-samsung-dock');
+  if(nav){
+   const labels={score:dict.score,history:dict.history,leaderboard:dict.ranking,strategy:dict.strategy,routes:dict.routes,rules:dict.rules,youtube:dict.tv,music:dict.music,privacy:dict.privacy,'team-workspace':dict.team,admin:dict.admin};
+   nav.querySelectorAll('button[data-page]').forEach(button=>{
+    const key=button.dataset.page, label=labels[key], node=button.querySelector('.dock-label');
+    if(label&&node){node.textContent=label;button.setAttribute('aria-label',label);button.title=label}
+   });
+  }
+  const teamButton=$('rbTeamWorkspaceNav');
+  if(teamButton){const label=dict.team;teamButton.querySelector('.dock-label')?.replaceChildren(document.createTextNode(label));teamButton.title=label;teamButton.setAttribute('aria-label',label)}
+ }
+ function initLocalizedGreetings(){
+  let lastUserId=currentUser()?.id||null;
+  rbApplyLanguageFallback();
+  const language=$('rbLanguageQuick')?.querySelector('select')||document.querySelector('select[id*="language" i],select[name*="language" i]');
+  language?.addEventListener('change',()=>{setTimeout(rbApplyLanguageFallback,0)});
+  window.addEventListener('rb-auth-state-changed',()=>{
+   const user=currentUser(),id=user?.id||null;
+   if(id&&id!==lastUserId)rbGreeting(user,'welcome');
+   lastUserId=id;
+  });
+  // Capture the existing logout action without replacing its auth handler.
+  document.addEventListener('click',event=>{
+   const target=event.target.closest('button,a,[role="button"]');
+   if(!target)return;
+   const text=String(target.textContent||'').replace(/\\s+/g,' ').trim().toLowerCase();
+   if(currentUser()&&/^(sair|logout|sign out|log out|desconectar)$/.test(text))rbGreeting(currentUser(),'bye');
+  },true);
+ }
  function init(){
-  removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();ensurePrivacyDisclosure();initFirstVisitTour();
+  removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();initLocalizedGreetings();ensurePrivacyDisclosure();initFirstVisitTour();
   const observer=new MutationObserver(()=>{
-   removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();
+   removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();rbApplyLanguageFallback();ensurePrivacyDisclosure();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
