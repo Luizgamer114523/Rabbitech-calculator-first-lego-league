@@ -1020,10 +1020,31 @@
   rbToast(greeting);
  }
  const rbUiTranslations={
-  pt:{'Home':'Início','Team':'Equipe','Admin':'Admin','Scoreboard':'Placar','Score':'Placar','History':'Histórico','Ranking':'Ranking','Strategy':'Estratégia','Routes':'Rotas','Rules':'Regras','Music':'Música','Privacy':'Privacidade','Refresh':'Atualizar','Create team':'Criar equipe','Join an existing team':'Entrar em equipe existente','Invite':'Convidar','Members':'Membros','Tasks':'Tarefas','Goals':'Metas','Progress':'Progresso','Performance':'Desempenho','Chat':'Chat','Send':'Enviar','Cancel':'Cancelar','Save':'Salvar','Close':'Fechar','Back':'Voltar','Next':'Avançar','Continue':'Continuar','Confirm':'Confirmar','Delete':'Excluir','Edit':'Editar','Loading...':'Carregando...','Loading…':'Carregando…','Search':'Pesquisar','Name':'Nome','Email':'E-mail','Password':'Senha','Sign in':'Entrar','Sign out':'Sair','Log in':'Entrar','Log out':'Sair','Settings':'Configurações','Notifications':'Notificações','No results':'Nenhum resultado','No data available':'Nenhum dado disponível','Try again':'Tentar novamente','Error':'Erro','Success':'Sucesso','Warning':'Aviso','Scheduled':'Agendado','Active':'Ativo','Inactive':'Inativo','Language':'Idioma','Create':'Criar','Join':'Entrar','Start':'Iniciar','Stop':'Parar','Round':'Round','Rounds':'Rounds','Average score':'Pontuação média','Global notices':'Avisos globais','Team workspace':'Área da equipe','Welcome back':'Bem-vindo de volta','Bem-vindo de volta ao Rabbitech':'Bem-vindo de volta ao Rabbitech'},
-  en:{'Início':'Home','Equipe':'Team','Placar':'Scoreboard','Histórico':'History','Estratégia':'Strategy','Rotas':'Routes','Regras':'Rules','Música':'Music','Privacidade':'Privacy','Atualizar':'Refresh','Criar equipe':'Create team','Entrar em equipe existente':'Join an existing team','Convidar':'Invite','Membros':'Members','Tarefas':'Tasks','Metas':'Goals','Progresso':'Progress','Desempenho':'Performance','Enviar':'Send','Cancelar':'Cancel','Salvar':'Save','Fechar':'Close','Voltar':'Back','Avançar':'Next','Continuar':'Continue','Confirmar':'Confirm','Excluir':'Delete','Editar':'Edit','Carregando...':'Loading...','Carregando…':'Loading…','Pesquisar':'Search','Nome':'Name','Senha':'Password','Entrar':'Sign in','Sair':'Sign out','Configurações':'Settings','Notificações':'Notifications','Nenhum resultado':'No results','Nenhum dado disponível':'No data available','Tentar novamente':'Try again','Erro':'Error','Sucesso':'Success','Aviso':'Warning','Agendado':'Scheduled','Ativo':'Active','Inativo':'Inactive','Idioma':'Language','Criar':'Create','Iniciar':'Start','Parar':'Stop','Pontuação média':'Average score','Avisos globais':'Global notices','Área da equipe':'Team workspace','Bem-vindo de volta':'Welcome back'},
-  es:{'Home':'Inicio','Team':'Equipo','Admin':'Administración','Scoreboard':'Marcador','Score':'Puntuación','History':'Historial','Ranking':'Clasificación','Strategy':'Estrategia','Routes':'Rutas','Rules':'Reglas','Music':'Música','Privacy':'Privacidad','Refresh':'Actualizar','Create team':'Crear equipo','Join an existing team':'Unirse a un equipo','Invite':'Invitar','Members':'Miembros','Tasks':'Tareas','Goals':'Objetivos','Progress':'Progreso','Performance':'Rendimiento','Send':'Enviar','Cancel':'Cancelar','Save':'Guardar','Close':'Cerrar','Back':'Volver','Next':'Siguiente','Continue':'Continuar','Confirm':'Confirmar','Delete':'Eliminar','Edit':'Editar','Loading...':'Cargando...','Search':'Buscar','Name':'Nombre','Email':'Correo electrónico','Password':'Contraseña','Sign in':'Iniciar sesión','Sign out':'Cerrar sesión','Settings':'Configuración','Notifications':'Notificaciones','No results':'Sin resultados','Try again':'Intentar de nuevo','Error':'Error','Success':'Éxito','Warning':'Aviso','Language':'Idioma','Create':'Crear','Join':'Unirse','Start':'Iniciar','Stop':'Detener','Global notices':'Avisos globales','Team workspace':'Área del equipo'}
+  pt:{
+   'Home':'Início','Team':'Equipe','Admin':'Admin','Scoreboard':'Placar','Score':'Placar','History':'Histórico','Ranking':'Ranking','Strategy':'Estratégia','Routes':'Rotas','Rules':'Regras','Music':'Música','Privacy':'Privacidade','Refresh':'Atualizar','Create team':'Criar equipe','Join an existing team':'Entrar em equipe existente','Invite':'Convidar','Members':'Membros','Tasks':'Tarefas','Goals':'Metas','Progress':'Progresso','Performance':'Desempenho','Chat':'Chat','Send':'Enviar','Cancel':'Cancelar','Save':'Salvar','Close':'Fechar','Back':'Voltar','Next':'Avançar','Continue':'Continuar','Confirm':'Confirmar','Delete':'Excluir','Edit':'Editar','Loading...':'Carregando...','Loading…':'Carregando…','Search':'Pesquisar','Name':'Nome','Email':'E-mail','Password':'Senha','Sign in':'Entrar','Sign out':'Sair','Log in':'Entrar','Log out':'Sair','Settings':'Configurações','Notifications':'Notificações','No results':'Nenhum resultado','No data available':'Nenhum dado disponível','Try again':'Tentar novamente','Error':'Erro','Success':'Sucesso','Warning':'Aviso','Scheduled':'Agendado','Active':'Ativo','Inactive':'Inativo','Language':'Idioma','Create':'Criar','Join':'Entrar','Start':'Iniciar','Stop':'Parar','Round':'Rodada','Rounds':'Rodadas','Average score':'Pontuação média','Global notices':'Avisos globais','Team workspace':'Área da equipe','Welcome back':'Bem-vindo de volta'
+  },
+  en:{
+   'Home':'Home','Team':'Team','Admin':'Admin','Scoreboard':'Scoreboard','Score':'Score','History':'History','Ranking':'Ranking','Strategy':'Strategy','Routes':'Routes','Rules':'Rules','Music':'Music','Privacy':'Privacy','Refresh':'Refresh','Create team':'Create team','Join an existing team':'Join an existing team','Invite':'Invite','Members':'Members','Tasks':'Tasks','Goals':'Goals','Progress':'Progress','Performance':'Performance','Chat':'Chat','Send':'Send','Cancel':'Cancel','Save':'Save','Close':'Close','Back':'Back','Next':'Next','Continue':'Continue','Confirm':'Confirm','Delete':'Delete','Edit':'Edit','Loading...':'Loading...','Loading…':'Loading…','Search':'Search','Name':'Name','Email':'Email','Password':'Password','Sign in':'Sign in','Sign out':'Sign out','Log in':'Log in','Log out':'Log out','Settings':'Settings','Notifications':'Notifications','No results':'No results','No data available':'No data available','Try again':'Try again','Error':'Error','Success':'Success','Warning':'Warning','Scheduled':'Scheduled','Active':'Active','Inactive':'Inactive','Language':'Language','Create':'Create','Join':'Join','Start':'Start','Stop':'Stop','Round':'Round','Rounds':'Rounds','Average score':'Average score','Global notices':'Global notices','Team workspace':'Team workspace','Welcome back':'Welcome back'
+  },
+  es:{
+   'Home':'Inicio','Team':'Equipo','Admin':'Administración','Scoreboard':'Marcador','Score':'Puntuación','History':'Historial','Ranking':'Clasificación','Strategy':'Estrategia','Routes':'Rutas','Rules':'Reglas','Music':'Música','Privacy':'Privacidad','Refresh':'Actualizar','Create team':'Crear equipo','Join an existing team':'Unirse a un equipo','Invite':'Invitar','Members':'Miembros','Tasks':'Tareas','Goals':'Objetivos','Progress':'Progreso','Performance':'Rendimiento','Chat':'Chat','Send':'Enviar','Cancel':'Cancelar','Save':'Guardar','Close':'Cerrar','Back':'Volver','Next':'Siguiente','Continue':'Continuar','Confirm':'Confirmar','Delete':'Eliminar','Edit':'Editar','Loading...':'Cargando...','Loading…':'Cargando…','Search':'Buscar','Name':'Nombre','Email':'Correo electrónico','Password':'Contraseña','Sign in':'Iniciar sesión','Sign out':'Cerrar sesión','Log in':'Iniciar sesión','Log out':'Cerrar sesión','Settings':'Configuración','Notifications':'Notificaciones','No results':'Sin resultados','No data available':'No hay datos disponibles','Try again':'Intentar de nuevo','Error':'Error','Success':'Éxito','Warning':'Aviso','Scheduled':'Programado','Active':'Activo','Inactive':'Inactivo','Language':'Idioma','Create':'Crear','Join':'Unirse','Start':'Iniciar','Stop':'Detener','Round':'Ronda','Rounds':'Rondas','Average score':'Puntuación media','Global notices':'Avisos globales','Team workspace':'Área del equipo','Welcome back':'Te damos la bienvenida'
+  }
  };
+ // Resolve a phrase against any supported locale, then render the same canonical key
+ // in the selected language. This makes language switching reversible.
+ const rbOriginalTextNodes=new WeakMap();
+ function rbTranslatePhrase(phrase,locale){
+  const dictionaries=Object.entries(rbUiTranslations);
+  for(const [sourceLocale,sourceDict] of dictionaries){
+   for(const [key,value] of Object.entries(sourceDict)){
+    if(phrase===key||phrase===value){
+     const target=rbUiTranslations[locale]||rbUiTranslations.en;
+     return Object.prototype.hasOwnProperty.call(target,key)?target[key]:phrase;
+    }
+   }
+  }
+  return phrase;
+ }
  function rbApplyLanguageFallback(){
   const locale=rbCurrentLocale(),dict=rbLocaleText[locale]||rbLocaleText.en;
   const nav=document.querySelector('nav.rb-samsung-dock');
@@ -1044,16 +1065,21 @@
   document.querySelectorAll('[data-i18n-placeholder]').forEach(element=>{const key=element.getAttribute('data-i18n-placeholder');if(phrases[key])element.setAttribute('placeholder',phrases[key])});
   document.querySelectorAll('[data-i18n-title]').forEach(element=>{const key=element.getAttribute('data-i18n-title');if(phrases[key])element.setAttribute('title',phrases[key])});
   document.querySelectorAll('[data-i18n-aria-label]').forEach(element=>{const key=element.getAttribute('data-i18n-aria-label');if(phrases[key])element.setAttribute('aria-label',phrases[key])});
-  // Exact phrase translations safely cover common static and dynamically-created UI text.
+  // Translate known UI phrases in either direction while preserving original spacing.
+  // User-entered content and form values are deliberately excluded.
   const walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);
   const nodes=[];
   while(walker.nextNode()){
    const node=walker.currentNode,parent=node.parentElement;
    if(!parent||parent.closest('script,style,textarea,input,select,option,code,pre,[contenteditable="true"],[data-user-content]'))continue;
-   const original=node.nodeValue||'',trimmed=original.trim();
-   if(trimmed&&Object.prototype.hasOwnProperty.call(phrases,trimmed))nodes.push({node,original,trimmed});
+   if(!rbOriginalTextNodes.has(node))rbOriginalTextNodes.set(node,node.nodeValue||'');
+   const original=rbOriginalTextNodes.get(node),trimmed=original.trim();
+   if(trimmed)nodes.push({node,original,trimmed});
   }
-  nodes.forEach(({node,original,trimmed})=>{const translated=phrases[trimmed];if(translated)node.nodeValue=original.replace(trimmed,translated)});
+  nodes.forEach(({node,original,trimmed})=>{
+   const translated=rbTranslatePhrase(trimmed,locale);
+   node.nodeValue=translated===trimmed?original:original.replace(trimmed,translated);
+  });
  }
  function initLocalizedGreetings(){
   let lastUserId=currentUser()?.id||null;
