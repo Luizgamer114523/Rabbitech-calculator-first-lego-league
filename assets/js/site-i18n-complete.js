@@ -406,6 +406,28 @@
   ["Ex.: testar missão","e.g., test a mission","","","","","","",""],
   ["Ex.: 10 rounds confiáveis","e.g., 10 reliable rounds","","","","","","",""]
  );
+
+ // Numbered privacy headings and longer policy paragraphs need exact matches too.
+ ADDITIONAL_COVERAGE.push(
+  ["1. Objetivo e âmbito","1. Purpose and scope","","","","","","",""],
+  ["2. Informações que podem ser tratadas","2. Information that may be processed","","","","","","",""],
+  ["3. Finalidades e fundamentos de utilização","3. Purposes and legal basis for use","","","","","","",""],
+  ["4. Ranking e informações públicas","4. Leaderboard and public information","","","","","","",""],
+  ["5. Armazenamento local e sincronização","5. Local storage and synchronization","","","","","","",""],
+  ["6. Provedores e compartilhamento","6. Providers and data sharing","","","","","","",""],
+  ["7. Segurança e controle de acesso","7. Security and access control","","","","","","",""],
+  ["8. Retenção, correção e exclusão","8. Retention, correction, and deletion","","","","","","",""],
+  ["9. Crianças, adolescentes e responsáveis","9. Children, teenagers, and guardians","","","","","","",""],
+  ["10. Serviços de terceiros e links externos","10. Third-party services and external links","","","","","","",""],
+  ["11. Alterações nesta política","11. Changes to this policy","","","","","","",""],
+  ["12. Contato e solicitações","12. Contact and requests","","","","","","",""],
+  ["13. Termos de uso e limites do serviço","13. Terms of use and service limits","","","","","","",""],
+  ["Esta Política descreve quais informações podem ser tratadas durante a utilização do Rabbitech BIOGLOW, para que são utilizadas, onde podem ser armazenadas e quais opções estão disponíveis aos usuários. Aplica-se às páginas públicas, ao placar de treino, ao ranking, à sincronização de equipes, ao painel administrativo e aos módulos complementares oferecidos pelo site.","This Policy describes what information may be processed while using Rabbitech BIOGLOW, why it is used, where it may be stored, and what options are available to users. It applies to public pages, the practice scoreboard, leaderboard, team synchronization, admin panel, and additional modules offered by the website.","","","","","","",""],
+  ["O Rabbitech é um projeto independente de apoio a treinos de robótica. Não é um serviço oficial da FIRST nem da LEGO. Ao utilizar funções opcionais de conta e sincronização, o usuário deve considerar também os avisos e as políticas dos provedores externos envolvidos.","Rabbitech is an independent project that supports robotics practice. It is not an official FIRST or LEGO service. When using optional account and synchronization features, users should also consider the notices and policies of the external providers involved.","","","","","","",""],
+  ["O ranking público pode apresentar o nome da equipe, sua posição, a média de pontuação e a quantidade de rounds considerados. O objetivo é permitir a comparação de resultados de treino. O ranking não deve exibir endereço de e-mail, credenciais, identificadores de autenticação ou pontuações privadas de cada partida. O acesso público é limitado aos dados agregados disponibilizados pela função de ranking do banco de dados.","The public leaderboard may show a team name, its position, average score, and number of rounds considered. It is intended to compare practice results. The leaderboard should not display email addresses, credentials, authentication identifiers, or private scores from individual matches. Public access is limited to aggregated data provided by the database leaderboard function.","","","","","","",""],
+  ["Algumas funções guardam informações no armazenamento do navegador, inclusive histórico, preferências e arquivos importados. Esses dados podem não ser transferidos para outro aparelho e podem ser perdidos se os dados do navegador forem apagados. A biblioteca de músicas importadas é mantida no armazenamento local do dispositivo, salvo indicação expressa em contrário.","Some features store information in the browser, including history, preferences, and imported files. This data may not transfer to another device and may be lost if browser data is cleared. The imported music library is stored locally on the device unless explicitly stated otherwise.","","","","","","",""],
+  ["Como o Rabbitech pode ser usado em atividades educacionais por menores de idade, o tratamento deve respeitar o melhor interesse da criança ou do adolescente. Quando aplicável, o uso deve ocorrer com conhecimento e orientação dos pais ou responsáveis e das regras da escola/equipe. Não publique dados pessoais de terceiros sem autorização.","Because Rabbitech may be used by minors in educational activities, data processing should respect the best interests of the child or teenager. Where applicable, use should take place with the knowledge and guidance of parents or guardians and in accordance with school/team rules. Do not publish other people’s personal data without authorization.","","","","","","",""]
+ );
  R.unshift(...ADDITIONAL_COVERAGE);
  const maps=new Map(),lowerMaps=new Map();
  R.forEach((row,index)=>row.forEach((phrase,langIndex)=>{if(!phrase)return;const v=norm(phrase);if(!maps.has(v))maps.set(v,{row,index,langIndex});const lo=v.toLocaleLowerCase();if(!lowerMaps.has(lo))lowerMaps.set(lo,{row,index,langIndex});}));
