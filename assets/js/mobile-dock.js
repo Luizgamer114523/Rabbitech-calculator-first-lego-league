@@ -526,11 +526,31 @@
   }catch(e){teamFeedback(e?.message||'Não foi possível salvar a anotação.',true)}
   finally{if(button)button.disabled=false}
  }
+ async function refreshTeamMemberNames(teamId){
+  const client=teamClient();if(!client||!teamId)return teamState.members||[];
+  try{
+   const result=await client.from('team_memberships').select('id,team_id,user_id,display_name,role,created_at').eq('team_id',teamId).order('created_at',{ascending:true}).limit(100);
+   if(result.error)throw result.error;
+   const members=result.data||[];
+   if(members.length)teamState.members=members;
+   return teamState.members||members;
+  }catch(error){console.warn('Não foi possível atualizar os nomes dos membros',error);return teamState.members||[]}
+ }
+ async function resolveTeamMemberName(userId,teamId){
+  if(!userId)return 'Membro';
+  const cached=(teamState.members||[]).find(m=>String(m.user_id)===String(userId))?.display_name;
+  if(cached&&String(cached).trim())return String(cached).trim();
+  const members=await refreshTeamMemberNames(teamId||teamState.team?.team_id);
+  const found=members.find(m=>String(m.user_id)===String(userId))?.display_name;
+  return found&&String(found).trim()?String(found).trim():'Membro';
+ }
  function appendTeamMessage(message,pending=false){
   const box=$('twMessages');if(!box)return;
-  const name=teamState.members?.find(m=>m.user_id===message.author_user_id)?.display_name||teamState.profile?.display_name||'Membro';
+  const cachedName=teamState.members?.find(m=>String(m.user_id)===String(message.author_user_id))?.display_name;
+  const name=cachedName&&String(cachedName).trim()?String(cachedName).trim():(message.author_user_id===teamState.profile?.user_id?(teamState.profile?.display_name||'Membro'):'Membro');
   const bubble=document.createElement('div');bubble.className='tw-bubble';if(pending)bubble.dataset.pendingMessage='true';
   const strong=document.createElement('strong');strong.textContent=name;
+  if(!pending&&name==='Membro'&&message.author_user_id){resolveTeamMemberName(message.author_user_id,message.team_id).then(resolved=>{if(bubble.isConnected&&resolved&&resolved!=='Membro')strong.textContent=resolved})}
   const body=document.createElement('p');body.style.cssText='white-space:pre-wrap;margin:4px 0';body.textContent=message.body;
   const time=document.createElement('small');time.className='tw-muted';time.textContent=pending?'Enviando…':new Date(message.created_at).toLocaleString();
   bubble.append(strong,body,time);
@@ -630,13 +650,16 @@
   teamState.backgroundRefreshInFlight=true;
   try{
    const teamId=team.team_id;
-   const [taskResult,roundResult,goalResult,messageResult,noteResult]=await Promise.all([
+   const [taskResult,roundResult,goalResult,messageResult,noteResult,memberResult]=await Promise.all([
     client.from('team_tasks').select('*').eq('team_id',teamId).order('created_at',{ascending:true}).limit(250),
     client.from('team_round_logs').select('*').eq('team_id',teamId).order('performed_at',{ascending:true}).limit(250),
     client.from('team_goals').select('*').eq('team_id',teamId).order('created_at',{ascending:true}).limit(250),
     client.from('team_messages').select('id,author_user_id,body,created_at').eq('team_id',teamId).order('created_at',{ascending:true}).limit(60),
-    client.from('team_notes').select('id,author_user_id,title,body,created_at').eq('team_id',teamId).order('created_at',{ascending:false}).limit(100)
+    client.from('team_notes').select('id,author_user_id,title,body,created_at').eq('team_id',teamId).order('created_at',{ascending:false}).limit(100),
+    client.from('team_memberships').select('id,team_id,user_id,display_name,role,created_at').eq('team_id',teamId).order('created_at',{ascending:true}).limit(100)
    ]);
+   if(memberResult.error)return;
+   if(Array.isArray(memberResult.data)&&memberResult.data.length)teamState.members=memberResult.data;
    if(taskResult.error||roundResult.error||goalResult.error||messageResult.error||noteResult.error)return;
    // If the user navigated away while the queries were running, do not touch the page.
    if(!$('page-team-workspace')?.classList.contains('active'))return;
@@ -738,7 +761,9 @@
      const id=String(message.id);let bubble=existingMessages.get(id);
      if(!bubble){const pending=messageBox.querySelector('[data-pending-message="true"]');if(pending&&message.author_user_id===teamState.profile?.user_id){bubble=pending;pending.removeAttribute('data-pending-message');bubble.dataset.messageId=id;bubble.dataset.createdAt=message.created_at;const del=document.createElement('button');del.type='button';del.className='tw-btn';del.dataset.teamDelete='team_messages';del.dataset.recordId=id;del.textContent='Apagar mensagem';bubble.append(del)}else{bubble=document.createElement('div');bubble.className='tw-bubble';bubble.dataset.messageId=id;bubble.dataset.createdAt=message.created_at;const h=document.createElement('strong'),p=document.createElement('p'),meta=document.createElement('small');p.style.cssText='white-space:pre-wrap;margin:4px 0';meta.className='tw-muted';bubble.append(h,p,meta);if(teamState.profile?.is_manager===true||teamState.profile?.role==='leader'||message.author_user_id===teamState.profile?.user_id){const del=document.createElement('button');del.type='button';del.className='tw-btn';del.dataset.teamDelete='team_messages';del.dataset.recordId=id;del.textContent='Apagar mensagem';bubble.append(del)}messageBox.appendChild(bubble)}}
      const h=bubble.querySelector('strong'),p=bubble.querySelector('p'),meta=bubble.querySelector('small');
-     if(h)h.textContent=teamState.members?.find(m=>m.user_id===message.author_user_id)?.display_name||'Membro';
+     const knownName=teamState.members?.find(m=>String(m.user_id)===String(message.author_user_id))?.display_name;
+     if(h)h.textContent=knownName&&String(knownName).trim()?String(knownName).trim():(message.author_user_id===teamState.profile?.user_id?(teamState.profile?.display_name||'Membro'):'Membro');
+     if(h&&h.textContent==='Membro'&&message.author_user_id)resolveTeamMemberName(message.author_user_id,message.team_id).then(resolved=>{if(h.isConnected&&resolved&&resolved!=='Membro')h.textContent=resolved});
      if(p&&p.textContent!==String(message.body||''))p.textContent=message.body||'';
      const time=new Date(message.created_at).toLocaleString();if(meta&&meta.textContent!==time)meta.textContent=time;
      existingMessages.delete(id);
