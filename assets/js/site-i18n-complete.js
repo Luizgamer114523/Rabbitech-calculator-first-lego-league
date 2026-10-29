@@ -310,7 +310,7 @@
  }
  function languageIndex(code){const i=CODES.indexOf(code);return i<0?0:i;}
  function excluded(el){
-  return !el||!!el.closest('script,style,code,pre,textarea,input,[contenteditable="true"],[data-user-content],#rbGlobalNotice,[data-global-notice-text],[data-global-notice-message],.global-notice-text,.global-notice-message,#rbTeamChatMessages,#rbTeamNotesList,.rb-team-message,.rb-team-note-body');
+  return !el||!!el.closest('script,style,code,pre,textarea,input,[contenteditable="true"],[data-user-content],#rbGlobalNotice,[data-global-notice-text],[data-global-notice-message],.global-notice-text,.global-notice-message,.rb-team-message,.rb-team-note-body');
  }
  function translateNode(node,langIndex){
   if(!node||node.nodeType!==Node.TEXT_NODE||excluded(node.parentElement))return;
@@ -339,7 +339,7 @@
   for(const el of els){
    // Placeholders and accessible labels are UI, unlike input values; translate them
    // while still excluding editable/user-generated areas and global notice content.
-   if(!el||el.closest('script,style,code,pre,[contenteditable="true"],[data-user-content],#rbGlobalNotice,[data-global-notice-text],[data-global-notice-message],.global-notice-text,.global-notice-message,#rbTeamChatMessages,#rbTeamNotesList,.rb-team-message,.rb-team-note-body'))continue;
+   if(!el||el.closest('script,style,code,pre,[contenteditable="true"],[data-user-content],#rbGlobalNotice,[data-global-notice-text],[data-global-notice-message],.global-notice-text,.global-notice-message,.rb-team-message,.rb-team-note-body'))continue;
    for(const attr of ['placeholder','title','aria-label','alt']){
     const raw=el.getAttribute(attr);if(!raw)continue;
     const found=maps.get(norm(raw))||lowerMaps.get(norm(raw).toLocaleLowerCase());
