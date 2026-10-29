@@ -1015,8 +1015,10 @@
   if(!user)return;
   const locale=rbCurrentLocale(),dict=rbLocaleText[locale]||rbLocaleText.pt;
   const name=String(user.user_metadata?.full_name||user.user_metadata?.name||user.email||'').split('@')[0].trim();
-  const greeting=kind==='bye'?dict.bye:dict.welcome[rbGreetingKey()];
-  rbToast(kind==='bye'?greeting:(name?greeting+', '+name+'!':greeting+'!'));
+  const greeting=kind==='bye'
+   ?dict.bye
+   :dict.welcome[0]+(name?', '+name:'')+'! '+dict.welcome[rbGreetingKey()]+'!';
+  rbToast(greeting);
  }
  function rbApplyLanguageFallback(){
   const locale=rbCurrentLocale(),dict=rbLocaleText[locale]||rbLocaleText.pt;
