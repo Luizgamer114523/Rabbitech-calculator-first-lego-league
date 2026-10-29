@@ -1027,11 +1027,23 @@
    const labels={score:dict.score,history:dict.history,leaderboard:dict.ranking,strategy:dict.strategy,routes:dict.routes,rules:dict.rules,youtube:dict.tv,music:dict.music,privacy:dict.privacy,'team-workspace':dict.team,admin:dict.admin};
    nav.querySelectorAll('button[data-page]').forEach(button=>{
     const key=button.dataset.page, label=labels[key], node=button.querySelector('.dock-label');
-    if(label&&node){node.textContent=label;button.setAttribute('aria-label',label);button.title=label}
+    if(label&&node){
+     // This function is called by a body-wide MutationObserver. Only write text
+     // when it actually changes, otherwise textContent triggers the observer again
+     // and creates an endless mutation/retranslation loop on mobile browsers.
+     if(node.textContent!==label)node.textContent=label;
+     if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
+     if(button.title!==label)button.title=label;
+    }
    });
   }
   const teamButton=$('rbTeamWorkspaceNav');
-  if(teamButton){const label=dict.team;teamButton.querySelector('.dock-label')?.replaceChildren(document.createTextNode(label));teamButton.title=label;teamButton.setAttribute('aria-label',label)}
+  if(teamButton){
+   const label=dict.team,node=teamButton.querySelector('.dock-label');
+   if(node&&node.textContent!==label)node.textContent=label;
+   if(teamButton.title!==label)teamButton.title=label;
+   if(teamButton.getAttribute('aria-label')!==label)teamButton.setAttribute('aria-label',label);
+  }
  }
  function initLocalizedGreetings(){
   let lastUserId=currentUser()?.id||null;
