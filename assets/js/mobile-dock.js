@@ -1020,9 +1020,19 @@
  }
  function initLocalizedGreetings(){
   let lastUserId=currentUser()?.id||null;
-  rbApplyLanguageFallback();
   const language=$('rbLanguageQuick')?.querySelector('select')||document.querySelector('select[id*="language" i],select[name*="language" i]');
-  language?.addEventListener('change',()=>{setTimeout(rbApplyLanguageFallback,0)});
+  if(language){
+   // Respect an explicit choice on this browser; otherwise follow its preferred language.
+   let saved='';try{saved=localStorage.getItem('rabbitech_ui_language')||''}catch(_){}
+   const preferred=saved||String((navigator.languages&&navigator.languages[0])||navigator.language||'pt-BR');
+   const option=[...language.options].find(o=>String(o.value).toLowerCase().startsWith(preferred.toLowerCase().slice(0,2))||String(o.textContent).toLowerCase().includes(preferred.toLowerCase().slice(0,2)));
+   if(option&&language.value!==option.value){language.value=option.value;language.dispatchEvent(new Event('change',{bubbles:true}))}
+   language.addEventListener('change',()=>{
+    try{localStorage.setItem('rabbitech_ui_language',language.value)}catch(_){}
+    setTimeout(rbApplyLanguageFallback,0);
+   });
+  }
+  rbApplyLanguageFallback();
   window.addEventListener('rb-auth-state-changed',()=>{
    const user=currentUser(),id=user?.id||null;
    if(id&&id!==lastUserId)rbGreeting(user,'welcome');
