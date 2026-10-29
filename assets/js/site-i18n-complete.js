@@ -290,13 +290,22 @@
  }
  function translateNode(node,langIndex){
   if(!node||node.nodeType!==Node.TEXT_NODE||excluded(node.parentElement))return;
-  const raw=node.nodeValue||'',v=norm(raw);if(!v)return;
-  let found=maps.get(v)||lowerMaps.get(v.toLocaleLowerCase());
+  const raw=node.nodeValue||'';let v=norm(raw);if(!v)return;
+  let found=maps.get(v)||lowerMaps.get(v.toLocaleLowerCase()),symbolPrefix='';
+  // Support short labels wrapped with icons/emojis, without translating arbitrary
+  // portions of user text or changing input values.
+  if(!found){
+   const decorated=v.match(/^([^\p{L}\p{N}]+)(.+)$/u);
+   if(decorated){
+    const body=norm(decorated[2]),match=maps.get(body)||lowerMaps.get(body.toLocaleLowerCase());
+    if(match){symbolPrefix=decorated[1];v=body;found=match;}
+   }
+  }
   if(!found)return;
   let target=found.row[langIndex]||found.row[0];
   if(v===v.toLocaleUpperCase()&&/[A-Za-zÀ-ÿ]/.test(v))target=target.toLocaleUpperCase();
   const lead=raw.match(/^\s*/)?.[0]||'',trail=raw.match(/\s*$/)?.[0]||'';
-  const next=lead+target+trail;
+  const next=lead+symbolPrefix+target+trail;
   if(node.nodeValue!==next)node.nodeValue=next;
  }
  function translateAttributes(root,langIndex){
@@ -304,7 +313,9 @@
   const els=[];if(root.nodeType===Node.ELEMENT_NODE&&root.matches?.(selector))els.push(root);
   root.querySelectorAll?.(selector).forEach(el=>els.push(el));
   for(const el of els){
-   if(excluded(el))continue;
+   // Placeholders and accessible labels are UI, unlike input values; translate them
+   // while still excluding editable/user-generated areas and global notice content.
+   if(!el||el.closest('script,style,code,pre,[contenteditable="true"],[data-user-content],#rbGlobalNotice,[data-global-notice-text],[data-global-notice-message],.global-notice-text,.global-notice-message,#rbTeamChatMessages,#rbTeamNotesList,.rb-team-message,.rb-team-note-body'))continue;
    for(const attr of ['placeholder','title','aria-label','alt']){
     const raw=el.getAttribute(attr);if(!raw)continue;
     const found=maps.get(norm(raw))||lowerMaps.get(norm(raw).toLocaleLowerCase());
