@@ -315,6 +315,8 @@
      joinTeamWorkspace('twInviteInput','twMemberName','twFeedback');
     },true);
    }
+   $('twStartInviteScanner')?.addEventListener('click',startTeamInviteScanner);
+   $('twStopInviteScanner')?.addEventListener('click',stopTeamInviteScanner);
    return;
   }
   const teamId=profile.team_id;
