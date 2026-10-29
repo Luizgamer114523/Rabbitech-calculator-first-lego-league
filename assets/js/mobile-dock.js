@@ -1094,7 +1094,7 @@ for(const [locale,parts] of Object.entries(rbLogoutParts)){
   if($('rbCompleteI18nScript'))return;
   const script=document.createElement('script');
   script.id='rbCompleteI18nScript';
-  script.src='assets/js/site-i18n-complete.js?v=20261029-i18n-coverage-2';
+  script.src='assets/js/site-i18n-complete.js?v=20261029-i18n-coverage-3';
   script.async=true;
   script.onerror=()=>console.warn('Rabbitech multilingual UI package could not be loaded.');
   document.head.appendChild(script);
