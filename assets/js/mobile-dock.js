@@ -972,28 +972,24 @@
  // Localized greetings and lightweight UI language fallback.
  const rbLocaleText={
   pt:{welcome:['Bem-vindo de volta ao Rabbitech','Bom dia','Boa tarde','Boa noite'],bye:'Até mais! Obrigado por usar o Rabbitech. Volte sempre!',team:'Equipe',admin:'Admin',score:'Placar',history:'Histórico',ranking:'Ranking',strategy:'Estratégia',routes:'Rotas',rules:'Regras',tv:'Rabbitech TV',music:'Música',privacy:'Privacidade',refresh:'Atualizar',createTeam:'Criar equipe',joinTeam:'Entrar em equipe existente'},
-  en:{welcome:['Welcome back to Rabbitech','Good morning','Good afternoon','Good evening'],bye:'See you soon! Thanks for using Rabbitech. Come back anytime!',team:'Team',admin:'Admin',score:'Scoreboard',history:'History',ranking:'Ranking',strategy:'Strategy',routes:'Routes',rules:'Rules',tv:'Rabbitech TV',music:'Music',privacy:'Privacy',refresh:'Refresh',createTeam:'Create team',joinTeam:'Join an existing team'},
-  es:{welcome:['Te damos la bienvenida de nuevo a Rabbitech','Buenos días','Buenas tardes','Buenas noches'],bye:'¡Hasta luego! Gracias por usar Rabbitech. ¡Vuelve pronto!',team:'Equipo',admin:'Administración',score:'Marcador',history:'Historial',ranking:'Clasificación',strategy:'Estrategia',routes:'Rutas',rules:'Reglas',tv:'Rabbitech TV',music:'Música',privacy:'Privacidad',refresh:'Actualizar',createTeam:'Crear equipo',joinTeam:'Unirse a un equipo'}
+  en:{welcome:['Welcome back to Rabbitech','Good morning','Good afternoon','Good evening'],bye:'See you soon! Thanks for using Rabbitech. Come back anytime!',team:'Team',admin:'Admin',score:'Scoreboard',history:'History',ranking:'Leaderboard',strategy:'Strategy',routes:'Routes',rules:'Rules',tv:'Rabbitech TV',music:'Music',privacy:'Privacy',refresh:'Refresh',createTeam:'Create team',joinTeam:'Join an existing team'},
+  es:{welcome:['Te damos la bienvenida de nuevo a Rabbitech','Buenos días','Buenas tardes','Buenas noches'],bye:'¡Hasta luego! Gracias por usar Rabbitech. ¡Vuelve pronto!',team:'Equipo',admin:'Administración',score:'Marcador',history:'Historial',ranking:'Clasificación',strategy:'Estrategia',routes:'Rutas',rules:'Reglas',tv:'Rabbitech TV',music:'Música',privacy:'Privacidad',refresh:'Actualizar',createTeam:'Crear equipo',joinTeam:'Unirse a un equipo'},
+  fr:{welcome:['Bon retour sur Rabbitech','Bonjour','Bon après-midi','Bonsoir'],bye:'À bientôt ! Merci d’utiliser Rabbitech. Revenez quand vous voulez !',team:'Équipe',admin:'Administration',score:'Score',history:'Historique',ranking:'Classement',strategy:'Stratégie',routes:'Itinéraires',rules:'Règles',tv:'Rabbitech TV',music:'Musique',privacy:'Confidentialité',refresh:'Actualiser',createTeam:'Créer une équipe',joinTeam:'Rejoindre une équipe'},
+  de:{welcome:['Willkommen zurück bei Rabbitech','Guten Morgen','Guten Tag','Guten Abend'],bye:'Bis bald! Danke, dass du Rabbitech nutzt. Komm gerne wieder!',team:'Team',admin:'Administration',score:'Spielstand',history:'Verlauf',ranking:'Rangliste',strategy:'Strategie',routes:'Routen',rules:'Regeln',tv:'Rabbitech TV',music:'Musik',privacy:'Datenschutz',refresh:'Aktualisieren',createTeam:'Team erstellen',joinTeam:'Bestehendem Team beitreten'},
+  it:{welcome:['Bentornato su Rabbitech','Buongiorno','Buon pomeriggio','Buonasera'],bye:'A presto! Grazie per usare Rabbitech. Torna quando vuoi!',team:'Squadra',admin:'Amministrazione',score:'Punteggio',history:'Cronologia',ranking:'Classifica',strategy:'Strategia',routes:'Percorsi',rules:'Regole',tv:'Rabbitech TV',music:'Musica',privacy:'Privacy',refresh:'Aggiorna',createTeam:'Crea squadra',joinTeam:'Unisciti a una squadra'}
  };
  function rbCurrentLocale(){
-  let saved='';try{saved=localStorage.getItem('rbPreferredLanguage')||''}catch(_){}
-  const selector=$('rbLanguageQuick')?.querySelector('select')||$('rbLanguageQuickSelect')||$('rbConsentLanguage')||document.querySelector('select[id*="language" i],select[name*="language" i]');
-  const chosen=String(saved||selector?.value||'').trim().toLowerCase();
-  // Explicit user choice wins. If none exists, detect the browser's locale.
-  const raw=chosen||String(navigator.languages?.[0]||navigator.language||document.documentElement.lang||'en').trim().toLowerCase();
-  if(raw==='pt-br'||raw.startsWith('pt'))return 'pt';
-  if(raw==='en-us'||raw.startsWith('en'))return 'en';
-  if(raw==='es'||raw.startsWith('es'))return 'es';
-  // The greeting dictionary currently supports Portuguese, English and Spanish.
-  return 'en';
- }
- function rbCurrentLocale(){
-  let saved='';try{saved=localStorage.getItem('rbPreferredLanguage')||''}catch(_){}
-  const selector=$('rbLanguageQuick')?.querySelector('select')||$('rbLanguageQuickSelect')||$('rbConsentLanguage')||document.querySelector('select[id*="language" i],select[name*="language" i]');
-  const chosen=String(saved||selector?.value||'').toLowerCase();
-  const lang=chosen||String(navigator.language||document.documentElement.lang||'pt').toLowerCase();
-  if(lang.startsWith('en'))return 'en';
-  if(lang.startsWith('es'))return 'es';
+  let saved='';
+  try{saved=localStorage.getItem('rbPreferredLanguage')||''}catch(_){}
+  const selector=$('rbLanguageQuick')?.querySelector('select')||$('rbLanguageQuickSelect')||$('rbLanguageGateSelect')||$('rbConsentLanguage');
+  const chosen=String(saved||selector?.value||'').trim().toLowerCase().replace('_','-');
+  const raw=chosen||String(navigator.languages?.[0]||navigator.language||document.documentElement.lang||'pt-BR').trim().toLowerCase().replace('_','-');
+  if(raw.startsWith('pt'))return 'pt';
+  if(raw.startsWith('en'))return 'en';
+  if(raw.startsWith('es'))return 'es';
+  if(raw.startsWith('fr'))return 'fr';
+  if(raw.startsWith('de'))return 'de';
+  if(raw.startsWith('it'))return 'it';
   return 'pt';
  }
  function rbGreetingKey(){
