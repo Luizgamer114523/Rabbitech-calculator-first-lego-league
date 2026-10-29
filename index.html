@@ -260,6 +260,11 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 #rbGlobalNotice.rb-notice-info:before{content:"?";color:#075ba0}
 @keyframes rbAlertPulse{0%,100%{box-shadow:0 0 0 0 #ff242455}50%{box-shadow:0 0 0 5px #ff242422}}
 #rbPrivacyGate{position:fixed;inset:0;z-index:1000;background:#020805f5;display:none;overflow:auto;padding:18px}
+/* Keep the legacy language consent modal from covering the current privacy gate.
+   Two simultaneous fixed overlays made the visible gate appear unresponsive. */
+#rbPrivacyGate{z-index:2147483001!important;pointer-events:auto!important;touch-action:pan-y!important}
+#rbPrivacyGate .rb-gate-card,#rbPrivacyGate .rb-gate-copy,#rbPrivacyGate label,#rbPrivacyGate input,#rbPrivacyGate button{pointer-events:auto!important;touch-action:manipulation!important}
+body.rb-privacy-gate-open #rbLanguageConsent{display:none!important;visibility:hidden!important;pointer-events:none!important}
 #rbPrivacyGate.rb-gate-open{display:flex;align-items:center;justify-content:center}
 #rbPrivacyGate .rb-gate-card{width:min(900px,100%);max-height:92dvh;overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:clamp(16px,4vw,28px);box-shadow:0 24px 80px #000b}
 #rbPrivacyGate h2{margin-top:0}
