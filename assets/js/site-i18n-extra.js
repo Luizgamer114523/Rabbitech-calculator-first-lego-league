@@ -11,7 +11,7 @@
  function translateStatus(){
   const el=document.getElementById('rbCloudStatus');if(!el)return;
   const text=String(el.textContent||'').trim();
-  const match=text.match(/^(?:Conectado como|Signed in as|Connecté en tant que|Angemeldet als|Accesso effettuato come)\s+(.+?)\.\s*(?:Equipe|Team|Equipo|Équipe|Squadra):\s*(.+?)\.\s*(\d+)\s*(?:round\\(s\\)|rounds?|ronda\\(s\\)|rondas?|manche\\(s\\)|manches?|Runde\\(n\\)|Runden|round|rounds)\s*(?:na nuvem|in the cloud|en la nube|dans le cloud|in der Cloud|nel cloud)\.$/i);
+  const match=text.match(/^(?:Conectado como|Signed in as|Connecté en tant que|Angemeldet als|Accesso effettuato come)\s+(.+?)\.\s*(?:Equipe|Team|Equipo|Équipe|Squadra):\s*(.+?)\.\s*(\d+)\s*(?:round\(s\)|rounds?|ronda\(s\)|rondas?|manche\(s\)|manches?|Runde\(n\)|Runden|round|rounds)\s*(?:na nuvem|in the cloud|en la nube|dans le cloud|in der Cloud|nel cloud)\.$/i);
   if(!match)return;
   const [,email,team,count]=match, i=codes.indexOf(lang());
   const out=[
