@@ -971,10 +971,22 @@
 
  // Localized greetings and lightweight UI language fallback.
  const rbLocaleText={
-  pt:{welcome:['Bem-vindo','Bom dia','Boa tarde','Boa noite'],bye:'Tchau, até mais!',team:'Equipe',admin:'Admin',score:'Placar',history:'Histórico',ranking:'Ranking',strategy:'Estratégia',routes:'Rotas',rules:'Regras',tv:'Rabbitech TV',music:'Música',privacy:'Privacidade',refresh:'Atualizar',createTeam:'Criar equipe',joinTeam:'Entrar em equipe existente'},
-  en:{welcome:['Welcome','Good morning','Good afternoon','Good evening'],bye:'Goodbye, see you next time!',team:'Team',admin:'Admin',score:'Scoreboard',history:'History',ranking:'Ranking',strategy:'Strategy',routes:'Routes',rules:'Rules',tv:'Rabbitech TV',music:'Music',privacy:'Privacy',refresh:'Refresh',createTeam:'Create team',joinTeam:'Join an existing team'},
-  es:{welcome:['Bienvenido/a','Buenos días','Buenas tardes','Buenas noches'],bye:'¡Hasta luego!',team:'Equipo',admin:'Administración',score:'Marcador',history:'Historial',ranking:'Clasificación',strategy:'Estrategia',routes:'Rutas',rules:'Reglas',tv:'Rabbitech TV',music:'Música',privacy:'Privacidad',refresh:'Actualizar',createTeam:'Crear equipo',joinTeam:'Unirse a un equipo'}
+  pt:{welcome:['Bem-vindo de volta ao Rabbitech','Bom dia','Boa tarde','Boa noite'],bye:'Até mais! Obrigado por usar o Rabbitech. Volte sempre!',team:'Equipe',admin:'Admin',score:'Placar',history:'Histórico',ranking:'Ranking',strategy:'Estratégia',routes:'Rotas',rules:'Regras',tv:'Rabbitech TV',music:'Música',privacy:'Privacidade',refresh:'Atualizar',createTeam:'Criar equipe',joinTeam:'Entrar em equipe existente'},
+  en:{welcome:['Welcome back to Rabbitech','Good morning','Good afternoon','Good evening'],bye:'See you soon! Thanks for using Rabbitech. Come back anytime!',team:'Team',admin:'Admin',score:'Scoreboard',history:'History',ranking:'Ranking',strategy:'Strategy',routes:'Routes',rules:'Rules',tv:'Rabbitech TV',music:'Music',privacy:'Privacy',refresh:'Refresh',createTeam:'Create team',joinTeam:'Join an existing team'},
+  es:{welcome:['Te damos la bienvenida de nuevo a Rabbitech','Buenos días','Buenas tardes','Buenas noches'],bye:'¡Hasta luego! Gracias por usar Rabbitech. ¡Vuelve pronto!',team:'Equipo',admin:'Administración',score:'Marcador',history:'Historial',ranking:'Clasificación',strategy:'Estrategia',routes:'Rutas',rules:'Reglas',tv:'Rabbitech TV',music:'Música',privacy:'Privacidad',refresh:'Actualizar',createTeam:'Crear equipo',joinTeam:'Unirse a un equipo'}
  };
+ function rbCurrentLocale(){
+  let saved='';try{saved=localStorage.getItem('rbPreferredLanguage')||''}catch(_){}
+  const selector=$('rbLanguageQuick')?.querySelector('select')||$('rbLanguageQuickSelect')||$('rbConsentLanguage')||document.querySelector('select[id*="language" i],select[name*="language" i]');
+  const chosen=String(saved||selector?.value||'').trim().toLowerCase();
+  // Explicit user choice wins. If none exists, detect the browser's locale.
+  const raw=chosen||String(navigator.languages?.[0]||navigator.language||document.documentElement.lang||'en').trim().toLowerCase();
+  if(raw==='pt-br'||raw.startsWith('pt'))return 'pt';
+  if(raw==='en-us'||raw.startsWith('en'))return 'en';
+  if(raw==='es'||raw.startsWith('es'))return 'es';
+  // The greeting dictionary currently supports Portuguese, English and Spanish.
+  return 'en';
+ }
  function rbCurrentLocale(){
   let saved='';try{saved=localStorage.getItem('rbPreferredLanguage')||''}catch(_){}
   const selector=$('rbLanguageQuick')?.querySelector('select')||$('rbLanguageQuickSelect')||$('rbConsentLanguage')||document.querySelector('select[id*="language" i],select[name*="language" i]');
@@ -1031,13 +1043,11 @@
    if(id&&id!==lastUserId)rbGreeting(user,'welcome');
    lastUserId=id;
   });
-  // Capture the existing logout action without replacing its auth handler.
-  document.addEventListener('click',event=>{
-   const target=event.target.closest('button,a,[role="button"]');
-   if(!target)return;
-   const text=String(target.textContent||'').replace(/\\s+/g,' ').trim().toLowerCase();
-   if(currentUser()&&/^(sair|logout|sign out|log out|desconectar)$/.test(text))rbGreeting(currentUser(),'bye');
-  },true);
+  // The logout handler dispatches this only after Supabase confirms sign-out.
+  window.addEventListener('rb-auth-logout-complete',event=>{
+   const user=event.detail?.user||null;
+   if(user)rbGreeting(user,'bye');
+  });
  }
  function init(){
   removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();initLocalizedGreetings();ensurePrivacyDisclosure();initFirstVisitTour();
