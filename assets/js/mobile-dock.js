@@ -303,7 +303,7 @@
   const profile=Array.isArray(result.data)?result.data[0]:result.data;
   teamState.profile=profile||null;teamState.team=profile?.member?profile:null;
   if(!(profile?.member&&profile?.team_id)){
-   teamShell('<div class="tw-card"><h2>Monte o espaço da sua equipe</h2><p>O mentor cria a equipe; depois compartilha o convite com os alunos. Cada pessoa entra usando a própria conta do Rabbitech.</p><div class="tw-grid"><section><h3>Criar equipe</h3>'+teamFormField('twTeamName','Nome da equipe','Ex.: Techscorpions')+teamFormField('twLeaderName','Seu nome','Nome do mentor')+'<button class="tw-btn" id="twCreate">Criar equipe</button></section><section><h3>Aceitar convite</h3>'+teamFormField('twInviteInput','Código de convite','Cole o código recebido')+teamFormField('twMemberName','Seu nome na equipe','Nome para os colegas')+'<button class="tw-btn" id="twJoin">Entrar na equipe</button></section></div><p class="tw-muted">Uma conta só pode pertencer a uma equipe por vez. O acesso aos dados é protegido no banco, não apenas por esconder botões.</p><div id="twFeedback" aria-live="polite"></div></div>');
+   teamShell('<div class="tw-card"><h2>Monte o espaço da sua equipe</h2><p>O mentor cria a equipe; depois compartilha o convite com os alunos. Cada pessoa entra usando a própria conta do Rabbitech.</p><div class="tw-grid"><section><h3>Criar equipe</h3>'+teamFormField('twTeamName','Nome da equipe','Ex.: Techscorpions')+teamFormField('twLeaderName','Seu nome','Nome do mentor')+'<button class="tw-btn" id="twCreate">Criar equipe</button></section><section><h3>Aceitar convite</h3>'+teamFormField('twInviteInput','Código de convite','Cole o código recebido')+teamFormField('twMemberName','Seu nome na equipe','Nome para os colegas')+'<button class="tw-btn" id="twStartInviteScanner">📷 Ler QR Code</button><div id="twInviteScanner" hidden style="margin:10px 0"><video id="twInviteVideo" playsinline muted style="width:100%;max-width:360px;border-radius:12px;background:#000"></video><p id="twScannerStatus" class="tw-muted">Aponte a câmera para o QR Code do convite.</p><button class="tw-btn" type="button" id="twStopInviteScanner">Fechar câmera</button></div><button class="tw-btn" id="twJoin">Entrar na equipe</button></section></div><p class="tw-muted">Uma conta só pode pertencer a uma equipe por vez. O acesso aos dados é protegido no banco, não apenas por esconder botões.</p><div id="twFeedback" aria-live="polite"></div></div>');
    $('twCreate')?.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();createTeamWorkspace()},true);
    // Capture this action before legacy inline handlers that reused the same IDs.
    // Otherwise an old handler can overwrite the real result with a false validation error.
@@ -363,6 +363,8 @@
   $('twRefresh')?.addEventListener('click',()=>{refreshTeamBackground();teamFeedback('Atualizando os dados em segundo plano…')});
   $('twEnableNotifications')?.addEventListener('click',requestTeamNotifications);
   $('twMakeInvite')?.addEventListener('click',createTeamInvite);
+  $('twStartInviteScanner')?.addEventListener('click',startTeamInviteScanner);
+  $('twStopInviteScanner')?.addEventListener('click',stopTeamInviteScanner);
   $('twAddTask')?.addEventListener('click',createTeamTask);
   $('twAddGoal')?.addEventListener('click',createTeamGoal);
   $('twAddRound')?.addEventListener('click',createTeamRound);
@@ -458,9 +460,83 @@
    const root=$('rbTeamWorkspaceRoot');if(root)root.dataset.initialized='true';
   }catch(e){say(e?.message||'Não foi possível aceitar o convite. Confira se o código está correto e ainda é válido.',true)}
  }
+ let teamInviteQrLibraryPromise=null,teamInviteStream=null,teamInviteScanFrame=0,teamInviteScanActive=false;
+ function loadTeamQrLibrary(){
+  if(window.QRCode)return Promise.resolve(window.QRCode);
+  if(teamInviteQrLibraryPromise)return teamInviteQrLibraryPromise;
+  teamInviteQrLibraryPromise=new Promise((resolve,reject)=>{
+   const script=document.createElement('script');
+   script.src='https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+   script.async=true;
+   script.onload=()=>window.QRCode?resolve(window.QRCode):reject(new Error('Biblioteca QR indisponível.'));
+   script.onerror=()=>reject(new Error('Não foi possível carregar o gerador de QR Code.'));
+   document.head.appendChild(script);
+  });
+  return teamInviteQrLibraryPromise;
+ }
+ async function renderTeamInviteQr(code){
+  const box=$('twInviteQr'),status=$('twInviteQrStatus');if(!box)return;
+  box.replaceChildren();
+  try{
+   const QR=await loadTeamQrLibrary();
+   if(!$('twInviteQr'))return;
+   new QR(box,{text:String(code),width:220,height:220,colorDark:'#102318',colorLight:'#ffffff',correctLevel:QR.CorrectLevel.M});
+   if(status)status.textContent='QR Code pronto. O aluno pode escanear com a câmera dentro do Rabbitech.';
+  }catch(e){if(status)status.textContent='Não foi possível gerar o QR Code agora. Compartilhe o código escrito acima.'}
+ }
+ function stopTeamInviteScanner(){
+  teamInviteScanActive=false;
+  if(teamInviteScanFrame)cancelAnimationFrame(teamInviteScanFrame);
+  teamInviteScanFrame=0;
+  if(teamInviteStream){teamInviteStream.getTracks().forEach(track=>track.stop());teamInviteStream=null}
+  const video=$('twInviteVideo');if(video){try{video.pause();video.srcObject=null}catch(_){}}
+  const box=$('twInviteScanner');if(box)box.hidden=true;
+ }
+ async function startTeamInviteScanner(){
+  const box=$('twInviteScanner'),video=$('twInviteVideo'),status=$('twScannerStatus');
+  if(!box||!video)return;
+  if(!('BarcodeDetector' in window)){
+   box.hidden=false;
+   if(status)status.textContent='Este navegador não oferece leitura de QR integrada. Você ainda pode entrar usando o código escrito no campo acima.';
+   return;
+  }
+  if(!navigator.mediaDevices?.getUserMedia){
+   box.hidden=false;if(status)status.textContent='A câmera não está disponível neste navegador. Digite o código manualmente.';return;
+  }
+  try{
+   const detector=new BarcodeDetector({formats:['qr_code']});
+   teamInviteStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
+   video.srcObject=teamInviteStream;box.hidden=false;teamInviteScanActive=true;
+   await video.play();
+   if(status)status.textContent='Aponte a câmera para o QR Code do convite.';
+   const scan=async()=>{
+    if(!teamInviteScanActive||!video.isConnected)return;
+    try{
+     if(video.readyState>=2){
+      const codes=await detector.detect(video);
+      if(codes?.length){
+       let code=String(codes[0].rawValue||'').trim();
+       try{const url=new URL(code);code=url.searchParams.get('invite')||url.searchParams.get('code')||code}catch(_){}
+       if(code){
+        const input=$('twInviteInput');if(input)input.value=code;
+        stopTeamInviteScanner();
+        teamFeedback('QR Code lido. Confira seu nome e toque em “Entrar na equipe”.');
+        return;
+       }
+      }
+     }
+    }catch(_){}
+    if(teamInviteScanActive)teamInviteScanFrame=requestAnimationFrame(scan);
+   };
+   teamInviteScanFrame=requestAnimationFrame(scan);
+  }catch(e){
+   stopTeamInviteScanner();box.hidden=false;
+   if(status)status.textContent=e?.name==='NotAllowedError'?'Permita o acesso à câmera nas configurações do navegador e tente novamente.':'Não foi possível abrir a câmera. Você pode digitar o código manualmente.';
+  }
+ }
  async function createTeamInvite(){
   const t=teamState.team;if(!t?.team_id)return;
-  const c=teamClient();try{const r=await c.rpc('create_team_invite',{p_team_id:t.team_id,p_expires_days:7,p_max_uses:20});if(r.error)throw r.error;const data=Array.isArray(r.data)?r.data[0]:r.data;teamState.inviteCode=data.code;const out=$('twInviteResult');if(out)out.innerHTML='<p>Convite criado. Compartilhe este código com os membros:</p><code style="overflow-wrap:anywhere">'+teamEsc(data.code)+'</code><p class="tw-muted">Expira em '+teamEsc(new Date(data.expires_at).toLocaleString())+'</p><button class="tw-btn" id="twCopyInvite">Copiar código</button>'; $('twCopyInvite')?.addEventListener('click',()=>{try{navigator.clipboard.writeText(data.code);$('twCopyInvite').textContent='Copiado'}catch(_){teamFeedback('Selecione e copie o código manualmente.')}})}catch(e){teamFeedback(e.message||'Não foi possível gerar o convite.',true)}
+  const c=teamClient();try{const r=await c.rpc('create_team_invite',{p_team_id:t.team_id,p_expires_days:7,p_max_uses:20});if(r.error)throw r.error;const data=Array.isArray(r.data)?r.data[0]:r.data;teamState.inviteCode=data.code;const out=$('twInviteResult');if(out)out.innerHTML='<p>Convite criado. Compartilhe o código ou o QR Code com os membros:</p><code style="overflow-wrap:anywhere">'+teamEsc(data.code)+'</code><div id="twInviteQr" style="display:flex;justify-content:center;align-items:center;min-height:16px;margin:12px 0;padding:12px;background:#fff;border-radius:12px"></div><p id="twInviteQrStatus" class="tw-muted" aria-live="polite">Preparando QR Code…</p><p class="tw-muted">Expira em '+teamEsc(new Date(data.expires_at).toLocaleString())+'</p><button class="tw-btn" id="twCopyInvite">Copiar código</button>';renderTeamInviteQr(data.code); $('twCopyInvite')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(data.code);$('twCopyInvite').textContent='Copiado'}catch(_){teamFeedback('Selecione e copie o código manualmente.')}})}catch(e){teamFeedback(e.message||'Não foi possível gerar o convite.',true)}
  }
  async function createTeamTask(){
   const c=teamClient(),t=teamState.team,title=$('twTaskTitle')?.value.trim();if(!title){teamFeedback('Informe o título da tarefa.',true);return}
