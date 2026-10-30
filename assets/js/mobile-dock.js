@@ -1645,11 +1645,21 @@ for(const [locale,parts] of Object.entries(rbLogoutParts)){
   // Coalesce DOM-driven UI synchronization to one pass per animation frame.
   // Legacy ad cleanup is a one-time startup task, not work for every DOM mutation.
   let uiSyncFrame=0;
-  const observer=new MutationObserver(()=>{
-   if(uiSyncFrame)return;
+  const observer=new MutationObserver(records=>{
+   // Ignore mutations inside long page content (score, missions, chat and notes).
+   // Re-run navigation helpers only when navigation/header/gates change.
+   const relevant=records.some(record=>{
+    const target=record.target?.nodeType===Node.ELEMENT_NODE?record.target:record.target?.parentElement;
+    if(target?.closest('nav,header,#rbPrivacyGate,#rbLanguageConsent'))return true;
+    return [...(record.addedNodes||[])].some(node=>node.nodeType===Node.ELEMENT_NODE&&(
+     node.matches?.('nav,header,#rbPrivacyGate,#rbLanguageConsent')||
+     node.querySelector?.('nav,header,#rbPrivacyGate,#rbLanguageConsent')
+    ));
+   });
+   if(!relevant||uiSyncFrame)return;
    uiSyncFrame=requestAnimationFrame(()=>{
     uiSyncFrame=0;
-    setupDock();syncDockContentSpace();placeLanguageButton();syncAdmin();syncTeamWorkspace();rbApplyLanguageFallback();ensurePrivacyDisclosure();
+    setupDock();syncDockContentSpace();placeLanguageButton();syncAdmin();syncTeamWorkspace();ensurePrivacyDisclosure();
    });
   });
   observer.observe(document.body,{childList:true,subtree:true});
