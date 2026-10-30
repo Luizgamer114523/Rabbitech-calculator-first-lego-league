@@ -400,7 +400,7 @@
    '<div class="tw-card"><h3>Metas e progresso</h3><div id="twGoalsList">'+(goalHtml||'<p class="tw-muted">O mentor ainda não cadastrou metas.</p>')+'</div></div>'+
    '<div class="tw-grid"><section class="tw-card"><h3>Registrar round de treino</h3>'+teamFormField('twRoundNumber','Número do round','1','number','min="1" max="10000"')+teamFormField('twRoundScore','Pontuação','0','number','min="0" max="10000"')+'<label style="display:block;margin:7px 0">Onde começou<select class="tw-field" id="twRoundStart"><option value="Base esquerda">Base esquerda</option><option value="Base direita">Base direita</option></select></label>'+teamMissionPicker()+'<textarea class="tw-field" id="twRoundNotes" rows="2" maxlength="2000" placeholder="Observações do round"></textarea><button class="tw-btn" id="twAddRound">Salvar round</button></section><section class="tw-card"><h3>Desempenho dos rounds</h3><p>Média atual: <strong id="twRoundsAverage">'+avg+' pontos</strong></p><div id="twRoundChart">'+chart+'</div><div style="margin-top:10px"><h4>Histórico de rounds</h4><div id="twRoundList">'+(rounds.slice().reverse().map(r=>'<article class="tw-task" data-round-id="'+teamEsc(r.id)+'"><strong>Round '+teamEsc(r.round_number)+'</strong><p>'+Number(r.score||0)+' pontos · '+teamEsc(r.start_position||'Início não informado')+'</p><p class="tw-muted">'+teamEsc(r.notes||'')+'</p>'+((manager||r.created_by===profile.user_id)?'<button class="tw-btn" data-team-delete="team_round_logs" data-record-id="'+teamEsc(r.id)+'">Excluir round</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhum round registrado.</p>')+'</div></div><p id="twRoundCountFooter" class="tw-muted">'+rounds.length+' rounds de treino registrados.</p></section></div>'+
    '<div class="tw-grid"><section class="tw-card"><h3>Notas compartilhadas</h3>'+teamFormField('twNoteTitle','Título da nota','Ideias da reunião')+'<textarea class="tw-field" id="twNoteBody" rows="4" maxlength="8000" placeholder="Planejamento, decisões, o que testar..."></textarea><button class="tw-btn" id="twAddNote">Salvar anotação</button><div id="twNotesList">'+(notes.slice().reverse().map(n=>'<article class="tw-task" data-team-note-id="'+teamEsc(n.id)+'"><strong>'+teamEsc(n.title)+'</strong><p style="white-space:pre-wrap">'+teamEsc(n.body)+'</p><small class="tw-muted">'+teamEsc(new Date(n.created_at).toLocaleString())+' · '+teamEsc(members.find(m=>m.user_id===n.author_user_id)?.display_name||'Membro')+'</small>'+((manager||n.author_user_id===profile.user_id)?'<button class="tw-btn" data-team-delete="team_notes" data-record-id="'+teamEsc(n.id)+'">Excluir anotação</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhuma anotação ainda.</p>')+'</div></section>'+
-   '</div></div><div id="twChatPanel" hidden><section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Conversa privada desta equipe. Envie mensagens, documentos, códigos, PDFs, imagens, áudio e vídeos.</p><div id="twMessages" style="max-height:360px;overflow:auto;overscroll-behavior:contain">'+messages.slice(-60).map(m=>'<div class="tw-bubble" data-message-id="'+teamEsc(m.id)+'" data-created-at="'+teamEsc(m.created_at)+'"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong>'+(m.body?'<p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p>':'')+(m.media_path&&m.media_type==='file'?'<p class="tw-muted">📎 '+teamEsc(m.media_name||'Arquivo anexado')+'</p>':'')+'<small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small>'+((manager||m.author_user_id===profile.user_id)?'<button class="tw-btn" data-team-delete="team_messages" data-record-id="'+teamEsc(m.id)+'">Apagar mensagem</button>':'')+'</div>').join('')+'</div><div class="tw-chat-composer"><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" aria-label="Mensagem para a equipe" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage" type="button">Enviar</button></div><div class="tw-chat-upload-grid"><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseAudio">🎧 Enviar áudio</button><input class="tw-field" id="twAudioFile" type="file" accept="audio/webm,audio/ogg,audio/mp4,audio/mpeg,audio/wav,.mp3,.m4a,.ogg,.wav,.webm" hidden></div><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseVideo">🎬 Enviar vídeo</button><input class="tw-field" id="twVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v" hidden></div><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseFile">📎 Anexar arquivo</button><input class="tw-field" id="twAnyFile" type="file" hidden></div></div><div class="tw-chat-record-row"><button class="tw-btn" type="button" id="twRecordAudio">🎙️ Gravar áudio</button><button class="tw-btn" type="button" id="twStopAudio" disabled>Parar gravação e enviar</button></div><p class="tw-muted" id="twMediaFeedback" role="status" aria-live="polite">Arquivos de até 25 MB por envio. O acesso é limitado aos membros desta equipe.</p></section></div>'+
+   '</div></div><div id="twChatPanel" hidden><section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Conversa privada desta equipe. Envie mensagens, documentos, códigos, PDFs, imagens, áudio e vídeos.</p><div id="twMessages" style="max-height:360px;overflow:auto;overscroll-behavior:contain">'+messages.slice(-60).map(m=>'<div class="tw-bubble" data-message-id="'+teamEsc(m.id)+'" data-created-at="'+teamEsc(m.created_at)+'"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong>'+(m.body?'<p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p>':'')+(m.media_path&&m.media_type==='file'?'<p class="tw-muted">📎 '+teamEsc(m.media_name||'Arquivo anexado')+'</p>':'')+'<small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small>'+((manager||m.author_user_id===profile.user_id)?'<button class="tw-btn" data-team-delete="team_messages" data-record-id="'+teamEsc(m.id)+'">Apagar mensagem</button>':'')+'</div>').join('')+'</div><div class="tw-chat-composer"><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" aria-label="Mensagem para a equipe" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage" type="button">Enviar</button></div><div class="tw-chat-upload-grid"><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twTakePhoto">📷 Tirar foto</button><input class="tw-field" id="twPhotoFile" type="file" accept="image/*" capture="environment" hidden></div><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseAudio">🎧 Enviar áudio</button><input class="tw-field" id="twAudioFile" type="file" accept="audio/webm,audio/ogg,audio/mp4,audio/mpeg,audio/wav,.mp3,.m4a,.ogg,.wav,.webm" hidden></div><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseVideo">🎬 Enviar vídeo</button><input class="tw-field" id="twVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v" hidden></div><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseFile">📎 Anexar arquivo</button><input class="tw-field" id="twAnyFile" type="file" hidden></div></div><div class="tw-chat-record-row"><button class="tw-btn" type="button" id="twRecordVideo">🎥 Gravar vídeo</button><button class="tw-btn" type="button" id="twStopVideo" disabled>Parar e enviar vídeo</button><button class="tw-btn" type="button" id="twRecordAudio">🎙️ Gravar áudio</button><button class="tw-btn" type="button" id="twStopAudio" disabled>Parar gravação e enviar</button></div><video id="twVideoRecordPreview" class="tw-chat-media" playsinline muted hidden></video><p class="tw-muted" id="twMediaFeedback" role="status" aria-live="polite">Arquivos de até 25 MB por envio. O acesso é limitado aos membros desta equipe.</p></section></div>'+
    '<div id="twFeedback" aria-live="polite"></div>');
   const dashboardPanel=$('twDashboardPanel'),chatPanel=$('twChatPanel');
   const showTeamTab=tab=>{
@@ -427,6 +427,8 @@
   $('twAddNote')?.addEventListener('click',createTeamNote);
   $('twSendMessage')?.addEventListener('click',sendTeamMessage);
   $('twMessageBody')?.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendTeamMessage()}});
+  $('twTakePhoto')?.addEventListener('click',()=> $('twPhotoFile')?.click());
+  $('twPhotoFile')?.addEventListener('change',event=>sendTeamChatMedia(event.target.files?.[0],'file'));
   $('twChooseAudio')?.addEventListener('click',()=> $('twAudioFile')?.click());
   $('twChooseVideo')?.addEventListener('click',()=> $('twVideoFile')?.click());
   $('twChooseFile')?.addEventListener('click',()=>{const input=$('twAnyFile');if(input){input.value='';input.click()}});
@@ -434,6 +436,7 @@
   $('twAudioFile')?.addEventListener('change',event=>sendTeamChatMedia(event.target.files?.[0],'audio'));
   $('twVideoFile')?.addEventListener('change',event=>sendTeamChatMedia(event.target.files?.[0],'video'));
   setupTeamAudioRecorder();
+  setupTeamVideoRecorder();
   messages.slice(-60).filter(message=>message.media_path).forEach(message=>{
    const bubble=[...document.querySelectorAll('#twMessages [data-message-id]')].find(el=>el.dataset.messageId===String(message.id));
    if(bubble)loadTeamMessageMedia(message,bubble);
@@ -723,7 +726,10 @@
    if(error)throw error;
    if(!data?.signedUrl)throw new Error('Link temporário indisponível.');
    const time=bubble.querySelector('small');
-   if(message.media_type==='file'){
+   if(message.media_type==='file'&&String(message.media_mime||'').startsWith('image/')){
+    const image=document.createElement('img');image.className='tw-chat-media tw-chat-image';image.src=data.signedUrl;image.alt=message.media_name||'Foto compartilhada pela equipe';image.loading='lazy';
+    if(time)bubble.insertBefore(image,time);else bubble.append(image);
+   }else if(message.media_type==='file'){
     const link=document.createElement('a');link.href=data.signedUrl;link.target='_blank';link.rel='noopener noreferrer';link.download=message.media_name||'arquivo';
     link.textContent='📎 '+(message.media_name||'Baixar arquivo');link.style.cssText='display:inline-block;margin:8px 0;color:#d0f477;font-weight:700;overflow-wrap:anywhere';
     if(time)bubble.insertBefore(link,time);else bubble.append(link);
@@ -749,7 +755,7 @@
   const team=teamState.team,profile=teamState.profile,c=teamClient();
   const kind=mediaType==='audio'?'áudio':mediaType==='video'?'vídeo':'arquivo';
   const fail=message=>{if(status)status.textContent=message;teamFeedback(message,true)};
-  if(!file){fail('Nenhum arquivo selecionado. Escolha um vídeo da galeria e tente novamente.');return}
+  if(!file){fail('Nenhum arquivo selecionado. Escolha uma mídia e tente novamente.');return}
   if(!team?.team_id||!profile?.user_id||!c){fail('Entre na equipe novamente antes de enviar mídia.');return}
   if(teamState.sendingMessage){fail('Aguarde o envio atual terminar.');return}
   const rawMime=String(file.type||'').toLowerCase().split(';')[0].trim();
@@ -770,7 +776,7 @@
   }
   teamState.sendingMessage=true;
   if(status)status.textContent='Preparando '+kind+'…';
-  ['twChooseAudio','twChooseVideo','twChooseFile','twRecordAudio','twSendMessage'].forEach(id=>{const b=$(id);if(b)b.disabled=true});
+  ['twTakePhoto','twChooseAudio','twChooseVideo','twChooseFile','twRecordAudio','twRecordVideo','twStopVideo','twSendMessage'].forEach(id=>{const b=$(id);if(b)b.disabled=true});
   const extensionByMime={'audio/webm':'webm','audio/ogg':'ogg','audio/mp4':'m4a','audio/mpeg':'mp3','audio/wav':'wav','video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov'};
   const extension=extensionByMime[mime]||String(file.name||'arquivo').split('.').pop().toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,12)||'bin';
   const fallbackName=(mediaType==='audio'?'audio-equipe.':mediaType==='video'?'video-equipe.':'anexo.')+extension;
@@ -802,7 +808,7 @@
    console.warn('Rabbitech team media upload failed',error);
   }finally{
    teamState.sendingMessage=false;
-   ['twChooseAudio','twChooseVideo','twChooseFile','twRecordAudio','twSendMessage'].forEach(id=>{const b=$(id);if(b)b.disabled=false});
+   ['twTakePhoto','twChooseAudio','twChooseVideo','twChooseFile','twRecordAudio','twRecordVideo','twStopVideo','twSendMessage'].forEach(id=>{const b=$(id);if(b)b.disabled=false});
    if(status?.textContent?.startsWith('Falha')){if(mediaType==='video'&&videoInput)videoInput.value='';if(mediaType==='audio'&&audioInput)audioInput.value='';if(mediaType==='file'&&anyFileInput)anyFileInput.value=''}
   }
  }
@@ -842,6 +848,45 @@
   stop.addEventListener('click',()=>{
    if(recorder?.state==='recording'){stop.disabled=true;recorder.stop()}
   });
+ }
+ function setupTeamVideoRecorder(){
+  const start=$('twRecordVideo'),stop=$('twStopVideo'),preview=$('twVideoRecordPreview'),status=$('twMediaFeedback');
+  if(!start||!stop||start.dataset.bound==='true')return;
+  start.dataset.bound='true';
+  let recorder=null,stream=null,chunks=[],size=0,limitTimer=null;
+  const release=()=>{if(limitTimer){clearTimeout(limitTimer);limitTimer=null}stream?.getTracks().forEach(track=>track.stop());stream=null;if(preview){try{preview.pause();preview.srcObject=null;preview.hidden=true}catch(_){}}};
+  const stopRecording=()=>{if(recorder?.state==='recording'){stop.disabled=true;recorder.stop()}};
+  start.addEventListener('click',async()=>{
+   if(teamState.sendingMessage)return;
+   if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){
+    if(status)status.textContent='Gravação de vídeo não suportada neste navegador. Use “Enviar vídeo” para escolher um arquivo.';return;
+   }
+   try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:true});
+    if(preview){preview.srcObject=stream;preview.hidden=false;await preview.play()}
+    const types=['video/webm;codecs=vp8,opus','video/webm;codecs=vp8','video/webm','video/mp4'];
+    const mime=types.find(type=>MediaRecorder.isTypeSupported(type));
+    recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);chunks=[];size=0;
+    recorder.addEventListener('dataavailable',event=>{if(event.data?.size){chunks.push(event.data);size+=event.data.size;if(size>TEAM_CHAT_MAX_BYTES)stopRecording()}});
+    recorder.addEventListener('stop',async()=>{
+     const blob=new Blob(chunks,{type:recorder?.mimeType||chunks[0]?.type||'video/webm'});
+     release();start.disabled=false;stop.disabled=true;
+     if(blob.size>TEAM_CHAT_MAX_BYTES){if(status)status.textContent='Vídeo ultrapassou 25 MB. Grave um trecho menor ou envie um vídeo compactado.';return}
+     if(!blob.size){if(status)status.textContent='A gravação ficou vazia. Tente novamente.';return}
+     const normalized=String(blob.type||'video/webm').split(';')[0].toLowerCase();
+     const ext=normalized==='video/mp4'?'mp4':'webm';
+     const file=new File([blob],'video-equipe-'+Date.now()+'.'+ext,{type:normalized});
+     await sendTeamChatMedia(file,'video');
+    });
+    recorder.start(1000);start.disabled=true;stop.disabled=false;
+    if(status)status.textContent='Gravando vídeo com áudio. Limite: 25 MB. Toque em “Parar e enviar vídeo” quando terminar.';
+    limitTimer=setTimeout(stopRecording,90000);
+   }catch(error){
+    release();start.disabled=false;stop.disabled=true;
+    if(status)status.textContent=error?.name==='NotAllowedError'?'Permita o acesso à câmera e ao microfone para gravar vídeo.':'Não foi possível iniciar a câmera: '+String(error?.message||error);
+   }
+  });
+  stop.addEventListener('click',stopRecording);
  }
  async function sendTeamMessage(){
   const t=teamState.team,p=teamState.profile,input=$('twMessageBody'),button=$('twSendMessage'),body=input?.value.trim();
