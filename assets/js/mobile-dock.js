@@ -858,7 +858,7 @@
   const rawExtension=String(file.name||'').split('.').pop().toLowerCase().replace(/[^a-z0-9]/g,'');
   // Android file providers sometimes return an empty or generic MIME type.
   // Infer only known formats; never trust an arbitrary extension as a MIME type.
-  const mimeByExtension={mp4:'video/mp4',m4v:'video/mp4',webm:'video/webm',mov:'video/quicktime',mp3:'audio/mpeg',m4a:'audio/mp4',ogg:'audio/ogg',wav:'audio/wav'};
+  const mimeByExtension={mp4:'video/mp4',m4v:'video/mp4',webm:'video/webm',mov:'video/quicktime', '3gp':'video/3gpp','3g2':'video/3gpp2',mp3:'audio/mpeg',m4a:'audio/mp4',ogg:'audio/ogg',wav:'audio/wav'};
   const mime=(!rawMime||rawMime==='application/octet-stream')?(mimeByExtension[rawExtension]||''):rawMime;
   if(mediaType==='audio'||mediaType==='video'){
    if(!TEAM_CHAT_MIME_TYPES.has(mime)||!(mediaType==='audio'?mime.startsWith('audio/'):mime.startsWith('video/'))){
