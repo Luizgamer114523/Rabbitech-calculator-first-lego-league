@@ -974,40 +974,88 @@
   const start=$('twRecordVideo'),stop=$('twStopVideo'),preview=$('twVideoRecordPreview'),status=$('twMediaFeedback');
   if(!start||!stop||start.dataset.bound==='true')return;
   start.dataset.bound='true';
-  let recorder=null,stream=null,chunks=[],size=0,limitTimer=null;
-  const release=()=>{if(limitTimer){clearTimeout(limitTimer);limitTimer=null}stream?.getTracks().forEach(track=>track.stop());stream=null;if(preview){try{preview.pause();preview.srcObject=null;preview.hidden=true}catch(_){}}};
-  const stopRecording=()=>{if(recorder?.state==='recording'){stop.disabled=true;recorder.stop()}};
+  let recorder=null,stream=null,chunks=[],size=0,limitTimer=null,starting=false;
+  const release=()=>{
+   if(limitTimer){clearTimeout(limitTimer);limitTimer=null}
+   stream?.getTracks().forEach(track=>track.stop());stream=null;
+   if(preview){try{preview.pause();preview.srcObject=null;preview.hidden=true}catch(_){}}
+  };
+  const stopRecording=()=>{
+   if(recorder?.state==='recording'){stop.disabled=true;recorder.stop()}
+  };
   start.addEventListener('click',async()=>{
-   if(teamState.sendingMessage)return;
+   if(teamState.sendingMessage||starting||recorder?.state==='recording')return;
    if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){
-    if(status)status.textContent='Gravação de vídeo não suportada neste navegador. Use “Enviar vídeo” para escolher um arquivo.';return;
+    if(status)status.textContent='Gravação de vídeo não suportada neste navegador. Use “Enviar vídeo” para escolher um arquivo.';
+    return;
    }
+   starting=true;start.disabled=true;stop.disabled=true;
    try{
-    const videoConstraints={facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}};
+    // Use a lighter capture profile on phones with limited RAM/CPU.
+    const memory=Number(navigator.deviceMemory)||0;
+    const cores=Number(navigator.hardwareConcurrency)||0;
+    const lowPower=(memory>0&&memory<=4)||(cores>0&&cores<=4);
+    const width=lowPower?640:854;
+    const height=lowPower?360:480;
+    const fps=lowPower?20:24;
+    const videoConstraints={
+     facingMode:{ideal:'environment'},
+     width:{ideal:width,max:width},
+     height:{ideal:height,max:height},
+     frameRate:{ideal:fps,max:24}
+    };
+    const audioConstraints={
+     echoCancellation:{ideal:true},
+     noiseSuppression:{ideal:true},
+     autoGainControl:{ideal:true},
+     channelCount:{ideal:1}
+    };
     let hasAudio=true;
-    try{stream=await navigator.mediaDevices.getUserMedia({video:videoConstraints,audio:true})}
+    try{stream=await navigator.mediaDevices.getUserMedia({video:videoConstraints,audio:audioConstraints})}
     catch(audioError){stream=await navigator.mediaDevices.getUserMedia({video:videoConstraints,audio:false});hasAudio=false}
     if(preview){preview.srcObject=stream;preview.hidden=false;try{await preview.play()}catch(_){}}
     const types=['video/webm;codecs=vp8,opus','video/webm;codecs=vp8','video/webm','video/mp4'];
-    const mime=types.find(type=>MediaRecorder.isTypeSupported(type));
-    recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);chunks=[];size=0;
-    recorder.addEventListener('dataavailable',event=>{if(event.data?.size){chunks.push(event.data);size+=event.data.size;if(size>TEAM_CHAT_MAX_BYTES)stopRecording()}});
+    const mime=types.find(type=>typeof MediaRecorder.isTypeSupported==='function'&&MediaRecorder.isTypeSupported(type));
+    const options={
+     videoBitsPerSecond:lowPower?420000:650000,
+     audioBitsPerSecond:lowPower?48000:64000
+    };
+    if(mime)options.mimeType=mime;
+    try{recorder=new MediaRecorder(stream,options)}
+    catch(optionError){recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined)}
+    chunks=[];size=0;
+    recorder.addEventListener('dataavailable',event=>{
+     if(event.data?.size){
+      chunks.push(event.data);size+=event.data.size;
+      if(size>TEAM_CHAT_MAX_BYTES)stopRecording();
+     }
+    });
     recorder.addEventListener('stop',async()=>{
      const blob=new Blob(chunks,{type:recorder?.mimeType||chunks[0]?.type||'video/webm'});
-     release();start.disabled=false;stop.disabled=true;
-     if(blob.size>TEAM_CHAT_MAX_BYTES){if(status)status.textContent='Vídeo ultrapassou 25 MB. Grave um trecho menor ou envie um vídeo compactado.';return}
+     release();starting=false;start.disabled=false;stop.disabled=true;
+     if(blob.size>TEAM_CHAT_MAX_BYTES){
+      if(status)status.textContent='Vídeo ultrapassou 25 MB. Grave um trecho menor ou envie um vídeo compactado.';
+      return;
+     }
      if(!blob.size){if(status)status.textContent='A gravação ficou vazia. Tente novamente.';return}
      const normalized=String(blob.type||'video/webm').split(';')[0].toLowerCase();
      const ext=normalized==='video/mp4'?'mp4':'webm';
-     const file=new File([blob],'video-equipe-'+Date.now()+'.'+ext,{type:normalized});
-     await sendTeamChatMedia(file,'video');
+     const recordedFile=new File([blob],'video-equipe-'+Date.now()+'.'+ext,{type:normalized});
+     await sendTeamChatMedia(recordedFile,'video');
     });
-    recorder.start(1000);start.disabled=true;stop.disabled=false;
-    if(status)status.textContent=(hasAudio?'Gravando vídeo com áudio. ':'Gravando vídeo sem áudio. ')+'Limite: 25 MB. Toque em “Parar e enviar vídeo” quando terminar.';
+    // Larger chunks reduce event frequency and work on the main thread.
+    recorder.start(2000);
+    starting=false;stop.disabled=false;
+    if(status){
+     status.textContent=(hasAudio?'Gravando vídeo com áudio. ':'Gravando vídeo sem áudio. ')+
+      'Qualidade leve ('+width+'×'+height+', até '+fps+' fps). Limite: 25 MB. Toque em “Parar e enviar vídeo” quando terminar.';
+    }
     limitTimer=setTimeout(stopRecording,90000);
    }catch(error){
-    release();start.disabled=false;stop.disabled=true;
-    if(status)status.textContent=error?.name==='NotAllowedError'?'Permita o acesso à câmera e ao microfone para gravar vídeo.':'Não foi possível iniciar a câmera: '+String(error?.message||error);
+    release();starting=false;start.disabled=false;stop.disabled=true;
+    if(status)status.textContent=error?.name==='NotAllowedError'
+     ?'Permita o acesso à câmera e ao microfone para gravar vídeo.'
+     :'Não foi possível iniciar a câmera: '+String(error?.message||error);
    }
   });
   stop.addEventListener('click',stopRecording);
