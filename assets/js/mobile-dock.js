@@ -751,7 +751,7 @@
   }
  }
  async function sendTeamChatMedia(file,mediaType){
-  const status=$('twMediaFeedback'),audioInput=$('twAudioFile'),videoInput=$('twVideoFile'),anyFileInput=$('twAnyFile');
+  const status=$('twMediaFeedback'),photoInput=$('twPhotoFile'),audioInput=$('twAudioFile'),videoInput=$('twVideoFile'),anyFileInput=$('twAnyFile');
   const team=teamState.team,profile=teamState.profile,c=teamClient();
   const kind=mediaType==='audio'?'áudio':mediaType==='video'?'vídeo':'arquivo';
   const fail=message=>{if(status)status.textContent=message;teamFeedback(message,true)};
@@ -798,6 +798,7 @@
    if(error)throw error;
    if(data)appendTeamMessage(data,false);
    if(status)status.textContent=(mediaType==='audio'?'Áudio':mediaType==='video'?'Vídeo':'Arquivo')+' enviado com sucesso.';
+   if(photoInput)photoInput.value='';
    if(audioInput)audioInput.value='';
    if(videoInput)videoInput.value='';
    if(anyFileInput)anyFileInput.value='';
@@ -809,7 +810,7 @@
   }finally{
    teamState.sendingMessage=false;
    ['twTakePhoto','twChooseAudio','twChooseVideo','twChooseFile','twRecordAudio','twRecordVideo','twStopVideo','twSendMessage'].forEach(id=>{const b=$(id);if(b)b.disabled=false});
-   if(status?.textContent?.startsWith('Falha')){if(mediaType==='video'&&videoInput)videoInput.value='';if(mediaType==='audio'&&audioInput)audioInput.value='';if(mediaType==='file'&&anyFileInput)anyFileInput.value=''}
+   if(status?.textContent?.startsWith('Falha')){if(mediaType==='file'&&photoInput)photoInput.value='';if(mediaType==='video'&&videoInput)videoInput.value='';if(mediaType==='audio'&&audioInput)audioInput.value='';if(mediaType==='file'&&anyFileInput)anyFileInput.value=''}
   }
  }
  function setupTeamAudioRecorder(){
