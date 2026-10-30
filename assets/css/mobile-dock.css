@@ -255,3 +255,39 @@ body.rb-privacy-gate-open #rbLanguageConsent{display:none!important;visibility:h
   box-shadow:0 2px 10px rgba(0,0,0,.28)!important;
  }
 }
+
+
+/* Rabbitech mobile scroll performance profile.
+   Keep visual hierarchy, but avoid expensive full-screen compositing while the
+   user scrolls on Android phones with limited GPU bandwidth. */
+@media (max-width: 650px) {
+ html {
+  scroll-behavior: auto !important;
+  -webkit-text-size-adjust: 100%;
+ }
+ body {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: auto;
+ }
+ /* A backdrop blur forces the browser to repaint the content behind the
+    element on every scroll frame. Use the existing opaque/dark surfaces. */
+ *, *::before, *::after {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+ }
+ /* Keep cards readable while avoiding large, soft shadows over many layers. */
+ main .page :is(.card,.panel,.glass,.glass-card,.stat-card,.mission-card,.tw-card,.tw-task) {
+  box-shadow: 0 2px 8px rgba(0,0,0,.22) !important;
+ }
+ /* Avoid expensive animated layout/paint effects during touch scrolling.
+    Opacity and transform transitions remain available for small UI feedback. */
+ main .page :is(.card,.panel,.glass,.glass-card,.stat-card,.mission-card,.tw-card,.tw-task) {
+  background-attachment: scroll !important;
+  will-change: auto !important;
+ }
+}
+@media (prefers-reduced-motion: reduce) {
+ html, body, main, main .page {
+  scroll-behavior: auto !important;
+ }
+}
