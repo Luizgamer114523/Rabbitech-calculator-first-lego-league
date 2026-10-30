@@ -728,7 +728,7 @@
    fail('Tipo de anexo inválido.');return;
   }
   if(file.size<=0||file.size>TEAM_CHAT_MAX_BYTES){
-   fail(file.size>TEAM_CHAT_MAX_BYTES?'O vídeo ultrapassa o limite de 25 MB. Comprima ou reduza o arquivo antes de enviar.':'O arquivo está vazio.');return;
+   fail(file.size>TEAM_CHAT_MAX_BYTES?'O arquivo ultrapassa o limite de 25 MB. Reduza ou compacte antes de enviar.':'O arquivo está vazio.');return;
   }
   teamState.sendingMessage=true;
   if(status)status.textContent='Preparando '+kind+'…';
@@ -1038,6 +1038,8 @@
    const user=await teamAuthUser();
    const userId=user?.id||null;
    if(userId!==teamState.authUserId){
+    if(teamState.realtimeChannel){try{teamClient()?.removeChannel(teamState.realtimeChannel)}catch(_){}}
+    teamState.realtimeChannel=null;teamState.realtimeTeamId=null;teamState.realtimeReady=false;
     teamState.authUserId=userId;
     teamState.profile=null;teamState.team=null;
     teamState.messageSignature='';teamState.notesSignature='';
