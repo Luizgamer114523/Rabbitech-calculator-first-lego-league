@@ -176,6 +176,7 @@
  const TEAM_STATES=['todo','in_progress','done'];
  const TEAM_LABELS={todo:'A fazer',in_progress:'Em andamento',done:'Concluído'};
  let teamState={profile:null,team:null,authUserId:null,loading:false,refreshing:false,inviteCode:'',timer:null,realtimeChannel:null,realtimeTeamId:null,realtimeReady:false,messageSignature:'',notesSignature:'',backgroundRefreshInFlight:false,backgroundRefreshQueued:false,sendingMessage:false,activeTab:'dashboard'};
+ let teamTourAccess=false;
  const teamEsc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const teamClient=()=>getSupabaseClient();
  function ensureTeamPage(){
@@ -266,6 +267,7 @@
   }
   const scrollToTeam=()=>{if(!refs.page.hidden&&refs.page.classList.contains('active')){const top=Math.max(0,window.scrollY+refs.page.getBoundingClientRect().top-12);window.scrollTo({top,behavior:'auto'})}};
   scrollToTeam();
+  if(!teamClientUser()&&teamTourAccess){renderTeamTourPreview();return}
   // The page may have been opened before Google sign-in finished. Do not keep
   // the anonymous/loading screen cached after the auth state changes.
   const signedIn=!!teamClientUser();
@@ -965,11 +967,17 @@
  function syncTeamWorkspace(){
   const refs=ensureTeamPage();
   if(refs){
-   refs.button.hidden=false;
-   refs.button.removeAttribute('hidden');
-   refs.button.removeAttribute('aria-hidden');
-   refs.button.style.removeProperty('display');
+   const allowed=!!teamClientUser()||teamTourAccess;
+   refs.button.hidden=!allowed;
+   if(allowed){refs.button.removeAttribute('hidden');refs.button.removeAttribute('aria-hidden');refs.button.style.removeProperty('display')}
+   else{refs.button.setAttribute('aria-hidden','true');refs.button.style.setProperty('display','none','important')}
   }
+ }
+ function renderTeamTourPreview(){
+  const root=$('rbTeamWorkspaceRoot');if(!root)return;
+  teamShell('<div class="tw-card"><p class="tw-muted">MODO DE DEMONSTRAÇÃO · DADOS FICTÍCIOS</p><h2>👥 Espaço da equipe · Techscorpions</h2><p>Este é um exemplo visual. Nenhum dado será salvo e nenhuma mensagem será enviada.</p><div class="tw-grid"><div class="tw-card"><div class="tw-stat">12</div>Tarefas criadas</div><div class="tw-card"><div class="tw-stat">7</div>Tarefas concluídas</div><div class="tw-card"><div class="tw-stat">58%</div>Progresso</div><div class="tw-card"><div class="tw-stat">286</div>Média de pontos · 5 rounds</div></div><h3>🧑‍🤝‍🧑 Membros</h3><p>Mentor · Ana · Bruno · Carlos · Júlia</p><h3>📋 Quadro Kanban</h3><div class="tw-board"><section class="tw-card"><h3>A fazer</h3><article class="tw-task"><strong>Testar M01</strong><p>Conferir alinhamento na base esquerda.</p><small>Responsável: Ana · Prioridade alta</small></article><article class="tw-task"><strong>Revisar estratégia</strong><p>Definir ordem das missões.</p></article></section><section class="tw-card"><h3>Em andamento</h3><article class="tw-task"><strong>Ajustar braço do robô</strong><p>Comparar duas posições de início.</p></article></section><section class="tw-card"><h3>Concluídas</h3><article class="tw-task"><strong>Montar checklist</strong><p>Conferência antes do round.</p></article></section></div><h3>🎯 Metas e desempenho</h3><p>Defina metas de tarefas, quantidade de rounds e média de pontos. O gráfico compara os resultados registrados e mostra tendência de melhora ou queda.</p><div class="tw-card"><strong>Rounds de exemplo</strong><p>R1 · 240 pts　 R2 · 265 pts　 R3 · 281 pts　 R4 · 286 pts</p><progress max="100" value="72" style="width:100%"></progress><small>Meta fictícia: 4 de 5 rounds concluídos</small></div><h3>📝 Anotações compartilhadas</h3><article class="tw-task"><strong>Reunião de treino</strong><p>Testar a saída da base direita e registrar o tempo de retorno.</p></article><h3>💬 Chat da equipe</h3><div class="tw-bubble"><strong>Ana</strong> O robô acertou a missão no terceiro teste!</div><div class="tw-bubble"><strong>Mentor</strong> Registrem os pontos e anotem o que mudou.</div><p class="tw-muted">No espaço real, o chat sincroniza entre membros autorizados. Aqui as mensagens são apenas exemplos.</p><div class="tw-card"><strong>Como entrar de verdade</strong><p>1. Conecte sua conta Google. 2. O mentor cria a equipe ou você usa um código de convite. 3. Depois de entrar, as tarefas, metas, rounds, notas e chat ficam disponíveis conforme sua permissão.</p><button class="tw-btn" type="button" id="rbTourDemoClose">Fechar demonstração</button></div></div>');
+  root.dataset.initialized='true';
+  $('rbTourDemoClose')?.addEventListener('click',()=>{const page=$('page-team-workspace');if(page){page.hidden=true;page.classList.remove('active')}});
  }
  async function refreshTeamBackground(){
   if(teamState.backgroundRefreshInFlight){teamState.backgroundRefreshQueued=true;return;}
@@ -1172,9 +1180,17 @@
    {title:'Histórico e ranking',copy:'O histórico ajuda a comparar os rounds que vocês já registraram. O ranking público depende dos critérios de rodadas configurados no site.',find:()=>document.querySelector('nav button[data-page="history"]')||document.querySelector('nav button[data-page="leaderboard"]')||document.querySelector('#page-leaderboard')},
    {title:'Estratégia e rotas',copy:'Use essas áreas para planejar a ordem das missões, os caminhos do robô e o que a equipe quer testar antes da próxima rodada.',find:()=>document.querySelector('nav button[data-page="strategy"]')||document.querySelector('nav button[data-page="routes"]')||document.querySelector('#page-strategy')},
    {title:'Regras e conteúdo',copy:'Consulte as regras da temporada e os materiais do Rabbitech TV quando precisar revisar uma missão ou estudar uma estratégia.',find:()=>document.querySelector('nav button[data-page="rules"]')||document.querySelector('nav button[data-page="youtube"]')||document.querySelector('#page-rules')},
-   {title:'Espaço da equipe',copy:'Crie uma equipe ou entre usando o código de convite do responsável. Depois, vocês podem organizar tarefas, metas, rounds, anotações e conversar no chat. Os dados sincronizados ficam na nuvem.',find:()=>document.querySelector('#rbTeamWorkspaceNav')||document.querySelector('nav button[data-page="team-workspace"]')||document.querySelector('#page-team-workspace')},
-   {title:'Conta e sincronização',copy:'Entre com sua conta e confira o estado da conexão com a nuvem. Use a mesma conta nos dispositivos em que precisa acessar seus dados.',find:()=>document.querySelector('[id*="cloud" i] button')||[...document.querySelectorAll('button')].find(b=>/sincronizar histórico|trocar conta google|mostrar opções da nuvem/i.test(b.textContent||''))||document.querySelector('body>header')},
-   {title:'Pronto para começar',copy:'É isso. Você pode abrir este tutorial novamente pelo botão ? no topo da tela. Bom trabalho, equipe!',find:()=>document.querySelector('#rbTeamWorkspaceNav')||document.querySelector('nav button[data-page="score"]')||document.querySelector('main')}
+   {title:'Espaço da equipe: criar ou entrar',copy:'Durante este tutorial, a aba Equipe abre uma demonstração sem login. No uso real, conecte o Google. O mentor cria a equipe e os demais integrantes escolhem “Entrar em equipe existente” e informam o código de convite. Cada conta participa com sua própria identidade.',find:()=>{if(!teamClientUser()&&teamTourAccess)openTeamPage();return $('rbTeamWorkspaceRoot')||$('rbTeamWorkspaceNav')||$('page-team-workspace')}},
+   {title:'Equipe: convites e membros',copy:'O responsável gera um código com validade e limite de usos e compartilha apenas com os alunos convidados. Cada aluno aceita o convite pela própria conta. A lista de membros mostra quem participa e o papel de cada pessoa. Não compartilhe o código publicamente.',find:()=>$('rbTeamWorkspaceRoot')||$('rbTeamWorkspaceNav')},
+   {title:'Equipe: tarefas e Kanban',copy:'O mentor cria tarefas, escreve a descrição, define prioridade, prazo e responsável. O quadro tem três colunas: A fazer, Em andamento e Concluída. Os membros atualizam o status permitido e o histórico registra as mudanças.',find:()=>$('rbTeamWorkspaceRoot')||$('rbTeamWorkspaceNav')},
+   {title:'Equipe: metas e progresso',copy:'As metas podem acompanhar quantidade de tarefas, número de rounds e média de pontuação. Os indicadores mostram tarefas criadas, concluídas, percentual de progresso e média dos rounds. Com registros suficientes, a tendência ajuda a comparar o desempenho ao longo do tempo.',find:()=>$('rbTeamWorkspaceRoot')||$('rbTeamWorkspaceNav')},
+   {title:'Equipe: rounds e missões',copy:'Registre o número do round, pontuação, posição inicial, missões tentadas e observações. Assim o histórico não fica só na memória de alguém, essa tecnologia revolucionária chamada anotação.',find:()=>$('rbTeamWorkspaceRoot')||$('rbTeamWorkspaceNav')},
+   {title:'Equipe: anotações e chat',copy:'As anotações guardam decisões e planos compartilhados. O chat é privado para os membros da equipe e permite trocar mensagens e arquivos compatíveis. A atualização em tempo real depende da conexão e das permissões configuradas.',find:()=>$('rbTeamWorkspaceRoot')||$('rbTeamWorkspaceNav')},
+   {title:'Temporizador oficial',copy:'O cronômetro oficial marca 2 minutos e 30 segundos por round. Use iniciar, pausar e resetar conforme o treino. Confira se o robô está pronto antes de começar a contagem.',find:()=>document.querySelector('#timer')||document.querySelector('[id*="timer" i]')||document.querySelector('nav button[data-page="score"]')},
+   {title:'Música e privacidade',copy:'O player de música controla a reprodução disponível no site. A aba Privacidade explica quais dados são tratados, para que servem e como solicitar informações ou correções.',find:()=>document.querySelector('nav button[data-page="music"]')||document.querySelector('nav button[data-page="privacy"]')||document.querySelector('main')},
+   {title:'Conta Google e nuvem',copy:'Conecte sua conta Google para sincronizar histórico e usar o espaço real da equipe. “Sincronizar histórico” envia ou atualiza os registros associados à conta. “Sair” encerra a sessão neste dispositivo. Use a mesma conta nos dispositivos em que precisa acessar seus dados.',find:()=>document.querySelector('[id*="cloud" i] button')||[...document.querySelectorAll('button')].find(b=>/sincronizar histórico|trocar conta google|mostrar opções da nuvem/i.test(b.textContent||''))||document.querySelector('body>header')},
+   {title:'Administração e avisos',copy:'A aba Admin aparece apenas para contas autorizadas. Nela, responsáveis administrativos gerenciam configurações, avisos globais, módulos e diagnósticos. Os avisos publicados podem aparecer para todos os visitantes. Esta área não é necessária para o uso normal da equipe.',find:()=>document.querySelector('#rbAdminNav')||document.querySelector('nav button[data-page="admin"]')||document.querySelector('main')},
+   {title:'Pronto para começar',copy:'Você concluiu o tour. A aba Equipe em modo de demonstração será bloqueada ao sair do tutorial. Para criar ou entrar em uma equipe real, conecte sua conta Google. Reabra o guia pelo botão ? quando quiser.',find:()=>document.querySelector('nav button[data-page="score"]')||document.querySelector('main')}
   ];
   let index=0,root=null,card=null,arrow=null,highlight=null,shades=[],resizeHandler=null;
   const visible=el=>!!el&&el.isConnected&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).display!=='none';
@@ -1185,6 +1201,12 @@
   }
   function finish(skipped){
    cleanup();try{localStorage.setItem(KEY,'done')}catch(_){}
+   teamTourAccess=false;syncTeamWorkspace();
+   if(!teamClientUser()){
+    const page=$('page-team-workspace'),root=$('rbTeamWorkspaceRoot');
+    if(page){page.hidden=true;page.classList.remove('active')}
+    if(root){root.replaceChildren();root.dataset.initialized='false'}
+   }
    window.dispatchEvent(new CustomEvent('rb-first-visit-tour-finished',{detail:{skipped:!!skipped}}));
   }
   function build(){
@@ -1246,6 +1268,8 @@
     observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['hidden','style','class','aria-hidden']});
     setTimeout(()=>{observer.disconnect();waitingForConsent=false},45000);return;
    }
+   teamTourAccess=true;syncTeamWorkspace();
+   window.dispatchEvent(new CustomEvent('rb-first-visit-tour-started'));
    index=0;build();render();
   }
   help.addEventListener('click',()=>start(true));
