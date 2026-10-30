@@ -32,6 +32,30 @@
   delete nav.dataset.rbDockController;
   return nav;
  }
+ let dockSpaceObserver=null,dockSpaceObservedNav=null,dockSpaceFrame=0;
+ function syncDockContentSpace(){
+  const nav=document.querySelector('nav.rb-samsung-dock');
+  const mobile=!!(window.matchMedia&&window.matchMedia('(max-width:650px)').matches);
+  const measured=mobile&&nav?Math.ceil(nav.getBoundingClientRect().height):0;
+  const reserve=mobile&&nav?measured+24:32;
+  const root=document.documentElement,next=reserve+'px';
+  if(root.style.getPropertyValue('--rb-dock-content-space')!==next)root.style.setProperty('--rb-dock-content-space',next);
+  const page=$('page-team-workspace');
+  if(page){
+   const padding=mobile&&nav?('calc('+reserve+'px + env(safe-area-inset-bottom) + 16px)'):'32px';
+   if(page.style.paddingBottom!==padding)page.style.paddingBottom=padding;
+  }
+  if(nav!==dockSpaceObservedNav){
+   dockSpaceObserver?.disconnect();dockSpaceObserver=null;dockSpaceObservedNav=nav;
+   if(nav&&typeof ResizeObserver!=='undefined'){
+    dockSpaceObserver=new ResizeObserver(()=>{
+     if(dockSpaceFrame)return;
+     dockSpaceFrame=requestAnimationFrame(()=>{dockSpaceFrame=0;syncDockContentSpace()});
+    });
+    dockSpaceObserver.observe(nav);
+   }
+  }
+ }
  function placeLanguageButton(){
   const button=$('rbLanguageQuick'),header=document.querySelector('body>header');
   const season=header?.querySelector('.season');
@@ -151,7 +175,7 @@
  // Team workspace: leader/member portal backed by Supabase RLS and RPCs.
  const TEAM_STATES=['todo','in_progress','done'];
  const TEAM_LABELS={todo:'A fazer',in_progress:'Em andamento',done:'Concluído'};
- let teamState={profile:null,team:null,authUserId:null,loading:false,refreshing:false,inviteCode:'',timer:null,realtimeChannel:null,realtimeTeamId:null,realtimeReady:false,messageSignature:'',notesSignature:'',backgroundRefreshInFlight:false,backgroundRefreshQueued:false,sendingMessage:false};
+ let teamState={profile:null,team:null,authUserId:null,loading:false,refreshing:false,inviteCode:'',timer:null,realtimeChannel:null,realtimeTeamId:null,realtimeReady:false,messageSignature:'',notesSignature:'',backgroundRefreshInFlight:false,backgroundRefreshQueued:false,sendingMessage:false,activeTab:'dashboard'};
  const teamEsc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const teamClient=()=>getSupabaseClient();
  function ensureTeamPage(){
@@ -277,6 +301,17 @@
    '#rbTeamWorkspaceRoot .tw-board{display:grid;grid-template-columns:repeat(3,minmax(220px,1fr));gap:10px;overflow-x:auto;padding-bottom:8px}'+
    '#rbTeamWorkspaceRoot .tw-task{background:#0c1b11;border:1px solid #35533a;border-radius:12px;padding:11px;margin:8px 0;overflow-wrap:anywhere}'+
    '#rbTeamWorkspaceRoot .tw-bubble{padding:9px 12px;border-radius:12px;background:#102319;margin:7px 0;overflow-wrap:anywhere}'+
+   '#rbTeamWorkspaceRoot #twChatPanel[hidden]{display:none!important}'+
+   '#rbTeamWorkspaceRoot #twChatPanel .tw-card{display:flex;flex-direction:column;min-height:0;gap:8px}'+
+   '#rbTeamWorkspaceRoot #twMessages{box-sizing:border-box;width:100%;min-height:clamp(220px,40vh,420px);max-height:min(56vh,560px)!important;overflow-y:auto!important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:8px;border:1px solid #294632;border-radius:12px;background:#07130d}'+
+   '#rbTeamWorkspaceRoot .tw-bubble strong{display:block;font-size:13px;color:#d0f477}'+
+   '#rbTeamWorkspaceRoot .tw-bubble small{display:block;margin-top:5px;font-size:11px}'+
+   '#rbTeamWorkspaceRoot .tw-chat-composer{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px;margin-top:8px}'+
+   '#rbTeamWorkspaceRoot .tw-chat-composer .tw-field{min-width:0;min-height:52px;max-height:120px;resize:vertical;margin:0}'+
+   '#rbTeamWorkspaceRoot .tw-chat-composer .tw-btn{min-height:44px;margin:0;white-space:nowrap}'+
+   '#rbTeamWorkspaceRoot .tw-chat-upload-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))}'+
+   '@media(max-width:420px){#rbTeamWorkspaceRoot .tw-chat-composer .tw-btn{padding:9px 10px;font-size:13px}}'+
+
    '#rbTeamWorkspaceRoot .tw-chat-media{display:block;width:100%;max-width:520px;max-height:320px;margin:8px 0;border-radius:10px}'+
    '#rbTeamWorkspaceRoot .tw-chat-upload-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:8px;margin:10px 0}'+
    '#rbTeamWorkspaceRoot .tw-chat-upload{display:flex;flex-direction:column;gap:6px;min-width:0}'+
@@ -365,11 +400,12 @@
    '<div class="tw-card"><h3>Metas e progresso</h3><div id="twGoalsList">'+(goalHtml||'<p class="tw-muted">O mentor ainda não cadastrou metas.</p>')+'</div></div>'+
    '<div class="tw-grid"><section class="tw-card"><h3>Registrar round de treino</h3>'+teamFormField('twRoundNumber','Número do round','1','number','min="1" max="10000"')+teamFormField('twRoundScore','Pontuação','0','number','min="0" max="10000"')+'<label style="display:block;margin:7px 0">Onde começou<select class="tw-field" id="twRoundStart"><option value="Base esquerda">Base esquerda</option><option value="Base direita">Base direita</option></select></label>'+teamMissionPicker()+'<textarea class="tw-field" id="twRoundNotes" rows="2" maxlength="2000" placeholder="Observações do round"></textarea><button class="tw-btn" id="twAddRound">Salvar round</button></section><section class="tw-card"><h3>Desempenho dos rounds</h3><p>Média atual: <strong id="twRoundsAverage">'+avg+' pontos</strong></p><div id="twRoundChart">'+chart+'</div><div style="margin-top:10px"><h4>Histórico de rounds</h4><div id="twRoundList">'+(rounds.slice().reverse().map(r=>'<article class="tw-task" data-round-id="'+teamEsc(r.id)+'"><strong>Round '+teamEsc(r.round_number)+'</strong><p>'+Number(r.score||0)+' pontos · '+teamEsc(r.start_position||'Início não informado')+'</p><p class="tw-muted">'+teamEsc(r.notes||'')+'</p>'+((manager||r.created_by===profile.user_id)?'<button class="tw-btn" data-team-delete="team_round_logs" data-record-id="'+teamEsc(r.id)+'">Excluir round</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhum round registrado.</p>')+'</div></div><p id="twRoundCountFooter" class="tw-muted">'+rounds.length+' rounds de treino registrados.</p></section></div>'+
    '<div class="tw-grid"><section class="tw-card"><h3>Notas compartilhadas</h3>'+teamFormField('twNoteTitle','Título da nota','Ideias da reunião')+'<textarea class="tw-field" id="twNoteBody" rows="4" maxlength="8000" placeholder="Planejamento, decisões, o que testar..."></textarea><button class="tw-btn" id="twAddNote">Salvar anotação</button><div id="twNotesList">'+(notes.slice().reverse().map(n=>'<article class="tw-task" data-team-note-id="'+teamEsc(n.id)+'"><strong>'+teamEsc(n.title)+'</strong><p style="white-space:pre-wrap">'+teamEsc(n.body)+'</p><small class="tw-muted">'+teamEsc(new Date(n.created_at).toLocaleString())+' · '+teamEsc(members.find(m=>m.user_id===n.author_user_id)?.display_name||'Membro')+'</small>'+((manager||n.author_user_id===profile.user_id)?'<button class="tw-btn" data-team-delete="team_notes" data-record-id="'+teamEsc(n.id)+'">Excluir anotação</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhuma anotação ainda.</p>')+'</div></section>'+
-   '</div><div id="twChatPanel" hidden><section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Conversa privada desta equipe. Envie mensagens, documentos, códigos, PDFs, imagens, áudio e vídeos.</p><div id="twMessages" style="max-height:360px;overflow:auto;overscroll-behavior:contain">'+messages.slice(-60).map(m=>'<div class="tw-bubble" data-message-id="'+teamEsc(m.id)+'" data-created-at="'+teamEsc(m.created_at)+'"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong>'+(m.body?'<p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p>':'')+(m.media_path&&m.media_type==='file'?'<p class="tw-muted">📎 '+teamEsc(m.media_name||'Arquivo anexado')+'</p>':'')+'<small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small>'+((manager||m.author_user_id===profile.user_id)?'<button class="tw-btn" data-team-delete="team_messages" data-record-id="'+teamEsc(m.id)+'">Apagar mensagem</button>':'')+'</div>').join('')+'</div><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage">Enviar mensagem</button><div class="tw-chat-upload-grid"><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseAudio">🎧 Enviar áudio</button><input class="tw-field" id="twAudioFile" type="file" accept="audio/webm,audio/ogg,audio/mp4,audio/mpeg,audio/wav,.mp3,.m4a,.ogg,.wav,.webm" hidden></div><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseVideo">🎬 Enviar vídeo</button><input class="tw-field" id="twVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v" hidden></div><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseFile">📎 Anexar arquivo</button><input class="tw-field" id="twAnyFile" type="file" hidden></div></div><div class="tw-chat-record-row"><button class="tw-btn" type="button" id="twRecordAudio">🎙️ Gravar áudio</button><button class="tw-btn" type="button" id="twStopAudio" disabled>Parar gravação e enviar</button></div><p class="tw-muted" id="twMediaFeedback" role="status" aria-live="polite">Arquivos de até 25 MB por envio. O acesso é limitado aos membros desta equipe.</p></section></div>'+
+   '</div></div><div id="twChatPanel" hidden><section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Conversa privada desta equipe. Envie mensagens, documentos, códigos, PDFs, imagens, áudio e vídeos.</p><div id="twMessages" style="max-height:360px;overflow:auto;overscroll-behavior:contain">'+messages.slice(-60).map(m=>'<div class="tw-bubble" data-message-id="'+teamEsc(m.id)+'" data-created-at="'+teamEsc(m.created_at)+'"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong>'+(m.body?'<p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p>':'')+(m.media_path&&m.media_type==='file'?'<p class="tw-muted">📎 '+teamEsc(m.media_name||'Arquivo anexado')+'</p>':'')+'<small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small>'+((manager||m.author_user_id===profile.user_id)?'<button class="tw-btn" data-team-delete="team_messages" data-record-id="'+teamEsc(m.id)+'">Apagar mensagem</button>':'')+'</div>').join('')+'</div><div class="tw-chat-composer"><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" aria-label="Mensagem para a equipe" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage" type="button">Enviar</button></div><div class="tw-chat-upload-grid"><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseAudio">🎧 Enviar áudio</button><input class="tw-field" id="twAudioFile" type="file" accept="audio/webm,audio/ogg,audio/mp4,audio/mpeg,audio/wav,.mp3,.m4a,.ogg,.wav,.webm" hidden></div><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseVideo">🎬 Enviar vídeo</button><input class="tw-field" id="twVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v" hidden></div><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseFile">📎 Anexar arquivo</button><input class="tw-field" id="twAnyFile" type="file" hidden></div></div><div class="tw-chat-record-row"><button class="tw-btn" type="button" id="twRecordAudio">🎙️ Gravar áudio</button><button class="tw-btn" type="button" id="twStopAudio" disabled>Parar gravação e enviar</button></div><p class="tw-muted" id="twMediaFeedback" role="status" aria-live="polite">Arquivos de até 25 MB por envio. O acesso é limitado aos membros desta equipe.</p></section></div>'+
    '<div id="twFeedback" aria-live="polite"></div>');
   const dashboardPanel=$('twDashboardPanel'),chatPanel=$('twChatPanel');
   const showTeamTab=tab=>{
    const chat=tab==='chat';
+   teamState.activeTab=chat?'chat':'dashboard';
    if(dashboardPanel)dashboardPanel.hidden=chat;
    if(chatPanel)chatPanel.hidden=!chat;
    const dashboardButton=$('twTabDashboard'),chatButton=$('twTabChat');
@@ -377,6 +413,7 @@
    if(chatButton)chatButton.setAttribute('aria-pressed',String(chat));
    if(chat){const box=$('twMessages');if(box)box.scrollTop=box.scrollHeight}
   };
+  showTeamTab(teamState.activeTab||'dashboard');
   $('twTabDashboard')?.addEventListener('click',()=>showTeamTab('dashboard'));
   $('twTabChat')?.addEventListener('click',()=>showTeamTab('chat'));
   $('twRefresh')?.addEventListener('click',()=>{refreshTeamBackground();teamFeedback('Atualizando os dados em segundo plano…')});
@@ -389,6 +426,7 @@
   $('twAddRound')?.addEventListener('click',createTeamRound);
   $('twAddNote')?.addEventListener('click',createTeamNote);
   $('twSendMessage')?.addEventListener('click',sendTeamMessage);
+  $('twMessageBody')?.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendTeamMessage()}});
   $('twChooseAudio')?.addEventListener('click',()=> $('twAudioFile')?.click());
   $('twChooseVideo')?.addEventListener('click',()=> $('twVideoFile')?.click());
   $('twChooseFile')?.addEventListener('click',()=> $('twAnyFile')?.click());
@@ -1352,9 +1390,11 @@ for(const [locale,parts] of Object.entries(rbLogoutParts)){
  }
  function init(){
   loadExtendedSiteI18n();
-  removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();initLocalizedGreetings();ensurePrivacyDisclosure();initFirstVisitTour();
+  removeRetiredAds();setupDock();syncDockContentSpace();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();
+  window.addEventListener('resize',syncDockContentSpace,{passive:true});
+  window.visualViewport?.addEventListener('resize',syncDockContentSpace,{passive:true});initLocalizedGreetings();ensurePrivacyDisclosure();initFirstVisitTour();
   const observer=new MutationObserver(()=>{
-   removeRetiredAds();setupDock();placeLanguageButton();syncAdmin();syncTeamWorkspace();rbApplyLanguageFallback();ensurePrivacyDisclosure();
+   removeRetiredAds();setupDock();syncDockContentSpace();placeLanguageButton();syncAdmin();syncTeamWorkspace();rbApplyLanguageFallback();ensurePrivacyDisclosure();
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
