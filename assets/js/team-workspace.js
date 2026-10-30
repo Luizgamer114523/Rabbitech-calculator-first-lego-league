@@ -140,8 +140,58 @@
   const card=node('article','rb-team-chat-msg');card.dataset.messageId=m.id||'';
   card.style.cssText='padding:10px 12px;border:1px solid var(--line,rgba(208,244,119,.18));border-radius:12px;overflow-wrap:anywhere';
   const member=members.find(x=>x.user_id===m.author_user_id);
-  card.append(node('strong','',(member?.display_name||'Membro')+' · '+new Date(m.created_at).toLocaleString('pt-BR')),node('p','',m.body));
+  card.append(node('strong','',(member?.display_name||'Membro')+' · '+new Date(m.created_at).toLocaleString('pt-BR')));
+  if(m.body)card.append(node('p','',m.body));
+  if(m.media_path)loadChatMedia(m,card);
   return card;
+ }
+ async function loadChatMedia(message,card){
+  if(card.dataset.mediaLoaded==='true')return;card.dataset.mediaLoaded='true';
+  try{
+   const {data,error}=await client().storage.from('rabbitech-team-chat').createSignedUrl(message.media_path,3600);
+   if(error)throw error;
+   if(!data?.signedUrl)throw new Error('URL de mídia indisponível');
+   const media=node(message.media_type==='video'?'video':'audio','');
+   media.controls=true;media.preload='metadata';media.src=data.signedUrl;
+   media.style.cssText='display:block;width:100%;max-width:520px;max-height:320px;margin-top:8px;border-radius:10px';
+   if(message.media_type==='video')media.playsInline=true;
+   card.append(media);
+   if(message.media_name)card.append(node('small','rb-team-muted',message.media_name));
+  }catch(error){card.append(node('small','rb-team-muted','Não foi possível carregar esta mídia. '+String(error?.message||'').slice(0,100)))}
+ }
+ async function sendChatText(){
+  const field=$('rbTeamMessage'),body=field?.value.trim();if(!body)return;
+  const send=$('rbTeamSendText');if(send)send.disabled=true;
+  try{
+   const {data,error}=await client().from('team_messages').insert({team_id:workspace.team_id,author_user_id:user().id,body}).select('*').single();
+   if(error)throw error;if(field)field.value='';if(data)addMessageOnce(data);
+  }catch(error){alert(error?.message||'Não foi possível enviar a mensagem.')}
+  finally{if(send)send.disabled=false}
+ }
+ async function sendChatMedia(file,mediaType){
+  if(!file||!workspace?.team_id||!user())return;
+  const maxBytes=25*1024*1024;
+  if(file.size>maxBytes){alert('O arquivo ultrapassa o limite de 25 MB.');return}
+  const allowed=mediaType==='audio'?file.type.startsWith('audio/'):(file.type.startsWith('video/'));
+  if(!allowed){alert('Formato de mídia não compatível.');return}
+  const status=$('rbTeamMediaStatus'),send=$('rbTeamSendMedia');
+  if(send)send.disabled=true;if(status)status.textContent='Enviando mídia…';
+  const extension=(file.name.split('.').pop()|| (mediaType==='audio'?'webm':'mp4')).replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,8)||'bin';
+  const path=workspace.team_id+'/'+user().id+'/'+crypto.randomUUID()+'.'+extension;
+  try{
+   const {error:uploadError}=await client().storage.from('rabbitech-team-chat').upload(path,file,{contentType:file.type,upsert:false});
+   if(uploadError)throw uploadError;
+   const {data,error}=await client().from('team_messages').insert({
+    team_id:workspace.team_id,author_user_id:user().id,body:'',
+    media_type:mediaType,media_path:path,media_name:file.name.slice(0,180),
+    media_mime:file.type,media_size:file.size
+   }).select('*').single();
+   if(error){await client().storage.from('rabbitech-team-chat').remove([path]);throw error}
+   if(data)addMessageOnce(data);
+   if(status)status.textContent='Mídia enviada.';
+   const picker=$('rbTeam'+(mediaType==='audio'?'AudioFile':'VideoFile'));if(picker)picker.value='';
+  }catch(error){if(status)status.textContent=error?.message||'Falha ao enviar mídia.'}
+  finally{if(send)send.disabled=false}
  }
  function addMessageOnce(m){
   if(!m)return;
@@ -171,10 +221,39 @@
    .subscribe(status=>{if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('Rabbitech team Realtime connection:',status)});
  }
  function renderChat(){
-  const panel=node('section','rb-team-panel');panel.append(node('h3','','💬 Chat da equipe'),node('p','rb-team-muted','Mensagens de texto para integrantes autenticados da equipe.'));
+  const panel=node('section','rb-team-panel');panel.append(node('h3','','💬 Chat da equipe'),node('p','rb-team-muted','Mensagens de texto, áudios gravados e vídeos. O conteúdo fica privado para os membros da equipe.'));
   const list=node('div','rb-team-chat');list.id='rbTeamChatMessages';list.setAttribute('aria-live','polite');list.style.cssText='display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;padding:8px 2px;overscroll-behavior:contain';
   messages.forEach(m=>list.append(createMessageNode(m)));if(!messages.length)list.append(node('p','rb-team-muted','Nenhuma mensagem ainda.'));panel.append(list);
-  const field=input('Mensagem','textarea','','Escreva uma mensagem…');field.el.maxLength=2000;field.el.id='rbTeamMessage';panel.append(field.wrap,button('Enviar mensagem','rb-team-btn',async()=>{const body=$('rbTeamMessage').value.trim();if(!body)return;const {data,error}=await client().from('team_messages').insert({team_id:workspace.team_id,author_user_id:user().id,body}).select('*').single();if(error)alert(error.message);else{const field=$('rbTeamMessage');if(field)field.value='';if(data)addMessageOnce(data);}}));return panel
+  const field=input('Mensagem','textarea','','Escreva uma mensagem…');field.el.maxLength=2000;field.el.id='rbTeamMessage';panel.append(field.wrap);
+  const actions=node('div','rb-team-fields');
+  const send=button('Enviar texto','rb-team-btn',sendChatText);send.id='rbTeamSendText';actions.append(send);
+  const audio=input('Enviar áudio','file');audio.el.id='rbTeamAudioFile';audio.el.accept='audio/*';audio.el.addEventListener('change',()=>sendChatMedia(audio.el.files?.[0],'audio'));actions.append(audio.wrap);
+  const video=input('Enviar vídeo','file');video.el.id='rbTeamVideoFile';video.el.accept='video/*';video.el.setAttribute('capture','environment');video.el.addEventListener('change',()=>sendChatMedia(video.el.files?.[0],'video'));actions.append(video.wrap);
+  const recorderControls=node('div','');recorderControls.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-top:8px';
+  const record=button('🎙️ Gravar áudio','rb-team-btn');record.id='rbTeamRecordAudio';
+  const stop=button('Parar e enviar','rb-team-btn');stop.id='rbTeamStopAudio';stop.disabled=true;
+  const status=node('p','rb-team-muted','');status.id='rbTeamMediaStatus';
+  let recorder=null,recordedChunks=[];
+  record.addEventListener('click',async()=>{
+   if(!navigator.mediaDevices?.getUserMedia||typeof MediaRecorder==='undefined'){status.textContent='Este navegador não oferece gravação de áudio. Use o seletor de arquivo.';return}
+   try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    const mime=['audio/webm;codecs=opus','audio/webm','audio/mp4'].find(type=>MediaRecorder.isTypeSupported(type));
+    recorder=new MediaRecorder(stream,mime?{mimeType:mime}:undefined);recordedChunks=[];
+    recorder.ondataavailable=event=>{if(event.data?.size)recordedChunks.push(event.data)};
+    recorder.onstop=async()=>{
+     stream.getTracks().forEach(track=>track.stop());
+     const blob=new Blob(recordedChunks,{type:recorder.mimeType||'audio/webm'});
+     const ext=blob.type.includes('mp4')?'m4a':'webm';
+     await sendChatMedia(new File([blob],'audio-equipe-'+Date.now()+'.'+ext,{type:blob.type}),'audio');
+     record.disabled=false;stop.disabled=true;status.textContent='Gravação enviada.';
+    };
+    recorder.start();record.disabled=true;stop.disabled=false;status.textContent='Gravando áudio…';
+   }catch(error){status.textContent='Não foi possível acessar o microfone: '+String(error?.message||error)}
+  });
+  stop.addEventListener('click',()=>{if(recorder&&recorder.state==='recording'){stop.disabled=true;recorder.stop()}});
+  recorderControls.append(record,stop);panel.append(actions,recorderControls,status);
+  return panel
  }
  function createTaskForm(){
   const panel=node('section','rb-team-panel');panel.append(node('h3','','Nova tarefa'));panel.append(node('p','rb-team-muted','Crie uma tarefa, defina prioridade e, se quiser, atribua a um membro.'));const fields=node('div','rb-team-fields');
