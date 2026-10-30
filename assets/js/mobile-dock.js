@@ -429,7 +429,7 @@
   $('twMessageBody')?.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();sendTeamMessage()}});
   $('twChooseAudio')?.addEventListener('click',()=> $('twAudioFile')?.click());
   $('twChooseVideo')?.addEventListener('click',()=> $('twVideoFile')?.click());
-  $('twChooseFile')?.addEventListener('click',()=> $('twAnyFile')?.click());
+  $('twChooseFile')?.addEventListener('click',()=>{const input=$('twAnyFile');if(input){input.value='';input.click()}});
   $('twAnyFile')?.addEventListener('change',event=>sendTeamChatMedia(event.target.files?.[0],'file'));
   $('twAudioFile')?.addEventListener('change',event=>sendTeamChatMedia(event.target.files?.[0],'audio'));
   $('twVideoFile')?.addEventListener('change',event=>sendTeamChatMedia(event.target.files?.[0],'video'));
@@ -780,7 +780,7 @@
   let uploaded=false;
   try{
    if(status)status.textContent='Enviando '+kind+'… mantenha o Rabbitech aberto.';
-   const {error:uploadError}=await c.storage.from(TEAM_CHAT_BUCKET).upload(path,file,{contentType:mime,upsert:false,cacheControl:'3600'});
+   const {error:uploadError}=await c.storage.from(TEAM_CHAT_BUCKET).upload(path,file,{contentType:mime||'application/octet-stream',upsert:false,cacheControl:'3600'});
    if(uploadError)throw uploadError;
    uploaded=true;
    if(status)status.textContent='Arquivo enviado. Publicando no chat…';
@@ -802,7 +802,7 @@
    console.warn('Rabbitech team media upload failed',error);
   }finally{
    teamState.sendingMessage=false;
-   ['twChooseAudio','twChooseVideo','twRecordAudio','twSendMessage'].forEach(id=>{const b=$(id);if(b)b.disabled=false});
+   ['twChooseAudio','twChooseVideo','twChooseFile','twRecordAudio','twSendMessage'].forEach(id=>{const b=$(id);if(b)b.disabled=false});
    if(status?.textContent?.startsWith('Falha')){if(mediaType==='video'&&videoInput)videoInput.value='';if(mediaType==='audio'&&audioInput)audioInput.value='';if(mediaType==='file'&&anyFileInput)anyFileInput.value=''}
   }
  }
