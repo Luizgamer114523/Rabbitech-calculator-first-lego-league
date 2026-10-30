@@ -763,8 +763,73 @@
  const TEAM_CHAT_BUCKET='rabbitech-team-chat';
  const TEAM_CHAT_MAX_BYTES=25*1024*1024;
  const TEAM_CHAT_MIME_TYPES=new Set(['audio/webm','audio/ogg','audio/mp4','audio/mpeg','audio/wav','video/mp4','video/webm','video/quicktime','video/3gpp','video/3gpp2','video/x-m4v']);
- let teamPhotoStream=null;
+ function mountTeamCameraControls(stream,video,parent,status,beforeNode=null){
+  const track=stream?.getVideoTracks?.()[0];
+  if(!track||!parent)return ()=>{};
+  const controls=document.createElement('div');
+  controls.className='tw-camera-controls';
+  controls.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:10px 0;padding:10px;border:1px solid #49684b;border-radius:12px;background:#102319;color:#f1faef';
+  let torchOn=false,zoomQueue=Promise.resolve();
+  const capabilities=(()=>{try{return track.getCapabilities?.()||{}}catch(_){return {}}})();
+  const settings=(()=>{try{return track.getSettings?.()||{}}catch(_){return {}}})();
+  const zoom=capabilities.zoom;
+  const zoomLabel=document.createElement('label');
+  zoomLabel.style.cssText='display:flex;align-items:center;gap:8px;flex:1 1 180px;min-width:170px;font-size:13px;font-weight:700';
+  const zoomTitle=document.createElement('span');zoomTitle.textContent='Zoom';
+  const zoomInput=document.createElement('input');zoomInput.type='range';zoomInput.style.cssText='flex:1;min-width:90px;accent-color:#d0f477';
+  const zoomValue=document.createElement('output');zoomValue.style.cssText='min-width:42px;text-align:right;font-variant-numeric:tabular-nums';zoomValue.textContent='1.0×';
+  if(zoom&&Number.isFinite(Number(zoom.min))&&Number.isFinite(Number(zoom.max))&&Number(zoom.max)>Number(zoom.min)&&typeof track.applyConstraints==='function'){
+   const min=Number(zoom.min),max=Number(zoom.max),step=Number(zoom.step)>0?Number(zoom.step):0.1;
+   const initial=Number(settings.zoom);
+   zoomInput.min=String(min);zoomInput.max=String(max);zoomInput.step=String(step);
+   zoomInput.value=String(Number.isFinite(initial)?Math.min(max,Math.max(min,initial)):min);
+   zoomValue.textContent=Number(zoomInput.value).toFixed(1)+'×';
+   zoomInput.addEventListener('input',()=>{
+    const value=Number(zoomInput.value);zoomValue.textContent=value.toFixed(1)+'×';
+    zoomQueue=zoomQueue.then(()=>track.applyConstraints({advanced:[{zoom:value}]})).catch(error=>{
+     if(status)status.textContent='Este aparelho não aceitou o nível de zoom selecionado: '+String(error?.message||error);
+    });
+   });
+  }else{
+   zoomInput.disabled=true;zoomValue.textContent='N/A';
+   zoomInput.setAttribute('aria-label','Zoom não suportado pela câmera');
+  }
+  zoomLabel.append(zoomTitle,zoomInput,zoomValue);
+  controls.appendChild(zoomLabel);
+  const flashButton=document.createElement('button');flashButton.type='button';flashButton.className='tw-btn';
+  if(capabilities.torch===true&&typeof track.applyConstraints==='function'){
+   flashButton.textContent='⚡ Ligar flash';
+   flashButton.setAttribute('aria-pressed','false');
+   flashButton.addEventListener('click',async()=>{
+    flashButton.disabled=true;
+    const next=!torchOn;
+    try{
+     await track.applyConstraints({advanced:[{torch:next}]});
+     torchOn=next;flashButton.textContent=torchOn?'⚡ Desligar flash':'⚡ Ligar flash';
+     flashButton.setAttribute('aria-pressed',String(torchOn));
+    }catch(error){
+     if(status)status.textContent='O flash não pôde ser alterado nesta câmera: '+String(error?.message||error);
+    }finally{flashButton.disabled=false}
+   });
+  }else{
+   flashButton.textContent='⚡ Flash indisponível';flashButton.disabled=true;
+   flashButton.title='O navegador ou a câmera não oferece controle de flash contínuo.';
+  }
+  controls.appendChild(flashButton);
+  const hint=document.createElement('small');
+  hint.style.cssText='flex:1 0 100%;font-size:11px;opacity:.78';
+  hint.textContent=(zoomInput.disabled?'Zoom não disponível neste aparelho. ':'')+(flashButton.disabled?'Flash não disponível nesta câmera/navegador.':'O flash funciona como lanterna enquanto a câmera estiver aberta.');
+  controls.appendChild(hint);
+  parent.insertBefore(controls,beforeNode&&beforeNode.parentNode===parent?beforeNode:null);
+  return ()=>{
+   if(torchOn){try{const result=track.applyConstraints({advanced:[{torch:false}]});result?.catch?.(()=>{})}catch(_){}}
+   controls.remove();
+   if(video)video.style.transform='';
+  };
+ }
+ let teamPhotoStream=null,teamPhotoControls=null;
  function stopTeamPhotoCapture(){
+  if(teamPhotoControls){teamPhotoControls();teamPhotoControls=null}
   if(teamPhotoStream){teamPhotoStream.getTracks().forEach(track=>track.stop());teamPhotoStream=null}
   const panel=$('twPhotoCapturePanel');if(panel)panel.remove();
  }
@@ -791,6 +856,7 @@
   try{
    teamPhotoStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
    video.srcObject=teamPhotoStream;
+   teamPhotoControls=mountTeamCameraControls(teamPhotoStream,video,panel,status,actions);
    try{await video.play()}catch(_){}
    capture.disabled=false;
    if(status)status.textContent='Enquadre a foto e toque em “Tirar foto agora”.';
@@ -974,9 +1040,10 @@
   const start=$('twRecordVideo'),stop=$('twStopVideo'),preview=$('twVideoRecordPreview'),status=$('twMediaFeedback');
   if(!start||!stop||start.dataset.bound==='true')return;
   start.dataset.bound='true';
-  let recorder=null,stream=null,chunks=[],size=0,limitTimer=null,starting=false;
+  let recorder=null,stream=null,chunks=[],size=0,limitTimer=null,starting=false,cameraControls=null;
   const release=()=>{
    if(limitTimer){clearTimeout(limitTimer);limitTimer=null}
+   if(cameraControls){cameraControls();cameraControls=null}
    stream?.getTracks().forEach(track=>track.stop());stream=null;
    if(preview){try{preview.pause();preview.srcObject=null;preview.hidden=true}catch(_){}}
   };
@@ -1014,6 +1081,7 @@
     try{stream=await navigator.mediaDevices.getUserMedia({video:videoConstraints,audio:audioConstraints})}
     catch(audioError){stream=await navigator.mediaDevices.getUserMedia({video:videoConstraints,audio:false});hasAudio=false}
     if(preview){preview.srcObject=stream;preview.hidden=false;try{await preview.play()}catch(_){}}
+    if(preview)cameraControls=mountTeamCameraControls(stream,preview,preview.parentElement||start.parentElement,status,preview.nextSibling);
     const types=['video/webm;codecs=vp8,opus','video/webm;codecs=vp8','video/webm','video/mp4'];
     const mime=types.find(type=>typeof MediaRecorder.isTypeSupported==='function'&&MediaRecorder.isTypeSupported(type));
     const options={
