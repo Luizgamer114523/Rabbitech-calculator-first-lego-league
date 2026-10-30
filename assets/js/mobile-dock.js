@@ -364,7 +364,7 @@
    '<div class="tw-card"><h3>Metas e progresso</h3><div id="twGoalsList">'+(goalHtml||'<p class="tw-muted">O mentor ainda não cadastrou metas.</p>')+'</div></div>'+
    '<div class="tw-grid"><section class="tw-card"><h3>Registrar round de treino</h3>'+teamFormField('twRoundNumber','Número do round','1','number','min="1" max="10000"')+teamFormField('twRoundScore','Pontuação','0','number','min="0" max="10000"')+'<label style="display:block;margin:7px 0">Onde começou<select class="tw-field" id="twRoundStart"><option value="Base esquerda">Base esquerda</option><option value="Base direita">Base direita</option></select></label>'+teamMissionPicker()+'<textarea class="tw-field" id="twRoundNotes" rows="2" maxlength="2000" placeholder="Observações do round"></textarea><button class="tw-btn" id="twAddRound">Salvar round</button></section><section class="tw-card"><h3>Desempenho dos rounds</h3><p>Média atual: <strong id="twRoundsAverage">'+avg+' pontos</strong></p><div id="twRoundChart">'+chart+'</div><div style="margin-top:10px"><h4>Histórico de rounds</h4><div id="twRoundList">'+(rounds.slice().reverse().map(r=>'<article class="tw-task" data-round-id="'+teamEsc(r.id)+'"><strong>Round '+teamEsc(r.round_number)+'</strong><p>'+Number(r.score||0)+' pontos · '+teamEsc(r.start_position||'Início não informado')+'</p><p class="tw-muted">'+teamEsc(r.notes||'')+'</p>'+((manager||r.created_by===profile.user_id)?'<button class="tw-btn" data-team-delete="team_round_logs" data-record-id="'+teamEsc(r.id)+'">Excluir round</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhum round registrado.</p>')+'</div></div><p id="twRoundCountFooter" class="tw-muted">'+rounds.length+' rounds de treino registrados.</p></section></div>'+
    '<div class="tw-grid"><section class="tw-card"><h3>Notas compartilhadas</h3>'+teamFormField('twNoteTitle','Título da nota','Ideias da reunião')+'<textarea class="tw-field" id="twNoteBody" rows="4" maxlength="8000" placeholder="Planejamento, decisões, o que testar..."></textarea><button class="tw-btn" id="twAddNote">Salvar anotação</button><div id="twNotesList">'+(notes.slice().reverse().map(n=>'<article class="tw-task" data-team-note-id="'+teamEsc(n.id)+'"><strong>'+teamEsc(n.title)+'</strong><p style="white-space:pre-wrap">'+teamEsc(n.body)+'</p><small class="tw-muted">'+teamEsc(new Date(n.created_at).toLocaleString())+' · '+teamEsc(members.find(m=>m.user_id===n.author_user_id)?.display_name||'Membro')+'</small>'+((manager||n.author_user_id===profile.user_id)?'<button class="tw-btn" data-team-delete="team_notes" data-record-id="'+teamEsc(n.id)+'">Excluir anotação</button>':'')+'</article>').join('')||'<p class="tw-muted">Nenhuma anotação ainda.</p>')+'</div></section>'+
-   '<section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Texto, mensagens de áudio gravadas e vídeos compartilhados entre os membros.</p><div id="twMessages" style="max-height:360px;overflow:auto;overscroll-behavior:contain">'+messages.slice(-60).map(m=>'<div class="tw-bubble" data-message-id="'+teamEsc(m.id)+'" data-created-at="'+teamEsc(m.created_at)+'"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong>'+(m.body?'<p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p>':'')+'<small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small>'+((manager||m.author_user_id===profile.user_id)?'<button class="tw-btn" data-team-delete="team_messages" data-record-id="'+teamEsc(m.id)+'">Apagar mensagem</button>':'')+'</div>').join('')+'</div><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage">Enviar mensagem</button><div class="tw-chat-upload-grid"><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseAudio">🎧 Enviar áudio</button><input class="tw-field" id="twAudioFile" type="file" accept="audio/webm,audio/ogg,audio/mp4,audio/mpeg,audio/wav,.mp3,.m4a,.ogg,.wav,.webm" hidden></div><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseVideo">🎬 Enviar vídeo</button><input class="tw-field" id="twVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" capture="environment" hidden></div></div><div class="tw-chat-record-row"><button class="tw-btn" type="button" id="twRecordAudio">🎙️ Gravar áudio</button><button class="tw-btn" type="button" id="twStopAudio" disabled>Parar gravação e enviar</button></div><p class="tw-muted" id="twMediaFeedback" role="status" aria-live="polite">Áudios e vídeos de até 25 MB. A gravação pede acesso ao microfone.</p></section></div>'+
+   '<section class="tw-card"><h3>Chat da equipe</h3><p class="tw-muted">Texto, mensagens de áudio gravadas e vídeos compartilhados entre os membros.</p><div id="twMessages" style="max-height:360px;overflow:auto;overscroll-behavior:contain">'+messages.slice(-60).map(m=>'<div class="tw-bubble" data-message-id="'+teamEsc(m.id)+'" data-created-at="'+teamEsc(m.created_at)+'"><strong>'+teamEsc(members.find(x=>x.user_id===m.author_user_id)?.display_name||'Membro')+'</strong>'+(m.body?'<p style="white-space:pre-wrap;margin:4px 0">'+teamEsc(m.body)+'</p>':'')+'<small class="tw-muted">'+teamEsc(new Date(m.created_at).toLocaleString())+'</small>'+((manager||m.author_user_id===profile.user_id)?'<button class="tw-btn" data-team-delete="team_messages" data-record-id="'+teamEsc(m.id)+'">Apagar mensagem</button>':'')+'</div>').join('')+'</div><textarea class="tw-field" id="twMessageBody" rows="2" maxlength="2000" placeholder="Escreva para a equipe..."></textarea><button class="tw-btn" id="twSendMessage">Enviar mensagem</button><div class="tw-chat-upload-grid"><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseAudio">🎧 Enviar áudio</button><input class="tw-field" id="twAudioFile" type="file" accept="audio/webm,audio/ogg,audio/mp4,audio/mpeg,audio/wav,.mp3,.m4a,.ogg,.wav,.webm" hidden></div><div class="tw-chat-upload"><button class="tw-btn" type="button" id="twChooseVideo">🎬 Enviar vídeo</button><input class="tw-field" id="twVideoFile" type="file" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.m4v" hidden></div></div><div class="tw-chat-record-row"><button class="tw-btn" type="button" id="twRecordAudio">🎙️ Gravar áudio</button><button class="tw-btn" type="button" id="twStopAudio" disabled>Parar gravação e enviar</button></div><p class="tw-muted" id="twMediaFeedback" role="status" aria-live="polite">Áudios e vídeos de até 25 MB. A gravação pede acesso ao microfone.</p></section></div>'+
    '<div id="twFeedback" aria-live="polite"></div>');
   $('twRefresh')?.addEventListener('click',()=>{refreshTeamBackground();teamFeedback('Atualizando os dados em segundo plano…')});
   $('twEnableNotifications')?.addEventListener('click',requestTeamNotifications);
@@ -686,46 +686,60 @@
   }
  }
  async function sendTeamChatMedia(file,mediaType){
+  const status=$('twMediaFeedback'),audioInput=$('twAudioFile'),videoInput=$('twVideoFile');
   const team=teamState.team,profile=teamState.profile,c=teamClient();
-  if(!file||!team?.team_id||!profile?.user_id||!c)return;
-  if(teamState.sendingMessage)return teamFeedback('Aguarde o envio atual terminar.');
-  const mime=String(file.type||'').toLowerCase().split(';')[0].trim();
+  const kind=mediaType==='audio'?'áudio':'vídeo';
+  const fail=message=>{if(status)status.textContent=message;teamFeedback(message,true)};
+  if(!file){fail('Nenhum arquivo selecionado. Escolha um vídeo da galeria e tente novamente.');return}
+  if(!team?.team_id||!profile?.user_id||!c){fail('Entre na equipe novamente antes de enviar mídia.');return}
+  if(teamState.sendingMessage){fail('Aguarde o envio atual terminar.');return}
+  const rawMime=String(file.type||'').toLowerCase().split(';')[0].trim();
+  const rawExtension=String(file.name||'').split('.').pop().toLowerCase().replace(/[^a-z0-9]/g,'');
+  // Android file providers sometimes return an empty or generic MIME type.
+  // Infer only known formats; never trust an arbitrary extension as a MIME type.
+  const mimeByExtension={mp4:'video/mp4',m4v:'video/mp4',webm:'video/webm',mov:'video/quicktime',mp3:'audio/mpeg',m4a:'audio/mp4',ogg:'audio/ogg',wav:'audio/wav'};
+  const mime=(!rawMime||rawMime==='application/octet-stream')?(mimeByExtension[rawExtension]||''):rawMime;
   if(!TEAM_CHAT_MIME_TYPES.has(mime)||!(mediaType==='audio'?mime.startsWith('audio/'):mime.startsWith('video/'))){
-   teamFeedback('Formato não aceito. Use áudio WebM, OGG, MP4, MP3 ou WAV; vídeo MP4, WebM ou MOV.',true);return;
+   fail('Formato não aceito ('+(rawMime||'tipo não identificado')+'). Use vídeo MP4, WebM ou MOV; áudio MP3, M4A, OGG ou WAV.');return;
   }
   if(file.size<=0||file.size>TEAM_CHAT_MAX_BYTES){
-   teamFeedback(file.size>TEAM_CHAT_MAX_BYTES?'O arquivo ultrapassa o limite de 25 MB.':'O arquivo está vazio.',true);return;
+   fail(file.size>TEAM_CHAT_MAX_BYTES?'O vídeo ultrapassa o limite de 25 MB. Comprima ou reduza o arquivo antes de enviar.':'O arquivo está vazio.');return;
   }
   teamState.sendingMessage=true;
-  const status=$('twMediaFeedback'),audioInput=$('twAudioFile'),videoInput=$('twVideoFile');
-  if(status)status.textContent='Enviando '+(mediaType==='audio'?'áudio':'vídeo')+'…';
+  if(status)status.textContent='Preparando '+kind+'…';
   ['twChooseAudio','twChooseVideo','twRecordAudio','twSendMessage'].forEach(id=>{const b=$(id);if(b)b.disabled=true});
   const extensionByMime={'audio/webm':'webm','audio/ogg':'ogg','audio/mp4':'m4a','audio/mpeg':'mp3','audio/wav':'wav','video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov'};
-  const fallbackName=(mediaType==='audio'?'audio-equipe.':'video-equipe.')+extensionByMime[mime];
-  const rawExtension=String(file.name||'').split('.').pop()||extensionByMime[mime];
-  const extension=rawExtension.replace(/[^a-z0-9]/gi,'').toLowerCase().slice(0,8)||extensionByMime[mime];
-  const uuid=crypto?.randomUUID?crypto.randomUUID():(Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12));
+  const extension=extensionByMime[mime];
+  const fallbackName=(mediaType==='audio'?'audio-equipe.':'video-equipe.')+extension;
+  const safeName=String(file.name||fallbackName).replace(/[\\/\\\\]/g,'_').slice(0,180);
+  const uuid=globalThis.crypto?.randomUUID?.()||(Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12));
   const path=team.team_id+'/'+profile.user_id+'/'+uuid+'.'+extension;
   let uploaded=false;
   try{
+   if(status)status.textContent='Enviando '+kind+'… mantenha o Rabbitech aberto.';
    const {error:uploadError}=await c.storage.from(TEAM_CHAT_BUCKET).upload(path,file,{contentType:mime,upsert:false,cacheControl:'3600'});
-   if(uploadError)throw uploadError;uploaded=true;
+   if(uploadError)throw uploadError;
+   uploaded=true;
+   if(status)status.textContent='Arquivo enviado. Publicando no chat…';
    const {data,error}=await c.from('team_messages').insert({
     team_id:team.team_id,author_user_id:profile.user_id,body:'',
-    media_type:mediaType,media_path:path,media_name:String(file.name||fallbackName).slice(0,180),
+    media_type:mediaType,media_path:path,media_name:safeName,
     media_mime:mime,media_size:file.size
    }).select('*').single();
    if(error)throw error;
    if(data)appendTeamMessage(data,false);
-   if(status)status.textContent=(mediaType==='audio'?'Áudio':'Vídeo')+' enviado.';
-   if(audioInput)audioInput.value='';if(videoInput)videoInput.value='';
+   if(status)status.textContent=(mediaType==='audio'?'Áudio':'Vídeo')+' enviado com sucesso.';
+   if(audioInput)audioInput.value='';
+   if(videoInput)videoInput.value='';
   }catch(error){
-   if(uploaded){try{await c.storage.from(TEAM_CHAT_BUCKET).remove([path])}catch(_){}}
-   if(status)status.textContent='Falha no envio: '+String(error?.message||error);
+   if(uploaded){try{await c.storage.from(TEAM_CHAT_BUCKET).remove([path])}catch(cleanupError){console.warn('Could not remove failed team media upload',cleanupError)}}
+   const detail=String(error?.message||error||'erro desconhecido');
+   fail('Falha ao enviar '+kind+': '+detail);
    console.warn('Rabbitech team media upload failed',error);
   }finally{
    teamState.sendingMessage=false;
    ['twChooseAudio','twChooseVideo','twRecordAudio','twSendMessage'].forEach(id=>{const b=$(id);if(b)b.disabled=false});
+   if(status?.textContent?.startsWith('Falha')){if(mediaType==='video'&&videoInput)videoInput.value='';if(mediaType==='audio'&&audioInput)audioInput.value=''}
   }
  }
  function setupTeamAudioRecorder(){
