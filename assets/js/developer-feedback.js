@@ -5,9 +5,13 @@
  window.__rbDeveloperFeedbackLoaded=true;
  const OWNER_ID='7e799691-ba7e-42ea-ab6f-71ad11ca32ff';
  const $=id=>document.getElementById(id);
- const client=()=>window.rbClient||window.supabaseClient||null;
+ const client=()=>{
+  try{if(typeof rbClient!=='undefined'&&rbClient)return rbClient}catch(_){}
+  return window.rbClient||window.supabaseClient||null;
+ };
  async function currentUser(){
-  const cached=window.rbCloudUser;
+  let cached=null;
+  try{cached=(typeof rbCloudUser!=='undefined'&&rbCloudUser)||window.rbCloudUser||null}catch(_){cached=window.rbCloudUser||null}
   if(cached?.id)return cached;
   try{const r=await client()?.auth?.getUser?.();return r?.data?.user||null}catch(_){return null}
  }
