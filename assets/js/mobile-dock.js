@@ -1361,11 +1361,13 @@
    {title:'Administração e avisos',copy:'A aba Admin aparece apenas para contas autorizadas. Nela, responsáveis administrativos gerenciam configurações, avisos globais, módulos e diagnósticos. Os avisos publicados podem aparecer para todos os visitantes. Esta área não é necessária para o uso normal da equipe.',find:()=>document.querySelector('#rbAdminNav')||document.querySelector('nav button[data-page="admin"]')||document.querySelector('main')},
    {title:'Pronto para começar',copy:'Você concluiu o tour. A aba Equipe em modo de demonstração será bloqueada ao sair do tutorial. Para criar ou entrar em uma equipe real, conecte sua conta Google. Reabra o guia pelo botão ? quando quiser.',find:()=>document.querySelector('nav button[data-page="score"]')||document.querySelector('main')}
   ];
-  let index=0,root=null,card=null,arrow=null,highlight=null,shades=[],resizeHandler=null;
+  let index=0,root=null,card=null,arrow=null,highlight=null,shades=[],resizeHandler=null,positionFrame=0;
   const visible=el=>!!el&&el.isConnected&&el.getClientRects().length>0&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).display!=='none';
   function clearHighlight(){if(highlight){highlight.classList.remove('rb-tour-highlight');highlight=null}}
   function cleanup(){
-   clearHighlight();if(resizeHandler){window.removeEventListener('resize',resizeHandler);window.removeEventListener('scroll',resizeHandler,true);resizeHandler=null}
+   clearHighlight();
+   if(positionFrame){cancelAnimationFrame(positionFrame);positionFrame=0}
+   if(resizeHandler){window.removeEventListener('resize',resizeHandler);window.removeEventListener('scroll',resizeHandler,true);resizeHandler=null}
    root?.remove();root=null;card=null;arrow=null;shades=[];
   }
   function finish(skipped){
@@ -1387,7 +1389,7 @@
    root.querySelector('#rbTourBack').addEventListener('click',()=>{index=Math.max(0,index-1);render()});
    root.querySelector('#rbTourSkip').addEventListener('click',()=>finish(true));
    root.querySelector('#rbTourNext').addEventListener('click',()=>{index++;if(index>=steps.length)finish(false);else render()});
-   resizeHandler=()=>position();window.addEventListener('resize',resizeHandler,{passive:true});window.addEventListener('scroll',resizeHandler,true);
+   resizeHandler=()=>{if(positionFrame)return;positionFrame=requestAnimationFrame(()=>{positionFrame=0;position()})};window.addEventListener('resize',resizeHandler,{passive:true});window.addEventListener('scroll',resizeHandler,{passive:true,capture:true});
   }
   function position(){
    if(!root||!card)return;
@@ -1640,8 +1642,15 @@ for(const [locale,parts] of Object.entries(rbLogoutParts)){
   removeRetiredAds();setupDock();syncDockContentSpace();placeLanguageButton();syncAdmin();loadPublicSettings();initTeamWorkspace();
   window.addEventListener('resize',syncDockContentSpace,{passive:true});
   window.visualViewport?.addEventListener('resize',syncDockContentSpace,{passive:true});initLocalizedGreetings();ensurePrivacyDisclosure();initFirstVisitTour();
+  // Coalesce DOM-driven UI synchronization to one pass per animation frame.
+  // Legacy ad cleanup is a one-time startup task, not work for every DOM mutation.
+  let uiSyncFrame=0;
   const observer=new MutationObserver(()=>{
-   removeRetiredAds();setupDock();syncDockContentSpace();placeLanguageButton();syncAdmin();syncTeamWorkspace();rbApplyLanguageFallback();ensurePrivacyDisclosure();
+   if(uiSyncFrame)return;
+   uiSyncFrame=requestAnimationFrame(()=>{
+    uiSyncFrame=0;
+    setupDock();syncDockContentSpace();placeLanguageButton();syncAdmin();syncTeamWorkspace();rbApplyLanguageFallback();ensurePrivacyDisclosure();
+   });
   });
   observer.observe(document.body,{childList:true,subtree:true});
   let previous='';
