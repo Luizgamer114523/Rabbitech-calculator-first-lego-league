@@ -291,3 +291,15 @@ body.rb-privacy-gate-open #rbLanguageConsent{display:none!important;visibility:h
   scroll-behavior: auto !important;
  }
 }
+
+/* Mobile scroll responsiveness: avoid repainting fixed backgrounds and isolate the dock. */
+@media(max-width:800px){
+ html,body{scroll-behavior:auto!important;background-attachment:scroll!important}
+ body{overscroll-behavior-y:auto;-webkit-overflow-scrolling:touch}
+ main .page{scroll-margin-top:8px}
+ nav.rb-samsung-dock{
+  contain:layout paint;
+  transform:translateZ(0);
+  backface-visibility:hidden;
+ }
+}
