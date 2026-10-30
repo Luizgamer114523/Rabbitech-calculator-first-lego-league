@@ -459,7 +459,7 @@ body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
         <div id="rbAdminDiagnostics" class="card hidden" style="margin-top:12px;background:var(--panel2)" aria-live="polite"><h4 style="margin-top:0">🩺 Diagnóstico do Rabbitech</h4><p class="footnote">Execute o diagnóstico para verificar conexão, configurações globais, módulos e dados de equipes sem modificar o banco.</p><div id="rbAdminDiagnosticsResults"></div></div>
        </div>
        <div id="rbReleaseCenter" class="card" style="margin:14px 0;background:var(--panel2)">
-        <div class="toolbar" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🚀 Central de atualizações</h3><p class="footnote">Versão instalada, alterações recentes e comparação com a versão esperada no repositório.</p></div><span class="badge" id="rbReleaseVersionBadge">v2026.10.27.5</span></div>
+        <div class="toolbar" style="justify-content:space-between;align-items:center"><div><h3 style="margin:0">🚀 Central de atualizações</h3><p class="footnote">Versão instalada, alterações recentes e comparação com a versão esperada no repositório.</p></div><span class="badge" id="rbReleaseVersionBadge">v2026.10.30.1</span></div>
         <p id="rbReleaseStatus" class="rb-release-status footnote" role="status" aria-live="polite">Verifique a versão do repositório para comparar com este site.</p>
         <h4>Alterações desta versão</h4><ul id="rbReleaseNotes" class="footnote"><li>Monitor de saúde e diagnóstico com reparação guiada.</li><li>Modo manutenção, avisos agendados e restauração do histórico de configurações.</li><li>Análise de pontuação e evolução dos rounds.</li><li>Ranking público explica o mínimo de 3 rounds sincronizados para entrar na classificação.</li></ul>
         <button type="button" id="rbReleaseCheck" class="primary">Verificar publicação</button>
@@ -1667,7 +1667,7 @@ rbEl('rbClearScheduledNotice')?.addEventListener('click',rbRun(async()=>{
   throw error;
  }
 }));
-const RB_APP_RELEASE_VERSION='2026.10.27.5';
+const RB_APP_RELEASE_VERSION='2026.10.30.1';
 async function rbReleaseCheck(){
  const status=rbEl('rbReleaseStatus'),notes=rbEl('rbReleaseNotes'),badge=rbEl('rbReleaseVersionBadge');
  if(status)status.textContent='Consultando a versão esperada no GitHub…';
@@ -1694,7 +1694,7 @@ async function rbReleaseCheck(){
   }
  }catch(error){if(status)status.textContent='Não foi possível verificar a versão remota ('+(error.message||String(error))+'). O estado da publicação permanece não confirmado.';}
 }
-rbEl('rbReleaseCheck')?.addEventListener('click',()=>rbRun(rbReleaseCheck));
+rbEl('rbReleaseCheck')?.addEventListener('click',rbRun(rbReleaseCheck));
 rbEl('rbMaintenanceOwnerLogin')?.addEventListener('click',()=>{
  const team=String(rbEl('rbMaintenanceLoginTeam')?.value||'').trim();
  const destination=rbEl('rbCloudTeam');
