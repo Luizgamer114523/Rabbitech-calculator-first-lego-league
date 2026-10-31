@@ -1,3 +1,13 @@
+<div align="center">
+
+<img src="./assets/brand-mark.svg" width="132" alt="Rabbitech BIOGLOW FLLC brand mark" />
+
+**ROBOTICS TEAM PLATFORM**
+
+</div>
+
+---
+
 # Rabbitech BIOGLOW FLLC
 
 **A web platform for the Rabbitech BIOGLOW FIRST LEGO League team.**
